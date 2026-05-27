@@ -1,0 +1,39 @@
+title: "[Discussion] "
+
+body:
+  - type: checkboxes
+    id: attendees
+    attributes:
+      label: ✅ 회의 참석자 체크리스트
+      options:
+        - label: 서민지
+        - label: 손윤서
+
+  - type: textarea
+    id: discussion-topic
+    attributes:
+      label: 💡 논의 주제
+      placeholder: 논의할 주제를 작성해주세요.
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 🤔 해야할 일
+
+  - type: textarea
+    id: task-kim-donghoon
+    attributes:
+      label: 서민지
+      placeholder: 서민지님이 해야 할 일을 작성해주세요.
+    validations:
+      required: false
+
+  - type: textarea
+    id: task-lee-ganguk
+    attributes:
+      label: 손윤서
+      placeholder: 손윤서님이 해야 할 일을 작성해주세요.
+    validations:
+      required: false
