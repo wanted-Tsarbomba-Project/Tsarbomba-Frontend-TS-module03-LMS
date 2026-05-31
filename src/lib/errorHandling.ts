@@ -36,10 +36,16 @@ interface HandleClientErrorOptions {
 }
 
 export function isPageError(error: unknown) {
-  return error instanceof ApiClientError && PAGE_ERROR_STATUSES.has(error.status ?? 0);
+  return (
+    error instanceof ApiClientError &&
+    PAGE_ERROR_STATUSES.has(error.status ?? 0)
+  );
 }
 
-export function getErrorTitle(error: unknown, fallbackTitle = "요청을 처리하지 못했습니다") {
+export function getErrorTitle(
+  error: unknown,
+  fallbackTitle = "요청을 처리하지 못했습니다",
+) {
   if (error instanceof ApiClientError && error.status) {
     return getStatusTitle(error.status);
   }
@@ -59,7 +65,10 @@ export function getErrorContent(error: unknown, fallbackMessage: string) {
   return fallbackMessage;
 }
 
-export function handleClientError(error: unknown, options: HandleClientErrorOptions) {
+export function handleClientError(
+  error: unknown,
+  options: HandleClientErrorOptions,
+) {
   if (isPageError(error)) {
     options.router.push(buildErrorPageUrl(error as ApiClientError));
     return;
