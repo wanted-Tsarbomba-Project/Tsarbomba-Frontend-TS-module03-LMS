@@ -37,9 +37,9 @@ function Header({ isSimple }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(() => getHeaderStatus().isLoggedIn);
-  const [nickname, setNickname] = useState(() => getHeaderStatus().nickname);
-  const [userRole, setUserRole] = useState(() => getHeaderStatus().userRole);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [nickname, setNickname] = useState("닉네임");
+  const [userRole, setUserRole] = useState("");
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -53,8 +53,10 @@ function Header({ isSimple }: HeaderProps) {
   };
 
   useEffect(() => {
+    const syncTimerId = window.setTimeout(syncHeaderStatus, 0);
     window.addEventListener("loginSuccess", syncHeaderStatus);
     return () => {
+      window.clearTimeout(syncTimerId);
       window.removeEventListener("loginSuccess", syncHeaderStatus);
     };
   }, []);
@@ -137,6 +139,12 @@ function Header({ isSimple }: HeaderProps) {
           {/* 일반 학생 유저 로그인 시 메뉴 */}
           {!isAdminPath && isLoggedIn && !isManagementRole && (
             <nav className="flex items-center gap-5 text-sm font-semibold text-[#1f2937]">
+              <span
+                className="cursor-pointer hover:text-[#1a237e] transition-colors"
+                onClick={() => router.push("/chat")}
+              >
+                챗봇
+              </span>
               <span
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
                 onClick={() => router.push("/user/my-classroom")}

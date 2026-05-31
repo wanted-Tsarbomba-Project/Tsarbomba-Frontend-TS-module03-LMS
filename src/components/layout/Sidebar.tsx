@@ -359,7 +359,7 @@ export default function Sidebar({
     <div className="w-full flex flex-col gap-4">
       <button
         className="w-full h-11 bg-[#1a237e] text-white rounded-lg flex items-center justify-center font-semibold text-sm cursor-pointer hover:bg-[#111751] transition-colors shadow-sm"
-        onClick={() => router.push("/user/chat")}
+        onClick={() => router.push("/chat")}
         type="button"
       >
         + 새 대화 시작
@@ -370,11 +370,12 @@ export default function Sidebar({
           <li key={room.roomId}>
             <Link
               className={
+                pathname === `/chat/${room.roomId}` ||
                 pathname === `/user/chat/${room.roomId}`
                   ? itemActiveClass
                   : itemBaseClass
               }
-              href={`/user/chat/${room.roomId}`}
+              href={`/chat/${room.roomId}`}
             >
               <span className="block truncate">{room.title}</span>
             </Link>
