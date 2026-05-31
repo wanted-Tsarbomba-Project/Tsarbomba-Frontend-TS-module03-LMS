@@ -63,7 +63,8 @@ async function request<T>(
 }
 
 function createApiError(response: Response, text: string, requestPath: string) {
-  const fallbackMessage = "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  const fallbackMessage =
+    "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
 
   if (!text) {
     return new ApiClientError(
@@ -217,7 +218,7 @@ export async function getUserCourseProgress(userId: string) {
 
 export async function getUserProblemList(userId: string) {
   return request<{ submissions: UserProblemSubmission[] }>(
-    `/api/v1/users/${userId}/problem`,
+    `/api/v1/admin/students/${userId}/problems`,
   );
 }
 

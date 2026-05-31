@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
@@ -39,11 +39,26 @@ interface UserProblemDetailClientProps {
 const updateArrayItem = <T,>(items: T[], index: number, value: T) =>
   items.map((item, itemIndex) => (itemIndex === index ? value : item));
 
+const CHAT_INPUT_MAX_HEIGHT = 144;
+
+function resizeChatInput(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) {
+    return;
+  }
+
+  textarea.style.height = "auto";
+  const nextHeight = Math.min(textarea.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
+  textarea.style.height = `${nextHeight}px`;
+  textarea.style.overflowY =
+    textarea.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
+}
+
 export default function UserProblemDetailClient({
   problemSetId,
 }: UserProblemDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
 
   const [problemSet, setProblemSet] = useState<ProblemSetDetail | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -79,6 +94,10 @@ export default function UserProblemDetailClient({
 
   const currentProblem = problemSet?.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
+
+  useEffect(() => {
+    resizeChatInput(chatInputRef.current);
+  }, [chatInput]);
 
   useEffect(() => {
     let isMounted = true;
@@ -462,7 +481,9 @@ export default function UserProblemDetailClient({
               ))}
               {chatSending && (
                 <div className={styles.chatMessageWrap}>
-                  <div className={styles.assistantMessage}>AI 답변 중입니다.</div>
+                  <div className={`${styles.chatMessage} ${styles.assistantMessage}`}>
+                    AI 답변 중입니다.
+                  </div>
                 </div>
               )}
             </div>
@@ -478,6 +499,8 @@ export default function UserProblemDetailClient({
                   }
                 }}
                 placeholder="질문 입력"
+                ref={chatInputRef}
+                rows={1}
                 value={chatInput}
               />
               <button disabled={chatSending || !chatInput.trim()} onClick={sendChat} type="button">
