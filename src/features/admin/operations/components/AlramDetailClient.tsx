@@ -8,6 +8,7 @@ import {
   TwoButtonModal,
   WarningModal,
 } from "@/components/common";
+import { handleClientError } from "@/lib/errorHandling";
 
 import {
   deleteOperationAlert,
@@ -74,14 +75,19 @@ export default function AlramDetailClient() {
         setStatus(result.data.alert.status);
       } catch (error) {
         console.error("알람 상세 조회 실패:", error);
-        openNoticeModal("조회 실패", "알람 상세 조회에 실패했습니다.");
+        handleClientError(error, {
+          router,
+          fallbackTitle: "알람 정보를 불러오지 못했습니다",
+          fallbackMessage: "잠시 후 다시 시도해 주세요.",
+          showModal: openNoticeModal,
+        });
       } finally {
         setLoading(false);
       }
     };
 
     void fetchDetail();
-  }, [id]);
+  }, [id, router]);
 
   function openNoticeModal(title: string, content: string) {
     setNoticeModal({
@@ -118,7 +124,12 @@ export default function AlramDetailClient() {
       openNoticeModal("저장 완료", "관리자 메모가 저장되었습니다.");
     } catch (error) {
       console.error("관리자 메모 저장 실패:", error);
-      openNoticeModal("저장 실패", "관리자 메모 저장에 실패했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "메모를 저장하지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     } finally {
       setSaving(false);
     }
@@ -156,7 +167,12 @@ export default function AlramDetailClient() {
       openNoticeModal("변경 완료", "알람 상태가 변경되었습니다.");
     } catch (error) {
       console.error("알람 상태 변경 실패:", error);
-      openNoticeModal("변경 실패", "알람 상태 변경에 실패했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "상태를 변경하지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     } finally {
       setSaving(false);
     }
@@ -171,7 +187,12 @@ export default function AlramDetailClient() {
       router.push("/admin/alrams");
     } catch (error) {
       console.error("알람 삭제 실패:", error);
-      openNoticeModal("삭제 실패", "알람 삭제에 실패했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "알람을 삭제하지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     } finally {
       setSaving(false);
     }

@@ -4,6 +4,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { List, OneButtonModal, type ListColumn } from "@/components/common";
+import { handleClientError } from "@/lib/errorHandling";
 
 import { getOperationAlerts } from "../api";
 import type { AlertStatus, OperationAlertSummary, TargetType } from "../types";
@@ -52,10 +53,16 @@ export default function AlramsClient() {
         setAlerts(result.data.content);
       } catch (error) {
         console.error("알람 목록 조회 실패:", error);
-        setNoticeModal({
-          isOpen: true,
-          title: "조회 실패",
-          content: "알람 목록 조회에 실패했습니다.",
+        handleClientError(error, {
+          router,
+          fallbackTitle: "알람을 불러오지 못했습니다",
+          fallbackMessage: "잠시 후 다시 시도해 주세요.",
+          showModal: (title, content) =>
+            setNoticeModal({
+              isOpen: true,
+              title,
+              content,
+            }),
         });
       } finally {
         setLoading(false);
@@ -63,7 +70,7 @@ export default function AlramsClient() {
     };
 
     void fetchAlerts();
-  }, [type, status]);
+  }, [router, type, status]);
 
   const handleStatusChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setStatus(event.target.value as AlertStatus | "");
