@@ -1,6 +1,8 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
+
+import { OneButtonModal } from "@/components/common";
 
 import {
   getAutomationRules,
@@ -23,19 +25,32 @@ export default function RulesClient() {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [noticeModal, setNoticeModal] = useState({
+    isOpen: false,
+    title: "",
+    content: "",
+  });
 
-  const fetchRules = async () => {
+  const openNoticeModal = useCallback((title: string, content: string) => {
+    setNoticeModal({
+      isOpen: true,
+      title,
+      content,
+    });
+  }, []);
+
+  const fetchRules = useCallback(async () => {
     try {
       setLoading(true);
       const result = await getAutomationRules();
       setRules(result.data);
     } catch (error) {
       console.error("규칙 조회 실패:", error);
-      alert("규칙 조회에 실패했습니다.");
+      openNoticeModal("조회 실패", "규칙 조회에 실패했습니다.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [openNoticeModal]);
 
   useEffect(() => {
     const loadRules = async () => {
@@ -43,7 +58,7 @@ export default function RulesClient() {
     };
 
     void loadRules();
-  }, []);
+  }, [fetchRules]);
 
   const handleChange = (
     operationRuleId: number,
@@ -76,7 +91,7 @@ export default function RulesClient() {
       );
     } catch (error) {
       console.error("규칙 활성 상태 변경 실패:", error);
-      alert("활성 상태 변경에 실패했습니다.");
+      openNoticeModal("변경 실패", "활성 상태 변경에 실패했습니다.");
     }
   };
 
@@ -84,11 +99,11 @@ export default function RulesClient() {
     try {
       setSaving(true);
       await updateAutomationRules(rules);
-      alert("규칙이 수정되었습니다.");
+      openNoticeModal("수정 완료", "규칙이 수정되었습니다.");
       await fetchRules();
     } catch (error) {
       console.error("규칙 수정 실패:", error);
-      alert("규칙 수정 중 오류가 발생했습니다.");
+      openNoticeModal("수정 실패", "규칙 수정 중 오류가 발생했습니다.");
     } finally {
       setSaving(false);
     }
@@ -99,42 +114,51 @@ export default function RulesClient() {
   }
 
   return (
-    <div className={styles.container}>
-      {rules.map((rule) => (
-        <section className={styles.ruleBlock} key={rule.operationRuleId}>
-          <div className={styles.ruleHeader}>
-            <h2 className={styles.ruleLabel}>
-              {targetTypeLabel[rule.targetType] ?? rule.targetType}
-            </h2>
+    <>
+      <div className={styles.container}>
+        {rules.map((rule) => (
+          <section className={styles.ruleBlock} key={rule.operationRuleId}>
+            <div className={styles.ruleHeader}>
+              <h2 className={styles.ruleLabel}>
+                {targetTypeLabel[rule.targetType] ?? rule.targetType}
+              </h2>
 
-            <button
-              className={`${styles.toggleButton} ${
-                rule.enabled ? styles.enabled : styles.disabled
-              }`}
-              onClick={() => void handleToggleEnabled(rule)}
-              type="button"
-            >
-              {rule.enabled ? "활성" : "비활성"}
-            </button>
-          </div>
+              <button
+                className={`${styles.toggleButton} ${
+                  rule.enabled ? styles.enabled : styles.disabled
+                }`}
+                onClick={() => void handleToggleEnabled(rule)}
+                type="button"
+              >
+                {rule.enabled ? "활성" : "비활성"}
+              </button>
+            </div>
 
-          <div className={styles.ruleInputBox}>
-            {renderRuleInputs(rule, handleChange)}
-          </div>
-        </section>
-      ))}
+            <div className={styles.ruleInputBox}>
+              {renderRuleInputs(rule, handleChange)}
+            </div>
+          </section>
+        ))}
 
-      <div className={styles.submitWrapper}>
-        <button
-          className={styles.submitButton}
-          disabled={saving}
-          onClick={() => void handleSubmit()}
-          type="button"
-        >
-          {saving ? "수정 중..." : "수정하기"}
-        </button>
+        <div className={styles.submitWrapper}>
+          <button
+            className={styles.submitButton}
+            disabled={saving}
+            onClick={() => void handleSubmit()}
+            type="button"
+          >
+            {saving ? "수정 중..." : "수정하기"}
+          </button>
+        </div>
       </div>
-    </div>
+
+      <OneButtonModal
+        isOpen={noticeModal.isOpen}
+        modalContent={noticeModal.content}
+        modalTitle={noticeModal.title}
+        onClose={() => setNoticeModal({ isOpen: false, title: "", content: "" })}
+      />
+    </>
   );
 }
 
