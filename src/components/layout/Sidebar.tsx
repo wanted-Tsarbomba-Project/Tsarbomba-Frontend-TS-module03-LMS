@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
-import { getProblemCategories } from "@/features/problems/actions";
-import type { ProblemCategory } from "@/features/problems/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -57,24 +55,17 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const selectedCategoryId = searchParams.get("categoryId");
 
   const [nickname, setNickname] = useState(
     propsNickname || getStoredValue("userNickname") || "닉네임",
   );
   const [userRole, setUserRole] = useState(getStoredValue("userRole"));
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [problemCategories, setProblemCategories] = useState<ProblemCategory[]>([]);
 
   const isAdminPath = pathname.startsWith("/admin");
-  const isCategory =
-    !isAdminPath &&
-    (pathname.startsWith("/problems") || pathname.startsWith("/user/problems"));
   const isMypage =
-    (pathname.startsWith("/user/introduce") ||
-      pathname.startsWith("/user/profile")) &&
-    !isCategory;
+    pathname.startsWith("/user/introduce") ||
+    pathname.startsWith("/user/profile");
   const isChatPage =
     pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
@@ -129,30 +120,6 @@ export default function Sidebar({
       window.removeEventListener("chatRoomUpdated", fetchChatRooms);
     };
   }, [isChatPage]);
-
-  useEffect(() => {
-    if (!isCategory) return;
-
-    let isMounted = true;
-
-    const fetchProblemCategories = async () => {
-      try {
-        const categories = await getProblemCategories();
-
-        if (isMounted) {
-          setProblemCategories(categories);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    fetchProblemCategories();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isCategory]);
 
   const itemBaseClass =
     "block w-full text-left px-4 py-2.5 rounded-lg text-base font-semibold text-[#4b5563] hover:bg-[#f3f4f6] hover:text-[#1a237e] transition-all cursor-pointer";
@@ -316,45 +283,6 @@ export default function Sidebar({
     </div>
   );
 
-  const problemCategoryMenu = (
-    <div className="w-full flex flex-col gap-5">
-      <div className="flex flex-col items-start px-2 py-1">
-        <span className="text-lg font-bold text-[#1f2937]">카테고리</span>
-      </div>
-      <hr className="border-[#f3f4f6] -mt-2" />
-
-      <ul className="flex flex-col gap-1">
-        <li>
-          <button
-            className={!selectedCategoryId ? itemActiveClass : itemBaseClass}
-            onClick={() => router.push("/problems")}
-            type="button"
-          >
-            전체
-          </button>
-        </li>
-
-        {problemCategories.map((category) => (
-          <li key={category.categoryId}>
-            <button
-              className={
-                selectedCategoryId === category.categoryId
-                  ? itemActiveClass
-                  : itemBaseClass
-              }
-              onClick={() =>
-                router.push(`/problems?categoryId=${category.categoryId}`)
-              }
-              type="button"
-            >
-              {category.categoryName}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-
   const chatMenu = (
     <div className="w-full flex flex-col gap-4">
       <button
@@ -399,7 +327,7 @@ export default function Sidebar({
     );
   }
 
-  if (!isAdminPath && !isCategory && !isMypage && !isChatPage) {
+  if (!isAdminPath && !isMypage && !isChatPage) {
     return null;
   }
 
@@ -413,7 +341,6 @@ export default function Sidebar({
     >
       {isAdminPath && adminMenu}
       {isMypage && mypageMenu}
-      {isCategory && problemCategoryMenu}
       {isChatPage && chatMenu}
     </aside>
   );

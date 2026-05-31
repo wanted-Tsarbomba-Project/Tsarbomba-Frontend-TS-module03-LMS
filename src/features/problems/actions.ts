@@ -52,6 +52,12 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+type NextRequestInit = RequestInit & {
+  next?: {
+    revalidate?: number;
+  };
+};
+
 const CREATE_PATH = "/api/v1/problems/with-dataset";
 const DEFAULT_FALLBACK_MESSAGE =
   "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
@@ -157,7 +163,10 @@ export function createProblemUpdateRequestBody(
   };
 }
 
-export async function getProblemSets(categoryId?: string | null) {
+export async function getProblemSets(
+  categoryId?: string | null,
+  revalidateSeconds?: number,
+) {
   const categoryQuery = categoryId
     ? `?categoryId=${encodeURIComponent(categoryId)}`
     : "";
@@ -165,15 +174,17 @@ export async function getProblemSets(categoryId?: string | null) {
   const result = await requestJson<ProblemSetSummary[]>(
     `/api/v1/problem-sets${categoryQuery}`,
     "문제 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : {},
   );
 
   return result.data ?? [];
 }
 
-export async function getProblemCategories() {
+export async function getProblemCategories(revalidateSeconds?: number) {
   const result = (await requestJson<ProblemCategory[]>(
     "/api/v1/problem-categories",
     "카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : {},
   )) as ApiResponse<ProblemCategory[]> | ProblemCategory[];
 
   const categories = Array.isArray(result) ? result : result.data ?? [];
@@ -187,10 +198,12 @@ export async function getProblemCategories() {
 export async function getProblem(
   problemSetId: string,
   categories: ProblemCategory[] = [],
+  init: NextRequestInit = {},
 ) {
   const result = await requestJson<RawProblemDetail>(
     `/api/v1/problems/${problemSetId}`,
     "문제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    init,
   );
 
   return normalizeProblemDetail(result.data, categories);
@@ -430,7 +443,7 @@ function getProblemCategoryName(
 async function requestJson<T>(
   path: string,
   fallbackMessage: string,
-  init: RequestInit = {},
+  init: NextRequestInit = {},
 ): Promise<ApiResponse<T>> {
   let response: Response;
 

@@ -1,4 +1,8 @@
-// CSR - 문제 수정: 기존 데이터를 불러온 뒤 파일 교체, 소문제 편집, 삭제 확인까지 한 화면에서 처리함
+// SSR+CSR - 문제 수정: 초기 데이터는 서버에서 최신 조회하고, 폼 편집과 저장은 클라이언트에서 처리함
+import {
+  getProblem,
+  getProblemCategories,
+} from "@/features/problems/actions";
 import ProblemEditClient from "@/features/problems/components/ProblemEditClient";
 
 interface EditProblemPageProps {
@@ -9,6 +13,14 @@ interface EditProblemPageProps {
 
 export default async function EditProblemPage({ params }: EditProblemPageProps) {
   const { id } = await params;
+  const categories = await getProblemCategories(3600);
+  const detail = await getProblem(id, categories, { cache: "no-store" });
 
-  return <ProblemEditClient problemSetId={id} />;
+  return (
+    <ProblemEditClient
+      initialCategories={categories}
+      initialDetail={detail}
+      problemSetId={id}
+    />
+  );
 }
