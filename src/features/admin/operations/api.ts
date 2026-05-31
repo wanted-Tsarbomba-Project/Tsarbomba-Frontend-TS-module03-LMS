@@ -11,6 +11,7 @@ import type {
   UserCourseProgressResponse,
   UserProblemSubmission,
 } from "./types";
+import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,26 +25,78 @@ async function request<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      ...JSON_HEADERS,
-      ...init.headers,
-    },
-  });
+  let response: Response;
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers: {
+        ...JSON_HEADERS,
+        ...init.headers,
+      },
+    });
+  } catch (error) {
+    throw new ApiClientError(
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+        path,
+      },
+      "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    );
   }
 
   const text = await response.text();
+
+  if (!response.ok) {
+    throw createApiError(response, text, path);
+  }
 
   if (!text) {
     return { data: undefined as T };
   }
 
   return JSON.parse(text) as ApiResponse<T>;
+}
+
+function createApiError(response: Response, text: string, requestPath: string) {
+  const fallbackMessage = "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+
+  if (!text) {
+    return new ApiClientError(
+      {
+        status: response.status,
+        message: fallbackMessage,
+        path: requestPath,
+      },
+      fallbackMessage,
+    );
+  }
+
+  try {
+    const payload = JSON.parse(text) as BackendErrorPayload;
+
+    return new ApiClientError(
+      {
+        ...payload,
+        status: payload.status ?? response.status,
+        path: payload.path ?? requestPath,
+      },
+      fallbackMessage,
+    );
+  } catch {
+    return new ApiClientError(
+      {
+        status: response.status,
+        message: text || fallbackMessage,
+        path: requestPath,
+      },
+      fallbackMessage,
+    );
+  }
 }
 
 export async function getAutomationRules() {

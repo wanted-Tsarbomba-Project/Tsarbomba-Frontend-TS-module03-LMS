@@ -9,6 +9,7 @@ import {
   TwoButtonModal,
   type ListColumn,
 } from "@/components/common";
+import { handleClientError } from "@/lib/errorHandling";
 
 import {
   getAdminUserDetail,
@@ -87,14 +88,19 @@ export default function UserDetailClient() {
         setUser(result.data);
       } catch (error) {
         console.error("회원 상세 조회 실패:", error);
-        openNoticeModal("조회 실패", "회원 상세 조회에 실패했습니다.");
+        handleClientError(error, {
+          router,
+          fallbackTitle: "회원 정보를 불러오지 못했습니다",
+          fallbackMessage: "잠시 후 다시 시도해 주세요.",
+          showModal: openNoticeModal,
+        });
       } finally {
         setUserLoading(false);
       }
     };
 
     void fetchUser();
-  }, [userId]);
+  }, [router, userId]);
 
   useEffect(() => {
     const fetchList = async () => {
@@ -120,14 +126,19 @@ export default function UserDetailClient() {
         setProblemRows(result.data.submissions ?? []);
       } catch (error) {
         console.error("회원 상세 목록 조회 실패:", error);
-        openNoticeModal("조회 실패", "회원 상세 목록 조회에 실패했습니다.");
+        handleClientError(error, {
+          router,
+          fallbackTitle: "목록을 불러오지 못했습니다",
+          fallbackMessage: "잠시 후 다시 시도해 주세요.",
+          showModal: openNoticeModal,
+        });
       } finally {
         setListLoading(false);
       }
     };
 
     void fetchList();
-  }, [tab, userId]);
+  }, [router, tab, userId]);
 
   function openNoticeModal(title: string, content: string) {
     setNoticeModal({
@@ -158,7 +169,12 @@ export default function UserDetailClient() {
       );
     } catch (error) {
       console.error("회원 상태 변경 실패:", error);
-      openNoticeModal("오류 발생", "상태 변경 중 오류가 발생했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "상태를 변경하지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     } finally {
       setSaving(false);
     }

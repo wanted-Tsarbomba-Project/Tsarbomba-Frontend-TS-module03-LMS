@@ -55,6 +55,7 @@
   line-height: 24px;
   color: #667085;
   text-align: center;
+  white-space: pre-line;
 }
 
 .buttonWrap {

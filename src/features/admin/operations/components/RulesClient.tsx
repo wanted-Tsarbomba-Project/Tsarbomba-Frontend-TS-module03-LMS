@@ -1,8 +1,10 @@
 "use client";
 
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { OneButtonModal } from "@/components/common";
+import { handleClientError } from "@/lib/errorHandling";
 
 import {
   getAutomationRules,
@@ -22,6 +24,7 @@ const targetTypeLabel: Record<AutomationRule["targetType"], string> = {
 type NumericRuleField = "thresholdValue" | "minSampleCount";
 
 export default function RulesClient() {
+  const router = useRouter();
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,11 +49,16 @@ export default function RulesClient() {
       setRules(result.data);
     } catch (error) {
       console.error("규칙 조회 실패:", error);
-      openNoticeModal("조회 실패", "규칙 조회에 실패했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "규칙을 불러오지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     } finally {
       setLoading(false);
     }
-  }, [openNoticeModal]);
+  }, [openNoticeModal, router]);
 
   useEffect(() => {
     const loadRules = async () => {
@@ -91,7 +99,12 @@ export default function RulesClient() {
       );
     } catch (error) {
       console.error("규칙 활성 상태 변경 실패:", error);
-      openNoticeModal("변경 실패", "활성 상태 변경에 실패했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "상태를 변경하지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     }
   };
 
@@ -103,7 +116,12 @@ export default function RulesClient() {
       await fetchRules();
     } catch (error) {
       console.error("규칙 수정 실패:", error);
-      openNoticeModal("수정 실패", "규칙 수정 중 오류가 발생했습니다.");
+      handleClientError(error, {
+        router,
+        fallbackTitle: "규칙을 저장하지 못했습니다",
+        fallbackMessage: "잠시 후 다시 시도해 주세요.",
+        showModal: openNoticeModal,
+      });
     } finally {
       setSaving(false);
     }
