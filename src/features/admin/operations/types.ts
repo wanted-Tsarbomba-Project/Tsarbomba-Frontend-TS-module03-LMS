@@ -83,3 +83,49 @@ export interface OperationAlertDetail {
     email?: string | null;
   } | null;
 }
+
+export type UserDetailTab = "COURSE" | "PROBLEM";
+
+export interface AdminUserSummary {
+  userId: number;
+  name?: string | null;
+  nickname?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+  isLocked: boolean;
+  createdAt?: string | null;
+}
+
+export interface AdminUserDetail {
+  userId: number;
+  name?: string | null;
+  nickname?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+  isLocked: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface UserCourseProgressResponse {
+  courseId?: number;
+  courseTitle?: string | null;
+  averageLearningRate?: number | null;
+  updatedAt?: string | null;
+}
+
+export interface UserCourseRow {
+  courseId?: number;
+  title?: string | null;
+  progress?: number | null;
+  date?: string | null;
+}
+
+export interface UserProblemSubmission {
+  problemId?: number;
+  problemTitle?: string | null;
+  submissionStatus?: string | null;
+  submittedAt?: string | null;
+}

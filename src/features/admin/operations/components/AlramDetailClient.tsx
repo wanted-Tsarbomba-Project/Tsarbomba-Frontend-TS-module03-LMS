@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import {
+  OneButtonModal,
+  TwoButtonModal,
+  WarningModal,
+} from "@/components/common";
+
+import {
   deleteOperationAlert,
   getOperationAlertDetail,
   updateOperationAlertMemo,
@@ -25,6 +31,18 @@ const targetTypeLabel: Record<TargetType, string> = {
   COURSE: "강좌",
 };
 
+interface NoticeModalState {
+  isOpen: boolean;
+  title: string;
+  content: string;
+}
+
+const initialNoticeModal: NoticeModalState = {
+  isOpen: false,
+  title: "",
+  content: "",
+};
+
 export default function AlramDetailClient() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -35,6 +53,16 @@ export default function AlramDetailClient() {
   const [status, setStatus] = useState<AlertStatus>("OPEN");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [noticeModal, setNoticeModal] =
+    useState<NoticeModalState>(initialNoticeModal);
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    nextStatus: AlertStatus | null;
+  }>({
+    isOpen: false,
+    nextStatus: null,
+  });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -46,7 +74,7 @@ export default function AlramDetailClient() {
         setStatus(result.data.alert.status);
       } catch (error) {
         console.error("알람 상세 조회 실패:", error);
-        alert("알람 상세 조회에 실패했습니다.");
+        openNoticeModal("조회 실패", "알람 상세 조회에 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -55,9 +83,21 @@ export default function AlramDetailClient() {
     void fetchDetail();
   }, [id]);
 
+  function openNoticeModal(title: string, content: string) {
+    setNoticeModal({
+      isOpen: true,
+      title,
+      content,
+    });
+  }
+
+  const closeNoticeModal = () => {
+    setNoticeModal(initialNoticeModal);
+  };
+
   const handleMemoSave = async () => {
     if (adminMemo.length > 500) {
-      alert("관리자 메모는 500자까지 입력할 수 있습니다.");
+      openNoticeModal("입력 확인", "관리자 메모는 500자까지 입력할 수 있습니다.");
       return;
     }
 
@@ -75,22 +115,27 @@ export default function AlramDetailClient() {
             }
           : prev,
       );
-      alert("관리자 메모가 저장되었습니다.");
+      openNoticeModal("저장 완료", "관리자 메모가 저장되었습니다.");
     } catch (error) {
       console.error("관리자 메모 저장 실패:", error);
-      alert("관리자 메모 저장에 실패했습니다.");
+      openNoticeModal("저장 실패", "관리자 메모 저장에 실패했습니다.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleStatusChange = async (nextStatus: AlertStatus) => {
+  const handleStatusButtonClick = (nextStatus: AlertStatus) => {
     if (nextStatus === status) return;
 
-    const confirmed = window.confirm(
-      `${statusLabel[nextStatus]} 상태로 변경하시겠습니까?`,
-    );
-    if (!confirmed) return;
+    setStatusModal({
+      isOpen: true,
+      nextStatus,
+    });
+  };
+
+  const handleStatusConfirm = async () => {
+    const nextStatus = statusModal.nextStatus;
+    if (!nextStatus) return;
 
     try {
       setSaving(true);
@@ -107,29 +152,26 @@ export default function AlramDetailClient() {
             }
           : prev,
       );
-      alert("알람 상태가 변경되었습니다.");
+      setStatusModal({ isOpen: false, nextStatus: null });
+      openNoticeModal("변경 완료", "알람 상태가 변경되었습니다.");
     } catch (error) {
       console.error("알람 상태 변경 실패:", error);
-      alert("알람 상태 변경에 실패했습니다.");
+      openNoticeModal("변경 실패", "알람 상태 변경에 실패했습니다.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    const confirmed = window.confirm(
-      "알람을 삭제하시겠습니까? 삭제된 알람은 되돌릴 수 없습니다.",
-    );
-    if (!confirmed) return;
-
+  const handleDeleteConfirm = async () => {
     try {
       setSaving(true);
       await deleteOperationAlert(id);
-      alert("알람이 삭제되었습니다.");
+      setDeleteModalOpen(false);
+      openNoticeModal("삭제 완료", "알람이 삭제되었습니다.");
       router.push("/admin/alrams");
     } catch (error) {
       console.error("알람 삭제 실패:", error);
-      alert("알람 삭제에 실패했습니다.");
+      openNoticeModal("삭제 실패", "알람 삭제에 실패했습니다.");
     } finally {
       setSaving(false);
     }
@@ -146,132 +188,163 @@ export default function AlramDetailClient() {
   const { alert: alertInfo, rule, target, metric, assignee } = detail;
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.topBar}>
-        <div className={styles.status}>상태: {statusLabel[status] ?? status}</div>
+    <>
+      <div className={styles.wrapper}>
+        <div className={styles.topBar}>
+          <div className={styles.status}>상태: {statusLabel[status] ?? status}</div>
 
-        <div className={styles.topActions}>
-          <StatusButton
-            disabled={saving || status === "OPEN"}
-            label="미처리"
-            onClick={() => void handleStatusChange("OPEN")}
-          />
-          <StatusButton
-            disabled={saving || status === "RESOLVED"}
-            label="처리 완료"
-            onClick={() => void handleStatusChange("RESOLVED")}
-          />
-          <StatusButton
-            disabled={saving || status === "IGNORED"}
-            label="무시"
-            onClick={() => void handleStatusChange("IGNORED")}
-          />
-          <button
-            className={`${styles.button} ${styles.whiteRedButton}`}
-            disabled={saving}
-            onClick={() => void handleDelete()}
-            type="button"
-          >
-            삭제하기
-          </button>
+          <div className={styles.topActions}>
+            <StatusButton
+              disabled={saving || status === "OPEN"}
+              label="미처리"
+              onClick={() => handleStatusButtonClick("OPEN")}
+            />
+            <StatusButton
+              disabled={saving || status === "RESOLVED"}
+              label="처리 완료"
+              onClick={() => handleStatusButtonClick("RESOLVED")}
+            />
+            <StatusButton
+              disabled={saving || status === "IGNORED"}
+              label="무시"
+              onClick={() => handleStatusButtonClick("IGNORED")}
+            />
+            <button
+              className={`${styles.button} ${styles.whiteRedButton}`}
+              disabled={saving}
+              onClick={() => setDeleteModalOpen(true)}
+              type="button"
+            >
+              삭제하기
+            </button>
+          </div>
         </div>
+
+        <section className={styles.card}>
+          <h1 className={styles.title}>알림 정보</h1>
+
+          <div className={styles.grid}>
+            <Info label="알림 ID" value={alertInfo.operationAlertId} />
+            <Info label="규칙" value={rule.ruleName} />
+            <Info label="규칙 코드" value={rule.ruleCode} />
+            <Info label="설명" value={rule.description} />
+            <Info
+              label="대상"
+              value={`${targetTypeLabel[target.targetType] ?? target.targetType} #${
+                target.targetId
+              }`}
+            />
+            <Info label="대상명" value={target.title ?? target.nickname} />
+            <Info label="상태" value={statusLabel[status] ?? status} />
+            <Info label="심각도" value={alertInfo.severity} />
+            <Info label="감지 사유" value={alertInfo.reason} />
+            <Info label="권장 조치" value={alertInfo.recommendedAction} />
+            <Info label="최초 감지" value={formatDateTime(alertInfo.firstDetectedAt)} />
+            <Info label="최근 감지" value={formatDateTime(alertInfo.lastDetectedAt)} />
+            <Info label="생성일" value={formatDateTime(alertInfo.createdAt)} />
+            <Info label="수정일" value={formatDateTime(alertInfo.updatedAt)} />
+          </div>
+        </section>
+
+        <section className={styles.card}>
+          <h2 className={styles.title}>측정 정보</h2>
+
+          <div className={styles.grid}>
+            <Info
+              label={metric.observedLabel ?? "감지값"}
+              value={formatMetric(metric.observedValue, metric.unit)}
+            />
+            <Info
+              label={metric.thresholdLabel ?? "기준값"}
+              value={formatMetric(metric.thresholdValue, metric.unit)}
+            />
+            <Info
+              label={rule.minSampleCountLabel ?? "최소 표본 수"}
+              value={formatMetric(metric.minSampleCount, metric.minSampleCountUnit)}
+            />
+            <Info
+              label="알림 기준값"
+              value={formatMetric(alertInfo.thresholdValueSnapshot, rule.thresholdUnit)}
+            />
+          </div>
+        </section>
+
+        <section className={styles.card}>
+          <h2 className={styles.title}>대상 상세</h2>
+
+          <div className={styles.grid}>
+            <Info label="문제집" value={target.problemSetTitle} />
+            <Info label="강의" value={target.courseTitle} />
+            <Info label="회원 닉네임" value={target.nickname} />
+            <Info label="회원 이메일" value={target.email} />
+            <Info label="대상 상태" value={target.status} />
+          </div>
+        </section>
+
+        <section className={styles.card}>
+          <h2 className={styles.title}>담당자</h2>
+          <div className={styles.text}>
+            {assignee
+              ? `${assignee.name ?? "-"} (${assignee.email ?? "-"})`
+              : "담당자가 지정되지 않았습니다."}
+          </div>
+        </section>
+
+        <section className={styles.card}>
+          <div className={styles.memoHeader}>
+            <h2 className={styles.title}>관리자 메모</h2>
+
+            <button
+              className={`${styles.button} ${styles.blueButton}`}
+              disabled={saving}
+              onClick={() => void handleMemoSave()}
+              type="button"
+            >
+              저장
+            </button>
+          </div>
+
+          <textarea
+            className={styles.textarea}
+            maxLength={500}
+            onChange={(event) => setAdminMemo(event.target.value)}
+            placeholder="관리자 메모를 입력하세요."
+            value={adminMemo}
+          />
+
+          <div className={styles.count}>{adminMemo.length}/500</div>
+        </section>
       </div>
 
-      <section className={styles.card}>
-        <h1 className={styles.title}>알림 정보</h1>
+      <TwoButtonModal
+        cancelDisabled={saving}
+        confirmDisabled={saving}
+        isOpen={statusModal.isOpen}
+        modalContent={`${statusLabel[statusModal.nextStatus ?? status]} 상태로 변경합니다.`}
+        modalTitle="상태를 변경하시겠습니까?"
+        onClose={() => setStatusModal({ isOpen: false, nextStatus: null })}
+        onConfirm={() => void handleStatusConfirm()}
+      />
 
-        <div className={styles.grid}>
-          <Info label="알림 ID" value={alertInfo.operationAlertId} />
-          <Info label="규칙" value={rule.ruleName} />
-          <Info label="규칙 코드" value={rule.ruleCode} />
-          <Info label="설명" value={rule.description} />
-          <Info
-            label="대상"
-            value={`${targetTypeLabel[target.targetType] ?? target.targetType} #${
-              target.targetId
-            }`}
-          />
-          <Info label="대상명" value={target.title ?? target.nickname} />
-          <Info label="상태" value={statusLabel[status] ?? status} />
-          <Info label="심각도" value={alertInfo.severity} />
-          <Info label="감지 사유" value={alertInfo.reason} />
-          <Info label="권장 조치" value={alertInfo.recommendedAction} />
-          <Info label="최초 감지" value={formatDateTime(alertInfo.firstDetectedAt)} />
-          <Info label="최근 감지" value={formatDateTime(alertInfo.lastDetectedAt)} />
-          <Info label="생성일" value={formatDateTime(alertInfo.createdAt)} />
-          <Info label="수정일" value={formatDateTime(alertInfo.updatedAt)} />
-        </div>
-      </section>
+      <WarningModal
+        cancelDisabled={saving}
+        confirmDisabled={saving}
+        isOpen={deleteModalOpen}
+        modalContent="삭제된 알람은 되돌릴 수 없습니다."
+        modalTitle="알람을 삭제하시겠습니까?"
+        onClose={() => {
+          if (!saving) setDeleteModalOpen(false);
+        }}
+        onConfirm={() => void handleDeleteConfirm()}
+      />
 
-      <section className={styles.card}>
-        <h2 className={styles.title}>측정 정보</h2>
-
-        <div className={styles.grid}>
-          <Info
-            label={metric.observedLabel ?? "감지값"}
-            value={formatMetric(metric.observedValue, metric.unit)}
-          />
-          <Info
-            label={metric.thresholdLabel ?? "기준값"}
-            value={formatMetric(metric.thresholdValue, metric.unit)}
-          />
-          <Info
-            label={rule.minSampleCountLabel ?? "최소 표본 수"}
-            value={formatMetric(metric.minSampleCount, metric.minSampleCountUnit)}
-          />
-          <Info
-            label="알림 기준값"
-            value={formatMetric(alertInfo.thresholdValueSnapshot, rule.thresholdUnit)}
-          />
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <h2 className={styles.title}>대상 상세</h2>
-
-        <div className={styles.grid}>
-          <Info label="문제집" value={target.problemSetTitle} />
-          <Info label="강의" value={target.courseTitle} />
-          <Info label="회원 닉네임" value={target.nickname} />
-          <Info label="회원 이메일" value={target.email} />
-          <Info label="대상 상태" value={target.status} />
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <h2 className={styles.title}>담당자</h2>
-        <div className={styles.text}>
-          {assignee
-            ? `${assignee.name ?? "-"} (${assignee.email ?? "-"})`
-            : "담당자가 지정되지 않았습니다."}
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <div className={styles.memoHeader}>
-          <h2 className={styles.title}>관리자 메모</h2>
-
-          <button
-            className={`${styles.button} ${styles.blueButton}`}
-            disabled={saving}
-            onClick={() => void handleMemoSave()}
-            type="button"
-          >
-            저장
-          </button>
-        </div>
-
-        <textarea
-          className={styles.textarea}
-          maxLength={500}
-          onChange={(event) => setAdminMemo(event.target.value)}
-          placeholder="관리자 메모를 입력하세요."
-          value={adminMemo}
-        />
-
-        <div className={styles.count}>{adminMemo.length}/500</div>
-      </section>
-    </div>
+      <OneButtonModal
+        isOpen={noticeModal.isOpen}
+        modalContent={noticeModal.content}
+        modalTitle={noticeModal.title}
+        onClose={closeNoticeModal}
+      />
+    </>
   );
 }
 

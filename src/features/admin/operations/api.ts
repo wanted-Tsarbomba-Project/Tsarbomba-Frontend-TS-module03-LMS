@@ -1,11 +1,15 @@
 import type {
   AlertStatus,
+  AdminUserDetail,
+  AdminUserSummary,
   ApiResponse,
   AutomationRule,
   OperationAlertDetail,
   OperationAlertSummary,
   PageResponse,
   TargetType,
+  UserCourseProgressResponse,
+  UserProblemSubmission,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -135,4 +139,38 @@ export async function deleteOperationAlert(operationAlertId: string) {
       method: "DELETE",
     },
   );
+}
+
+export async function getAdminUsers(page = 0, size = 20) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+
+  return request<PageResponse<AdminUserSummary>>(
+    `/api/v1/users?${params.toString()}`,
+  );
+}
+
+export async function getAdminUserDetail(userId: string) {
+  return request<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
+}
+
+export async function getUserCourseProgress(userId: string) {
+  return request<UserCourseProgressResponse>(
+    `/api/v1/users/${userId}/enrollments`,
+  );
+}
+
+export async function getUserProblemList(userId: string) {
+  return request<{ submissions: UserProblemSubmission[] }>(
+    `/api/v1/users/${userId}/problem`,
+  );
+}
+
+export async function toggleUserLock(userId: string, locked: boolean) {
+  return request<unknown>(`/api/v1/users/${userId}/lock`, {
+    method: "PATCH",
+    body: JSON.stringify({ locked }),
+  });
 }
