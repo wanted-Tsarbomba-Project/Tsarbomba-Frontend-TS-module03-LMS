@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   List,
-  LoadingIndicator,
   OneButtonModal,
   type ListColumn,
 } from "@/components/common";
-import { handleClientError } from "@/lib/errorHandling";
 
-import { DIFFICULTY_MAP, getProblemSets } from "../actions";
+import { DIFFICULTY_MAP } from "../actions";
 import type { ProblemSetSummary } from "../types";
 
 import styles from "./UserProblemListClient.module.css";
+
+interface UserProblemListClientProps {
+  initialProblemSets: ProblemSetSummary[];
+}
 
 function formatDate(value?: string) {
   if (!value) {
@@ -34,13 +36,12 @@ function formatDate(value?: string) {
   return `${year}.${month}.${day}`;
 }
 
-export default function UserProblemListClient() {
+export default function UserProblemListClient({
+  initialProblemSets,
+}: UserProblemListClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedCategoryId = searchParams.get("categoryId");
 
-  const [problemSets, setProblemSets] = useState<ProblemSetSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [problemSets] = useState<ProblemSetSummary[]>(initialProblemSets);
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
 
   const columns = useMemo<ListColumn<ProblemSetSummary>[]>(
@@ -80,61 +81,17 @@ export default function UserProblemListClient() {
     [],
   );
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchProblemSets = async () => {
-      setIsLoading(true);
-
-      try {
-        const data = await getProblemSets(selectedCategoryId);
-
-        if (isMounted) {
-          setProblemSets(data);
-        }
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        handleClientError(error, {
-          router,
-          fallbackTitle: "문제 목록 조회 실패",
-          fallbackMessage:
-            "문제 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          showModal: (title, content) => {
-            setModal({ open: true, title, content });
-          },
-        });
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchProblemSets();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router, selectedCategoryId]);
-
   return (
     <main className={styles.container}>
       <h2 className={styles.pageTitle}>문제풀이</h2>
 
-      {isLoading ? (
-        <LoadingIndicator message="문제 목록을 불러오는 중입니다." />
-      ) : (
-        <List
-          columns={columns}
-          data={problemSets}
-          emptyMessage="등록된 문제가 없습니다."
-          onRowClick={(item) => router.push(`/problems/${item.problemSetId}`)}
-          rowKey={(item) => item.problemSetId}
-        />
-      )}
+      <List
+        columns={columns}
+        data={problemSets}
+        emptyMessage="등록된 문제가 없습니다."
+        onRowClick={(item) => router.push(`/problems/${item.problemSetId}`)}
+        rowKey={(item) => item.problemSetId}
+      />
 
       <OneButtonModal
         isOpen={modal.open}

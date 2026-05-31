@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -14,7 +14,6 @@ import { handleClientError } from "@/lib/errorHandling";
 import {
   createProblem,
   createProblemRequestBody,
-  getProblemCategories,
   INITIAL_PROBLEM_INFO,
   INITIAL_SUB_PROBLEM,
 } from "../actions";
@@ -23,18 +22,25 @@ import RegisterForm from "./RegisterForm";
 
 import styles from "./ProblemRegisterClient.module.css";
 
-export default function ProblemRegisterClient() {
+interface ProblemRegisterClientProps {
+  initialCategories: ProblemCategory[];
+}
+
+export default function ProblemRegisterClient({
+  initialCategories,
+}: ProblemRegisterClientProps) {
   const router = useRouter();
   const isSubmittingRef = useRef(false);
 
   const [problemInfo, setProblemInfo] = useState<ProblemInfo>({
     ...INITIAL_PROBLEM_INFO,
+    categoryId: initialCategories[0]?.categoryId ?? "",
   });
   const [problems, setProblems] = useState<SubProblem[]>([
     { ...INITIAL_SUB_PROBLEM },
   ]);
   const [file, setFile] = useState<File | null>(null);
-  const [categories, setCategories] = useState<ProblemCategory[]>([]);
+  const categories = initialCategories;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
@@ -42,46 +48,6 @@ export default function ProblemRegisterClient() {
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const [openValidationModal, setOpenValidationModal] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchCategories = async () => {
-      try {
-        const data = await getProblemCategories();
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCategories(data);
-        setProblemInfo((prev) => ({
-          ...prev,
-          categoryId: prev.categoryId || data[0]?.categoryId || "",
-        }));
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        handleClientError(error, {
-          router,
-          fallbackTitle: "카테고리 조회 실패",
-          fallbackMessage: "카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          showModal: (title, content) => {
-            setValidationMessage(content || title);
-            setOpenValidationModal(true);
-          },
-        });
-      }
-    };
-
-    fetchCategories();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
 
   const handleProblemInfoChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -134,7 +100,10 @@ export default function ProblemRegisterClient() {
   };
 
   const resetForm = () => {
-    setProblemInfo({ ...INITIAL_PROBLEM_INFO });
+    setProblemInfo({
+      ...INITIAL_PROBLEM_INFO,
+      categoryId: initialCategories[0]?.categoryId ?? "",
+    });
     setProblems([{ ...INITIAL_SUB_PROBLEM }]);
     setFile(null);
   };

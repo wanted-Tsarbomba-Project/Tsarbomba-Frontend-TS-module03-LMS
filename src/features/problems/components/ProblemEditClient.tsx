@@ -1,11 +1,10 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
-  LoadingIndicator,
   OneButtonModal,
   TwoButtonModal,
   WarningModal,
@@ -15,13 +14,11 @@ import { handleClientError } from "@/lib/errorHandling";
 import {
   createProblemUpdateRequestBody,
   deleteProblem,
-  getProblem,
-  getProblemCategories,
-  INITIAL_PROBLEM_INFO,
   INITIAL_SUB_PROBLEM,
   updateProblem,
 } from "../actions";
 import type {
+  NormalizedProblemDetail,
   ProblemCategory,
   ProblemDatasetFile,
   ProblemInfo,
@@ -33,6 +30,8 @@ import styles from "./ProblemRegisterClient.module.css";
 
 interface ProblemEditClientProps {
   problemSetId: string;
+  initialCategories: ProblemCategory[];
+  initialDetail: NormalizedProblemDetail;
 }
 
 type ModalState = {
@@ -41,20 +40,25 @@ type ModalState = {
   content: string;
 };
 
-export default function ProblemEditClient({ problemSetId }: ProblemEditClientProps) {
+export default function ProblemEditClient({
+  problemSetId,
+  initialCategories,
+  initialDetail,
+}: ProblemEditClientProps) {
   const router = useRouter();
   const isSubmittingRef = useRef(false);
 
-  const [problemInfo, setProblemInfo] = useState<ProblemInfo>({
-    ...INITIAL_PROBLEM_INFO,
-  });
-  const [problems, setProblems] = useState<SubProblem[]>([
-    { ...INITIAL_SUB_PROBLEM },
-  ]);
-  const [file, setFile] = useState<ProblemDatasetFile | null>(null);
-  const [categories, setCategories] = useState<ProblemCategory[]>([]);
-  const [datasetId, setDatasetId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [problemInfo, setProblemInfo] = useState<ProblemInfo>(
+    initialDetail.problemInfo,
+  );
+  const [problems, setProblems] = useState<SubProblem[]>(
+    initialDetail.problems,
+  );
+  const [file, setFile] = useState<ProblemDatasetFile | null>(
+    initialDetail.file,
+  );
+  const datasetId = initialDetail.datasetId;
+  const categories = initialCategories;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
@@ -67,52 +71,6 @@ export default function ProblemEditClient({ problemSetId }: ProblemEditClientPro
     title: "",
     content: "",
   });
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchProblem = async () => {
-      setIsLoading(true);
-
-      try {
-        const categoryList = await getProblemCategories();
-        const normalized = await getProblem(problemSetId, categoryList);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCategories(categoryList);
-        setProblemInfo(normalized.problemInfo);
-        setProblems(normalized.problems);
-        setFile(normalized.file);
-        setDatasetId(normalized.datasetId);
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        handleClientError(error, {
-          router,
-          fallbackTitle: "문제 조회 실패",
-          fallbackMessage: "문제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          showModal: (title, content) => {
-            setAlertModal({ open: true, title, content });
-          },
-        });
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchProblem();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [problemSetId, router]);
 
   const handleProblemInfoChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -287,15 +245,6 @@ export default function ProblemEditClient({ problemSetId }: ProblemEditClientPro
   const handleGoList = () => {
     router.push("/admin/problems");
   };
-
-  if (isLoading) {
-    return (
-      <main className={styles.container}>
-        <h2 className={styles.pageTitle}>문제 수정</h2>
-        <LoadingIndicator message="문제 정보를 불러오는 중입니다." />
-      </main>
-    );
-  }
 
   return (
     <main className={styles.container}>
