@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const HEADERS = { "Content-Type": "application/json" };
 
 export interface AuthResponse {
@@ -6,12 +6,7 @@ export interface AuthResponse {
   success?: boolean;
   statusCode?: number;
   message?: string;
-  data?: {
-    nickname?: string;
-    role?: string;
-    email?: string;
-    username?: string;
-  };
+  data?: any;
 }
 
 const handleBadResponse = async (
@@ -35,6 +30,7 @@ const handleBadResponse = async (
   }
 };
 
+/* 로그인 */
 export const login = async (
   email: string,
   password: string,
@@ -45,6 +41,7 @@ export const login = async (
     credentials: "include",
     body: JSON.stringify({ email, password }),
   });
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -52,15 +49,18 @@ export const login = async (
     );
     throw new Error(errMsg);
   }
+
   return response.json();
 };
 
+/* 회원가입 */
 export const signup = async (signupData: any): Promise<AuthResponse> => {
   const response = await fetch(`${BASE_URL}/api/v1/auth/signup`, {
     method: "POST",
     headers: HEADERS,
     body: JSON.stringify(signupData),
   });
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -68,12 +68,12 @@ export const signup = async (signupData: any): Promise<AuthResponse> => {
     );
     throw new Error(errMsg);
   }
+
   return response.json();
 };
 
-export const checkEmail = async (
-  email: string,
-): Promise<boolean | AuthResponse> => {
+/* 이메일 중복 체크 */
+export const checkEmail = async (email: string): Promise<any> => {
   const response = await fetch(
     `${BASE_URL}/api/v1/auth/check/email?email=${encodeURIComponent(email)}`,
     {
@@ -81,6 +81,7 @@ export const checkEmail = async (
       headers: HEADERS,
     },
   );
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -88,12 +89,12 @@ export const checkEmail = async (
     );
     throw new Error(errMsg);
   }
+
   return response.json();
 };
 
-export const checkNickname = async (
-  nickname: string,
-): Promise<boolean | AuthResponse> => {
+/* 닉네임 중복 체크 */
+export const checkNickname = async (nickname: string): Promise<any> => {
   const response = await fetch(
     `${BASE_URL}/api/v1/auth/check/nickname?nickname=${encodeURIComponent(nickname)}`,
     {
@@ -101,6 +102,7 @@ export const checkNickname = async (
       headers: HEADERS,
     },
   );
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -108,9 +110,11 @@ export const checkNickname = async (
     );
     throw new Error(errMsg);
   }
+
   return response.json();
 };
 
+/* 이메일 인증번호 전송 */
 export const sendVerificationCode = async (
   email: string,
 ): Promise<AuthResponse> => {
@@ -119,6 +123,7 @@ export const sendVerificationCode = async (
     headers: HEADERS,
     body: JSON.stringify({ email }),
   });
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -126,9 +131,11 @@ export const sendVerificationCode = async (
     );
     throw new Error(errMsg);
   }
+
   return response.json();
 };
 
+/* 이메일 인증 - 코드 확인 */
 export const verifyCode = async (
   email: string,
   code: string,
@@ -138,6 +145,7 @@ export const verifyCode = async (
     headers: HEADERS,
     body: JSON.stringify({ email, code }),
   });
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -145,19 +153,24 @@ export const verifyCode = async (
     );
     throw new Error(errMsg);
   }
+
   return response.json();
 };
 
+/* 아이디 찾기 */
 export const findId = async (name: string, phone: string): Promise<any> => {
   return {
     status: "OK",
     success: true,
     statusCode: 200,
     message: "이메일 찾기 성공",
-    email: "test@example.com",
+    data: "codebomba***@naver.com",
+    email: "codebomba***@naver.com",
+    userEmail: "codebomba***@naver.com",
   };
 };
 
+/* 비밀번호 재설정 */
 export const resetPassword = async (
   email: string,
   newPassword: string,
@@ -171,12 +184,14 @@ export const resetPassword = async (
   };
 };
 
+/* 로그아웃 */
 export const logoutService = async (): Promise<any> => {
   const response = await fetch(`${BASE_URL}/api/v1/auth/logout`, {
     method: "POST",
     headers: HEADERS,
     credentials: "include",
   });
+
   if (!response.ok) {
     const errMsg = await handleBadResponse(
       response,
@@ -184,5 +199,6 @@ export const logoutService = async (): Promise<any> => {
     );
     throw new Error(errMsg);
   }
+
   return response.json().catch(() => null);
 };

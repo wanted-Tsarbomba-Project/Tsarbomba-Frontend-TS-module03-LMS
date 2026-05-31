@@ -21,7 +21,6 @@ function CategoryNav({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 0. 홈 - 강의 카테고리
   const currentCategory = searchParams.get("category") || "전체";
 
   const categories = [
@@ -37,13 +36,11 @@ function CategoryNav({
 
   const handleCategoryClick = (category: string) => {
     const params = new URLSearchParams(searchParams.toString());
-
     if (category === "전체") {
       params.delete("category");
     } else {
       params.set("category", category);
     }
-
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -51,28 +48,26 @@ function CategoryNav({
     return null;
   }
 
+  const btnBase =
+    "px-4 h-[42px] text-base font-normal rounded-lg border border-[#e8e8e8] bg-white text-[#1f2937] hover:bg-[#f3f4f6] transition-colors cursor-pointer whitespace-nowrap box-border flex items-center justify-center";
+  const btnActive =
+    "px-4 h-[42px] text-base font-normal rounded-lg bg-[#1a237e] text-white transition-colors cursor-pointer whitespace-nowrap box-border flex items-center justify-center";
+
   // 1. 문제 풀이 상세 화면 전용 상단 네비게이션
   if (variant === "problem-detail") {
     return (
-      <nav className="category-nav problem-detail-nav">
-        <div className="category-nav-content problem-detail-nav-content">
-          <button
-            className="category-box problem-detail-nav-button"
-            onClick={onBack}
-          >
+      <nav className="w-full border-b bg-white border-[#e8e8e8] py-3 mb-4">
+        <div className="flex items-center justify-between max-w-[1200px] mx-auto px-6">
+          <button className={btnBase} onClick={onBack}>
             뒤로가기
           </button>
 
-          <div className="problem-detail-nav-actions">
-            <button
-              className="category-box active problem-detail-nav-button"
-              onClick={onRun}
-            >
+          <div className="flex items-center gap-2">
+            <button className={btnActive} onClick={onRun}>
               실행하기
             </button>
-
             <button
-              className={`category-box problem-detail-nav-button ${isProblemChatOpen ? "active" : ""}`}
+              className={isProblemChatOpen ? btnActive : btnBase}
               onClick={onToggleProblemChat}
               type="button"
             >
@@ -84,25 +79,25 @@ function CategoryNav({
     );
   }
 
-  // 2. 문제 풀이 목록 화면 전용 카테고리 네비게이션
+  // 2. 일반 강좌 / 문제 풀이 목록 화면 전용 카테고리 네비게이션
   return (
-    <nav className="category-nav">
-      <div className="category-nav-content">
-        {/* 좌측 카테고리 */}
-        <div className="category-nav-left">
+    <nav className="w-full border-b bg-white border-[#e8e8e8] py-3 mb-4">
+      <div className="flex items-center justify-between max-w-[1200px] mx-auto px-6 gap-4">
+        {/* 좌측 카테고리 버튼 모음 */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
           {categories.map((item, index) => (
             <button
               key={index}
-              className={`category-box ${item === currentCategory ? "active" : ""}`}
+              className={item === currentCategory ? btnActive : btnBase}
               onClick={() => handleCategoryClick(item)}
             >
               {item}
             </button>
           ))}
         </div>
-        {/* 우측 드롭다운 */}
-        <div className="category-nav-right">
-          <select className="dropdown">
+        {/* 우측 정렬 드롭다운 */}
+        <div className="shrink-0">
+          <select className="h-[42px] px-4 rounded-lg border border-[#e8e8e8] bg-white text-base font-normal text-[#1f2937] focus:outline-none focus:border-[#1a237e] transition-colors cursor-pointer box-border">
             <option>전체 정렬</option>
             <option>최신순</option>
             <option>인기순</option>

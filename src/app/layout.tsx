@@ -30,12 +30,15 @@ export default function RootLayout({
 
   const canAccessAdmin = userRole === "ADMIN" || userRole === "OPERATOR";
 
+  /* 1. 현재 페이지 경로 체크 패턴 정의 */
   const isAuthPath =
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth");
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isMypagePath = pathname.startsWith("/user/introduce");
+  const isMypagePath =
+    pathname.startsWith("/user/introduce") ||
+    pathname.startsWith("/user/profile");
   const isProblemPath =
     pathname.startsWith("/user/problems") ||
     pathname.startsWith("/user/problem");
@@ -46,6 +49,7 @@ export default function RootLayout({
     router.replace("/");
   };
 
+  /* 2. 로그인 / 회원가입 등 정중앙 배치 구역 */
   if (isAuthPath) {
     return (
       <html lang="ko">
@@ -61,6 +65,9 @@ export default function RootLayout({
     );
   }
 
+  /* 3. 통합 레이아웃 바디 및 분기 처리 구역 */
+  const isFlexBodySection = isMypagePath || isAdminPath;
+
   return (
     <html lang="ko">
       <body className="bg-white min-h-screen m-0 p-0 antialiased flex flex-col">
@@ -69,24 +76,32 @@ export default function RootLayout({
 
           {!isAdminPath && !isMypagePath && !isProblemPath && <CategoryNav />}
 
-          <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 px-5">
-            {(isMypagePath || (isAdminPath && canAccessAdmin)) && (
-              <Sidebar isOpen={isOpen} />
-            )}
+          {isFlexBodySection ? (
+            <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 max-[1024px]:px-5">
+              {(isMypagePath || (isAdminPath && canAccessAdmin)) && (
+                <Sidebar isOpen={isOpen} />
+              )}
 
-            {isOpen && (isMypagePath || (isAdminPath && canAccessAdmin)) && (
-              <div
-                className="fixed inset-0 bg-black/40 z-[998] md:hidden"
-                onClick={() => setIsOpen(false)}
-              />
-            )}
+              {isOpen && (isMypagePath || (isAdminPath && canAccessAdmin)) && (
+                <div
+                  className="fixed inset-0 bg-[#000000]/40 z-[998] lg:hidden"
+                  onClick={() => setIsOpen(false)}
+                />
+              )}
 
+              <main className="flex-1 min-w-0 py-10">
+                {isAdminPath ? (canAccessAdmin ? children : null) : children}
+              </main>
+            </div>
+          ) : (
             <main
-              className={`flex-1 min-w-0 ${isMypagePath || isAdminPath ? "py-10" : "py-10"}`}
+              className={`flex-1 w-full max-w-[1200px] mx-auto box-border ${
+                isProblemPath ? "py-0" : "px-5 py-10"
+              }`}
             >
-              {isAdminPath ? (canAccessAdmin ? children : null) : children}
+              {children}
             </main>
-          </div>
+          )}
 
           <Footer />
         </div>

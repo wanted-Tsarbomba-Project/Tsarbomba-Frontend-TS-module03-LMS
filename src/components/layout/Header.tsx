@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 import Logo from "../../../public/assets/img/logo-Icon.png";
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
+import { Searchbar, TwoButtonModal } from "../common";
 
 interface HeaderProps {
   isSimple?: boolean;
@@ -42,7 +44,6 @@ function Header({ isSimple }: HeaderProps) {
 
   useEffect(() => {
     syncHeaderStatus();
-
     window.addEventListener("loginSuccess", syncHeaderStatus);
     return () => {
       window.removeEventListener("loginSuccess", syncHeaderStatus);
@@ -67,106 +68,136 @@ function Header({ isSimple }: HeaderProps) {
     }, 500);
   };
 
-  const isManagementRole = userRole === "ADMIN" || userRole === "OPERATOR";
-  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isManagementRole =
+    isLoggedIn && (userRole === "ADMIN" || userRole === "OPERATOR");
 
-  const handleLogoClick = () => {
-    if (isManagementRole) {
-      router.push("/admin");
-    } else {
-      router.push("/");
-    }
-  };
+  const logoTargetHref = isManagementRole ? "/admin" : "/";
+  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
 
   if (isSimple) {
     return (
-      <header className="header-simple">
-        <div className="header-container">
-          <div className="logo-section" onClick={handleLogoClick}>
-            <Image src={Logo} className="logo-img" alt="로고" />
-            <span className="logo-text">codebomba</span>
-          </div>
+      <header className="w-full border-b border-[#e8e8e8] bg-white">
+        <div className="flex h-16 items-center justify-between px-6 max-w-[1200px] mx-auto">
+          <Link
+            href={logoTargetHref}
+            className="flex items-center gap-2 cursor-pointer select-none"
+          >
+            <Image
+              src={Logo}
+              className="h-10 w-auto object-contain"
+              alt="로고"
+              priority
+            />
+            <span className="text-xl font-bold text-[#1a237e] tracking-tight">
+              codebomba
+            </span>
+          </Link>
         </div>
       </header>
     );
   }
 
   return (
-    <header className="header-main">
-      <div className="header-container">
-        <div className="logo-section" onClick={handleLogoClick}>
-          <Image src={Logo} className="logo-img" alt="로고" />
-          <span className="logo-text">
-            {isAdminPath ? "관리자 페이지" : "codebomba"}
+    <header className="w-full border-b border-[#e8e8e8] bg-white sticky top-0 z-50">
+      <div className="flex h-16 items-center justify-between px-6 max-w-[1200px] mx-auto">
+        {/* 좌측 로고 영역 */}
+        <Link
+          href={logoTargetHref}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
+          <Image
+            src={Logo}
+            className="h-10 w-auto object-contain"
+            alt="로고"
+            priority
+          />
+          <span className="text-xl font-bold text-[#1a237e] tracking-tight">
+            {isManagementRole && isAdminPath ? "관리자 페이지" : "codebomba"}
           </span>
-        </div>
+        </Link>
 
-        {!isAdminPath && (
-          <div className="search-bar-wrapper">
-            <SearchBar />
+        {/* 중앙 검색바 영역 */}
+        {(!isManagementRole || !isAdminPath) && (
+          <div className="flex-1 max-w-md mx-8 hidden sm:block">
+            <Searchbar />
           </div>
         )}
 
-        <div className="header-right-section">
+        {/* 우측 네비게이션 및 프로필 영역 */}
+        <div className="flex items-center gap-6">
+          {/* 일반 학생 유저 로그인 시 메뉴 */}
           {!isAdminPath && isLoggedIn && !isManagementRole && (
-            <nav className="header-nav-links">
-              <span onClick={() => router.push("/user/my-classroom")}>
+            <nav className="flex items-center gap-5 text-sm font-semibold text-[#1f2937]">
+              <span
+                className="cursor-pointer hover:text-[#1a237e] transition-colors"
+                onClick={() => router.push("/user/my-classroom")}
+              >
                 내 강의실
               </span>
-              <span onClick={() => router.push("/user/problems")}>
+              <span
+                className="cursor-pointer hover:text-[#1a237e] transition-colors"
+                onClick={() => router.push("/user/problems")}
+              >
                 문제풀이
               </span>
             </nav>
           )}
 
+          {/* 비로그인 상태 */}
           {!isLoggedIn ? (
             <button
-              className="login-btn group"
-              onClick={() => router.push("/login")}
+              className="group inline-flex items-center gap-1.5 rounded-md text-sm font-medium h-9 px-4 py-2 border border-[#1a237e] bg-white text-[#1a237e] hover:bg-[#1a237e] hover:text-white transition-colors cursor-pointer"
+              onClick={() => router.push("/auth/login")}
             >
-              <div className="icon-wrapper">
+              <div className="w-4 h-4 relative">
                 <Image
                   src={BluebombLogo}
-                  className="icon-blue group-hover:opacity-0"
+                  className="w-4 h-4 object-contain absolute inset-0 transition-opacity group-hover:opacity-0"
                   alt="블루폭탄로고"
                 />
                 <Image
                   src={WhitebombLogo}
-                  className="icon-white opacity-0 group-hover:opacity-100"
+                  className="w-4 h-4 object-contain absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
                   alt="화이트폭탄로고"
                 />
               </div>
               <span>로그인</span>
             </button>
           ) : (
+            /* 로그인 완료 후 프로필 영역 */
             <div
-              className="profile-dropdown-wrapper"
+              className="relative w-fit"
               onMouseEnter={() => setIsDropdownOpen(true)}
               onMouseLeave={() => setIsDropdownOpen(false)}
             >
               <button
-                className={`profile-btn group ${isDropdownOpen ? "active" : ""}`}
+                className={`group inline-flex items-center gap-1.5 rounded-md text-sm font-medium h-9 px-4 py-2 border transition-all cursor-pointer whitespace-nowrap ${
+                  isDropdownOpen
+                    ? "bg-[#1a237e] text-white border-[#1a237e]"
+                    : "border-[#1a237e] bg-white text-[#1a237e] hover:bg-[#1a237e] hover:text-white"
+                }`}
               >
-                <div className="icon-wrapper">
+                <div className="w-4 h-4 relative">
                   <Image
                     src={BluebombLogo}
-                    className={`icon-blue ${isDropdownOpen ? "opacity-0" : "group-hover:opacity-0"}`}
+                    className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-0" : "group-hover:opacity-0"}`}
                     alt="블루폭탄로고"
                   />
                   <Image
                     src={WhitebombLogo}
-                    className={`icon-white ${isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                    className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                     alt="화이트폭탄로고"
                   />
                 </div>
                 <span>{nickname}</span>
               </button>
 
+              {/* 프로필 드롭다운 */}
               {isDropdownOpen && (
-                <div className="dropdown-menu">
+                <div className="absolute right-0 mt-0 w-full min-w-[100px] bg-white border border-[#e8e8e8] rounded-md shadow-lg py-1 z-50 flex flex-col">
                   {!isManagementRole && (
                     <div
-                      className="dropdown-item"
+                      className="flex items-center justify-center w-full px-2 py-2.5 text-sm text-[#1f2937] text-center hover:bg-[#f3f4f6] hover:text-[#1a237e] cursor-pointer whitespace-nowrap"
                       onClick={() => {
                         router.push("/user/introduce");
                         setIsDropdownOpen(false);
@@ -175,19 +206,9 @@ function Header({ isSimple }: HeaderProps) {
                       <span>마이페이지</span>
                     </div>
                   )}
-                  {isManagementRole && (
-                    <div
-                      className="dropdown-item"
-                      onClick={() => {
-                        router.push("/admin");
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      <span>관리자 메뉴</span>
-                    </div>
-                  )}
+
                   <div
-                    className="dropdown-item logout-item"
+                    className={`flex items-center justify-center w-full px-2 py-2.5 text-sm text-[#fb2c36] text-center hover:bg-[#f3f4f6] cursor-pointer whitespace-nowrap ${!isManagementRole ? "border-t border-[#e8e8e8]" : ""}`}
                     onClick={() => {
                       setIsDropdownOpen(false);
                       setIsLogoutModalOpen(true);

@@ -1,6 +1,6 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// 💡 강좌(Course) 데이터 타입 인터페이스 정의 및 수출
+/* CourseData */
 export interface CourseData {
   id?: number | string;
   courseId?: number | string;
@@ -16,13 +16,14 @@ export interface CourseData {
   enrollmentStatus?: string;
 }
 
-// 💡 강의(Lecture) 데이터 타입 인터페이스 정의 및 수출
+/* LectureData */
 export interface LectureData {
   id?: number | string;
   lectureId?: number | string;
   title?: string;
 }
 
+/* 학생 강좌 목록 조회 */
 export const getStudentCourses = async (): Promise<CourseData[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/v1/courses`, {
@@ -68,6 +69,7 @@ export const getStudentCourses = async (): Promise<CourseData[]> => {
   }
 };
 
+/* 강좌 상태 변경 */
 export const updateCourseStatus = async (
   courseId: number | string,
   payload: any,
@@ -97,6 +99,7 @@ export const updateCourseStatus = async (
   }
 };
 
+/* 강의 카테고리 조회 */
 export const getLectureCategories = async (): Promise<any> => {
   try {
     const response = await fetch(`${BASE_URL}/api/v1/courses/categories`, {
@@ -122,6 +125,7 @@ export const getLectureCategories = async (): Promise<any> => {
   }
 };
 
+/* 문제 카테고리 조회 */
 export const getProblemCategories = async (): Promise<any> => {
   try {
     const response = await fetch(`${BASE_URL}/api/v1/problems/categories`, {
@@ -147,6 +151,7 @@ export const getProblemCategories = async (): Promise<any> => {
   }
 };
 
+/* 카테고리별 문제 세트 조회 */
 export const getProblemSetsByCategory = async (
   categoryId: number | string,
 ): Promise<any> => {
@@ -180,6 +185,7 @@ export const getProblemSetsByCategory = async (
   }
 };
 
+/* 강좌 상세 조회 */
 export const getCourseDetail = async (
   courseId: number | string,
 ): Promise<CourseData> => {
@@ -223,6 +229,7 @@ export const getCourseDetail = async (
   }
 };
 
+/* 강좌별 강의 목록 조회 */
 export const getCourseLectures = async (
   courseId: number | string,
 ): Promise<LectureData[]> => {
@@ -252,6 +259,7 @@ export const getCourseLectures = async (
   }
 };
 
+/* 수강 신청 */
 export const enrollCourse = async (courseId: number | string): Promise<any> => {
   try {
     const response = await fetch(
@@ -305,6 +313,7 @@ export const enrollCourse = async (courseId: number | string): Promise<any> => {
   }
 };
 
+/* 강좌 삭제 */
 export const deleteCourse = async (courseId: number | string): Promise<any> => {
   try {
     const token =
