@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import {
   List,
+  LoadingIndicator,
   OneButtonModal,
   TwoButtonModal,
   type ListColumn,
@@ -181,7 +182,11 @@ export default function UserDetailClient() {
   };
 
   if (userLoading || !user) {
-    return <div className={styles.container}>로딩 중...</div>;
+    return (
+      <div className={styles.container}>
+        <LoadingIndicator message="회원 정보를 불러오는 중입니다." />
+      </div>
+    );
   }
 
   const nextLockLabel = user.isLocked ? "잠금해제" : "계정잠금";
@@ -254,7 +259,7 @@ export default function UserDetailClient() {
 
         <div className={styles.listSection}>
           {listLoading ? (
-            <div className={styles.listLoading}>로딩 중...</div>
+            <LoadingIndicator message="목록을 불러오는 중입니다." />
           ) : tab === "COURSE" ? (
             <List
               columns={courseColumns}

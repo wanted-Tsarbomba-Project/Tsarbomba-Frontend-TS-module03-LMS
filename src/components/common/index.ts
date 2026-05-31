@@ -1,4 +1,5 @@
 export { default as List } from "./List";
+export { default as LoadingIndicator } from "./LoadingIndicator";
 export type { ListColumn } from "./List";
 export { default as OneButtonModal } from "./OneButtonModal";
 export { default as Searchbar } from "./Searchbar";

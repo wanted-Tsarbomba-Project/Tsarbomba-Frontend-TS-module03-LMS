@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { List, OneButtonModal, type ListColumn } from "@/components/common";
+import {
+  List,
+  LoadingIndicator,
+  OneButtonModal,
+  type ListColumn,
+} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import { getAdminUsers } from "../api";
@@ -70,7 +75,7 @@ export default function UsersClient() {
         <h1 className={styles.title}>회원 관리</h1>
 
         {loading ? (
-          <div>로딩 중...</div>
+          <LoadingIndicator message="회원 목록을 불러오는 중입니다." />
         ) : (
           <List
             columns={userColumns}

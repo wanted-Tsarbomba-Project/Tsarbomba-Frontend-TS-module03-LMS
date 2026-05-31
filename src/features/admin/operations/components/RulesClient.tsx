@@ -3,7 +3,7 @@
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { OneButtonModal } from "@/components/common";
+import { LoadingIndicator, OneButtonModal } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -128,7 +128,11 @@ export default function RulesClient() {
   };
 
   if (loading) {
-    return <div className={styles.container}>로딩 중...</div>;
+    return (
+      <div className={styles.container}>
+        <LoadingIndicator message="자동화 규칙을 불러오는 중입니다." />
+      </div>
+    );
   }
 
   return (

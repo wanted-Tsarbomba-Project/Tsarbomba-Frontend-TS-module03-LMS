@@ -110,12 +110,6 @@
   overflow: hidden;
 }
 
-.listLoading {
-  padding: 16px;
-  text-align: center;
-  color: #6b7280;
-}
-
 @media (max-width: 768px) {
   .pageHeader,
   .row {

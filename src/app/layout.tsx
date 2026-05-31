@@ -40,8 +40,10 @@ export default function RootLayout({
     pathname.startsWith("/user/introduce") ||
     pathname.startsWith("/user/profile");
   const isProblemPath =
+    pathname.startsWith("/problems") ||
     pathname.startsWith("/user/problems") ||
     pathname.startsWith("/user/problem");
+  const isProblemListPath = pathname === "/problems" || pathname === "/user/problems";
 
   const showAdminAuthModal = isMount && isAdminPath && !canAccessAdmin;
 
@@ -66,7 +68,7 @@ export default function RootLayout({
   }
 
   /* 3. 통합 레이아웃 바디 및 분기 처리 구역 */
-  const isFlexBodySection = isMypagePath || isAdminPath;
+  const isFlexBodySection = isMypagePath || isAdminPath || isProblemListPath;
 
   return (
     <html lang="ko">
@@ -78,11 +80,11 @@ export default function RootLayout({
 
           {isFlexBodySection ? (
             <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 max-[1024px]:px-5">
-              {(isMypagePath || (isAdminPath && canAccessAdmin)) && (
+              {(isMypagePath || isProblemListPath || (isAdminPath && canAccessAdmin)) && (
                 <Sidebar isOpen={isOpen} />
               )}
 
-              {isOpen && (isMypagePath || (isAdminPath && canAccessAdmin)) && (
+              {isOpen && (isMypagePath || isProblemListPath || (isAdminPath && canAccessAdmin)) && (
                 <div
                   className="fixed inset-0 bg-[#000000]/40 z-[998] lg:hidden"
                   onClick={() => setIsOpen(false)}

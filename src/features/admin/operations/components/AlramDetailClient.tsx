@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import {
+  LoadingIndicator,
   OneButtonModal,
   TwoButtonModal,
   WarningModal,
@@ -199,7 +200,11 @@ export default function AlramDetailClient() {
   };
 
   if (loading) {
-    return <div className={styles.wrapper}>로딩 중...</div>;
+    return (
+      <div className={styles.wrapper}>
+        <LoadingIndicator message="알림 정보를 불러오는 중입니다." />
+      </div>
+    );
   }
 
   if (!detail) {

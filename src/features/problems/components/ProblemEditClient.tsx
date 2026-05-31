@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
+  LoadingIndicator,
   OneButtonModal,
   TwoButtonModal,
   WarningModal,
@@ -12,18 +13,35 @@ import {
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
-  createProblem,
-  createProblemRequestBody,
+  createProblemUpdateRequestBody,
+  deleteProblem,
+  getProblem,
   getProblemCategories,
   INITIAL_PROBLEM_INFO,
   INITIAL_SUB_PROBLEM,
+  updateProblem,
 } from "../actions";
-import type { ProblemCategory, ProblemInfo, SubProblem } from "../types";
+import type {
+  ProblemCategory,
+  ProblemDatasetFile,
+  ProblemInfo,
+  SubProblem,
+} from "../types";
 import RegisterForm from "./RegisterForm";
 
 import styles from "./ProblemRegisterClient.module.css";
 
-export default function ProblemRegisterClient() {
+interface ProblemEditClientProps {
+  problemSetId: string;
+}
+
+type ModalState = {
+  open: boolean;
+  title: string;
+  content: string;
+};
+
+export default function ProblemEditClient({ problemSetId }: ProblemEditClientProps) {
   const router = useRouter();
   const isSubmittingRef = useRef(false);
 
@@ -33,32 +51,42 @@ export default function ProblemRegisterClient() {
   const [problems, setProblems] = useState<SubProblem[]>([
     { ...INITIAL_SUB_PROBLEM },
   ]);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<ProblemDatasetFile | null>(null);
   const [categories, setCategories] = useState<ProblemCategory[]>([]);
+  const [datasetId, setDatasetId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [openSuccessModal, setOpenSuccessModal] = useState(false);
   const [openCancelModal, setOpenCancelModal] = useState(false);
-  const [openValidationModal, setOpenValidationModal] = useState(false);
-  const [validationMessage, setValidationMessage] = useState("");
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openDeleteSuccessModal, setOpenDeleteSuccessModal] = useState(false);
+  const [alertModal, setAlertModal] = useState<ModalState>({
+    open: false,
+    title: "",
+    content: "",
+  });
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchCategories = async () => {
+    const fetchProblem = async () => {
+      setIsLoading(true);
+
       try {
-        const data = await getProblemCategories();
+        const categoryList = await getProblemCategories();
+        const normalized = await getProblem(problemSetId, categoryList);
 
         if (!isMounted) {
           return;
         }
 
-        setCategories(data);
-        setProblemInfo((prev) => ({
-          ...prev,
-          categoryId: prev.categoryId || data[0]?.categoryId || "",
-        }));
+        setCategories(categoryList);
+        setProblemInfo(normalized.problemInfo);
+        setProblems(normalized.problems);
+        setFile(normalized.file);
+        setDatasetId(normalized.datasetId);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -66,22 +94,25 @@ export default function ProblemRegisterClient() {
 
         handleClientError(error, {
           router,
-          fallbackTitle: "카테고리 조회 실패",
-          fallbackMessage: "카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          fallbackTitle: "문제 조회 실패",
+          fallbackMessage: "문제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
           showModal: (title, content) => {
-            setValidationMessage(content || title);
-            setOpenValidationModal(true);
+            setAlertModal({ open: true, title, content });
           },
         });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchCategories();
+    fetchProblem();
 
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [problemSetId, router]);
 
   const handleProblemInfoChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -121,27 +152,6 @@ export default function ProblemRegisterClient() {
         };
       }),
     );
-  };
-
-  const handleAddProblem = () => {
-    setProblems((prev) => [...prev, { ...INITIAL_SUB_PROBLEM }]);
-  };
-
-  const handleRemoveProblem = (index: number) => {
-    setProblems((prev) =>
-      prev.length === 1 ? prev : prev.filter((_, problemIndex) => problemIndex !== index),
-    );
-  };
-
-  const resetForm = () => {
-    setProblemInfo({ ...INITIAL_PROBLEM_INFO });
-    setProblems([{ ...INITIAL_SUB_PROBLEM }]);
-    setFile(null);
-  };
-
-  const handleGoList = () => {
-    resetForm();
-    router.push("/admin/problems");
   };
 
   const validateForm = () => {
@@ -197,8 +207,11 @@ export default function ProblemRegisterClient() {
     const errorMessage = validateForm();
 
     if (errorMessage) {
-      setValidationMessage(errorMessage);
-      setOpenValidationModal(true);
+      setAlertModal({
+        open: true,
+        title: "확인해 주세요",
+        content: errorMessage,
+      });
       return;
     }
 
@@ -206,7 +219,7 @@ export default function ProblemRegisterClient() {
   };
 
   const handleSubmit = async () => {
-    if (isSubmittingRef.current || !file) {
+    if (isSubmittingRef.current) {
       return;
     }
 
@@ -214,14 +227,15 @@ export default function ProblemRegisterClient() {
     setIsSubmitting(true);
 
     try {
-      const requestBody = createProblemRequestBody(
+      const requestBody = createProblemUpdateRequestBody(
         problemInfo,
         problems,
         file,
+        datasetId,
         categories,
       );
 
-      await createProblem(requestBody, file);
+      await updateProblem(problemSetId, requestBody, file);
 
       setOpenConfirmModal(false);
       setOpenSuccessModal(true);
@@ -229,11 +243,10 @@ export default function ProblemRegisterClient() {
       setOpenConfirmModal(false);
       handleClientError(error, {
         router,
-        fallbackTitle: "문제 등록 실패",
-        fallbackMessage: "문제를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        fallbackTitle: "문제 수정 실패",
+        fallbackMessage: "문제를 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
         showModal: (title, content) => {
-          setValidationMessage(content || title);
-          setOpenValidationModal(true);
+          setAlertModal({ open: true, title, content });
         },
       });
     } finally {
@@ -242,31 +255,87 @@ export default function ProblemRegisterClient() {
     }
   };
 
+  const handleDelete = async () => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+
+    try {
+      await deleteProblem(problemSetId);
+
+      setOpenDeleteModal(false);
+      setOpenDeleteSuccessModal(true);
+    } catch (error) {
+      setOpenDeleteModal(false);
+      handleClientError(error, {
+        router,
+        fallbackTitle: "문제 삭제 실패",
+        fallbackMessage: "문제를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => {
+          setAlertModal({ open: true, title, content });
+        },
+      });
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoList = () => {
+    router.push("/admin/problems");
+  };
+
+  if (isLoading) {
+    return (
+      <main className={styles.container}>
+        <h2 className={styles.pageTitle}>문제 수정</h2>
+        <LoadingIndicator message="문제 정보를 불러오는 중입니다." />
+      </main>
+    );
+  }
+
   return (
     <main className={styles.container}>
-      <h2 className={styles.pageTitle}>문제 등록</h2>
+      <h2 className={styles.pageTitle}>문제 수정</h2>
 
       <RegisterForm
         categories={categories}
         file={file}
-        onAddProblem={handleAddProblem}
+        onAddProblem={() => setProblems((prev) => [...prev, { ...INITIAL_SUB_PROBLEM }])}
         onFileChange={setFile}
         onProblemChange={handleProblemChange}
         onProblemInfoChange={handleProblemInfoChange}
         onRemoveFile={() => setFile(null)}
-        onRemoveProblem={handleRemoveProblem}
+        onRemoveProblem={(index) =>
+          setProblems((prev) =>
+            prev.length === 1
+              ? prev
+              : prev.filter((_, problemIndex) => problemIndex !== index),
+          )
+        }
         problemInfo={problemInfo}
         problems={problems}
       />
 
       <div className={styles.bottomButtonGroup}>
         <button
+          className={styles.deleteButton}
+          disabled={isSubmitting}
+          onClick={() => setOpenDeleteModal(true)}
+          type="button"
+        >
+          삭제
+        </button>
+        <button
           className={styles.submitButton}
           disabled={isSubmitting}
           onClick={handleOpenSubmitModal}
           type="button"
         >
-          등록
+          수정
         </button>
         <button
           className={styles.cancelButton}
@@ -282,7 +351,7 @@ export default function ProblemRegisterClient() {
         cancelDisabled={isSubmitting}
         confirmDisabled={isSubmitting}
         isOpen={openConfirmModal}
-        modalTitle="등록하시겠습니까?"
+        modalTitle="수정하시겠습니까?"
         onClose={() => {
           if (!isSubmitting) {
             setOpenConfirmModal(false);
@@ -293,24 +362,45 @@ export default function ProblemRegisterClient() {
 
       <OneButtonModal
         isOpen={openSuccessModal}
-        modalContent="문제가 등록되었습니다."
-        modalTitle="등록 완료"
+        modalContent="문제가 수정되었습니다."
+        modalTitle="수정 완료"
         onClose={handleGoList}
-      />
-
-      <OneButtonModal
-        isOpen={openValidationModal}
-        modalContent={validationMessage}
-        modalTitle="확인해 주세요"
-        onClose={() => setOpenValidationModal(false)}
       />
 
       <WarningModal
         isOpen={openCancelModal}
-        modalContent="작성한 내용은 저장되지 않습니다."
+        modalContent="수정한 내용은 저장되지 않습니다."
         modalTitle="취소하시겠습니까?"
         onClose={() => setOpenCancelModal(false)}
         onConfirm={handleGoList}
+      />
+
+      <WarningModal
+        cancelDisabled={isSubmitting}
+        confirmDisabled={isSubmitting}
+        isOpen={openDeleteModal}
+        modalContent="삭제한 문제는 복구할 수 없습니다."
+        modalTitle="삭제하시겠습니까?"
+        onClose={() => {
+          if (!isSubmitting) {
+            setOpenDeleteModal(false);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
+
+      <OneButtonModal
+        isOpen={openDeleteSuccessModal}
+        modalContent="문제가 삭제되었습니다."
+        modalTitle="삭제 완료"
+        onClose={handleGoList}
+      />
+
+      <OneButtonModal
+        isOpen={alertModal.open}
+        modalContent={alertModal.content}
+        modalTitle={alertModal.title}
+        onClose={() => setAlertModal((prev) => ({ ...prev, open: false }))}
       />
     </main>
   );
