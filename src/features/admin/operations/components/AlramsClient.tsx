@@ -3,7 +3,12 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { List, OneButtonModal, type ListColumn } from "@/components/common";
+import {
+  List,
+  LoadingIndicator,
+  OneButtonModal,
+  type ListColumn,
+} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import { getOperationAlerts } from "../api";
@@ -110,7 +115,7 @@ export default function AlramsClient() {
         </div>
 
         {loading ? (
-          <div>로딩 중...</div>
+          <LoadingIndicator message="알림 목록을 불러오는 중입니다." />
         ) : (
           <List
             columns={alertColumns}

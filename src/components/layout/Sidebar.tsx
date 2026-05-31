@@ -1,29 +1,50 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
+import { getProblemCategories } from "@/features/problems/actions";
+import type { ProblemCategory } from "@/features/problems/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+type ProblemState = "LOCKED" | "UNSOLVED" | "CORRECT" | "WRONG";
+
+interface ChatRoom {
+  roomId: number;
+  title: string;
+  updatedAt: string;
+}
 
 interface SidebarProps {
   isOpen?: boolean;
   userNickname?: string;
-  variant?: string;
+  variant?: "default" | "problem-detail";
   problemSet?: {
     problems?: Array<{ problemId?: number; title: string }>;
   };
   currentIndex?: number;
-  problemStates?: any[];
+  problemStates?: ProblemState[];
   canMoveProblem?: (index: number) => boolean;
   moveProblem?: (index: number) => void;
-  getProblemButtonClass?: (state: any, isCurrent: boolean) => string;
+  getProblemButtonClass?: (
+    state: ProblemState | undefined,
+    isCurrent: boolean,
+  ) => string;
 }
 
-function Sidebar({
+function getStoredValue(key: string) {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return localStorage.getItem(key) || "";
+}
+
+export default function Sidebar({
   isOpen = false,
   userNickname: propsNickname,
   variant,
@@ -37,35 +58,39 @@ function Sidebar({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const selectedCategoryId = searchParams.get("categoryId");
 
-  const currentPath = pathname;
+  const [nickname, setNickname] = useState(
+    propsNickname || getStoredValue("userNickname") || "닉네임",
+  );
+  const [userRole, setUserRole] = useState(getStoredValue("userRole"));
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [problemCategories, setProblemCategories] = useState<ProblemCategory[]>([]);
 
-  const [nickname, setNickname] = useState(propsNickname || "닉네임");
-  const [userRole, setUserRole] = useState("");
-  const [chatRooms, setChatRooms] = useState<any[]>([]);
-
-  const isAdminPath = currentPath.startsWith("/admin");
-
+  const isAdminPath = pathname.startsWith("/admin");
   const isCategory =
     !isAdminPath &&
-    (currentPath.startsWith("/problems") ||
-      currentPath.includes("/problem/") ||
-      currentPath === "/user/problems");
-
+    (pathname.startsWith("/problems") || pathname.startsWith("/user/problems"));
   const isMypage =
-    (currentPath.startsWith("/user/introduce") ||
-      currentPath.startsWith("/user/profile")) &&
+    (pathname.startsWith("/user/introduce") ||
+      pathname.startsWith("/user/profile")) &&
     !isCategory;
-
   const isChatPage =
-    currentPath.startsWith("/chat") || currentPath.startsWith("/user/chat");
+    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   useEffect(() => {
-    const savedNickname = localStorage.getItem("userNickname");
-    const savedRole = localStorage.getItem("userRole");
+    const updateUserInfo = () => {
+      setNickname(propsNickname || getStoredValue("userNickname") || "닉네임");
+      setUserRole(getStoredValue("userRole"));
+    };
 
-    if (savedNickname) setNickname(savedNickname);
-    if (savedRole) setUserRole(savedRole);
+    window.addEventListener("loginSuccess", updateUserInfo);
+    window.addEventListener("storage", updateUserInfo);
+
+    return () => {
+      window.removeEventListener("loginSuccess", updateUserInfo);
+      window.removeEventListener("storage", updateUserInfo);
+    };
   }, [propsNickname]);
 
   useEffect(() => {
@@ -81,10 +106,12 @@ function Sidebar({
           },
         });
 
-        if (!response.ok) throw new Error("채팅방 목록 조회 실패");
+        if (!response.ok) {
+          throw new Error("채팅방 목록 조회 실패");
+        }
 
-        const result = await response.json();
-        const sortedRooms = [...result.data].sort(
+        const result = (await response.json()) as { data?: ChatRoom[] };
+        const sortedRooms = [...(result.data ?? [])].sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         );
@@ -104,136 +131,125 @@ function Sidebar({
   }, [isChatPage]);
 
   useEffect(() => {
-    const updateUserInfo = () => {
-      const savedNickname = localStorage.getItem("userNickname");
-      const savedRole = localStorage.getItem("userRole");
+    if (!isCategory) return;
 
-      if (savedNickname) setNickname(savedNickname);
-      if (savedRole) setUserRole(savedRole);
+    let isMounted = true;
+
+    const fetchProblemCategories = async () => {
+      try {
+        const categories = await getProblemCategories();
+
+        if (isMounted) {
+          setProblemCategories(categories);
+        }
+      } catch (error) {
+        console.error(error);
+      }
     };
 
-    window.addEventListener("loginSuccess", updateUserInfo);
-    window.addEventListener("storage", updateUserInfo);
+    fetchProblemCategories();
 
     return () => {
-      window.removeEventListener("loginSuccess", updateUserInfo);
-      window.removeEventListener("storage", updateUserInfo);
+      isMounted = false;
     };
-  }, []);
+  }, [isCategory]);
 
   const itemBaseClass =
     "block w-full text-left px-4 py-2.5 rounded-lg text-base font-semibold text-[#4b5563] hover:bg-[#f3f4f6] hover:text-[#1a237e] transition-all cursor-pointer";
   const itemActiveClass =
     "block w-full text-left px-4 py-2.5 rounded-lg text-base font-bold bg-[#1a237e] text-white transition-all cursor-pointer";
 
-  /* 1. 관리자 전용 서브 메뉴 */
-  const AdminMenu = () => {
-    const isOperator = userRole === "OPERATOR";
-    const isAdminUser = userRole === "ADMIN";
-
-    return (
-      <div className="w-full flex flex-col gap-5">
-        <div className="flex flex-col items-start px-2 py-1">
-          <span className="text-lg font-bold text-[#1f2937]">관리자 메뉴</span>
-        </div>
-        <hr className="border-[#f3f4f6] -mt-2" />
-
-        <ul className="flex flex-col gap-1">
-          {isOperator && (
-            <>
-              <li>
-                <Link
-                  href="/admin/lectures"
-                  className={
-                    currentPath === "/admin/lectures"
-                      ? itemActiveClass
-                      : itemBaseClass
-                  }
-                >
-                  강의 관리
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/problems"
-                  className={
-                    currentPath === "/admin/problems"
-                      ? itemActiveClass
-                      : itemBaseClass
-                  }
-                >
-                  문제 관리
-                </Link>
-              </li>
-            </>
-          )}
-
-          {isAdminUser && (
-            <>
-              <li>
-                <Link
-                  href="/admin/users"
-                  className={
-                    currentPath === "/admin/users"
-                      ? itemActiveClass
-                      : itemBaseClass
-                  }
-                >
-                  회원 관리
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/badges"
-                  className={
-                    currentPath === "/admin/badges"
-                      ? itemActiveClass
-                      : itemBaseClass
-                  }
-                >
-                  뱃지 관리
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/rules"
-                  className={
-                    currentPath === "/admin/rules"
-                      ? itemActiveClass
-                      : itemBaseClass
-                  }
-                >
-                  규칙 관리
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/alrams"
-                  className={
-                    currentPath === "/admin/alrams"
-                      ? itemActiveClass
-                      : itemBaseClass
-                  }
-                >
-                  알람 관리
-                </Link>
-              </li>
-            </>
-          )}
-        </ul>
+  const adminMenu = (
+    <div className="w-full flex flex-col gap-5">
+      <div className="flex flex-col items-start px-2 py-1">
+        <span className="text-lg font-bold text-[#1f2937]">관리자 메뉴</span>
       </div>
-    );
-  };
+      <hr className="border-[#f3f4f6] -mt-2" />
 
-  /* 2. 마이페이지 전용 서브 메뉴 */
-  const MypageMenu = () => (
+      <ul className="flex flex-col gap-1">
+        {userRole === "OPERATOR" && (
+          <>
+            <li>
+              <Link
+                className={
+                  pathname === "/admin/lectures"
+                    ? itemActiveClass
+                    : itemBaseClass
+                }
+                href="/admin/lectures"
+              >
+                강의 관리
+              </Link>
+            </li>
+            <li>
+              <Link
+                className={
+                  pathname === "/admin/problems"
+                    ? itemActiveClass
+                    : itemBaseClass
+                }
+                href="/admin/problems"
+              >
+                문제 관리
+              </Link>
+            </li>
+          </>
+        )}
+
+        {userRole === "ADMIN" && (
+          <>
+            <li>
+              <Link
+                className={
+                  pathname === "/admin/users" ? itemActiveClass : itemBaseClass
+                }
+                href="/admin/users"
+              >
+                회원 관리
+              </Link>
+            </li>
+            {/* <li>
+              <Link
+                className={pathname === "/admin/badges" ? itemActiveClass : itemBaseClass}
+                href="/admin/badges"
+              >
+                뱃지 관리
+              </Link>
+            </li> */}
+            <li>
+              <Link
+                className={
+                  pathname === "/admin/rules" ? itemActiveClass : itemBaseClass
+                }
+                href="/admin/rules"
+              >
+                규칙 관리
+              </Link>
+            </li>
+            <li>
+              <Link
+                className={
+                  pathname === "/admin/alrams" ? itemActiveClass : itemBaseClass
+                }
+                href="/admin/alrams"
+              >
+                알람 관리
+              </Link>
+            </li>
+          </>
+        )}
+      </ul>
+    </div>
+  );
+
+  const mypageMenu = (
     <div className="w-full flex flex-col gap-5">
       <div className="flex items-center gap-3 px-2 py-1">
         <div className="w-12 h-12 rounded-full bg-white border border-[#e8e8e8] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
           <Image
-            src={BluebombLogo}
             alt="프로필"
             className="w-8 h-8 object-contain text-[#1a237e]"
+            src={BluebombLogo}
           />
         </div>
         <span className="text-lg font-bold text-[#1f2937] tracking-tight">
@@ -245,22 +261,20 @@ function Sidebar({
       <ul className="flex flex-col gap-1">
         <li>
           <Link
-            href="/user/introduce"
             className={
-              currentPath === "/user/introduce"
-                ? itemActiveClass
-                : itemBaseClass
+              pathname === "/user/introduce" ? itemActiveClass : itemBaseClass
             }
+            href="/user/introduce"
           >
-            내 소개
+            자기소개
           </Link>
         </li>
         <li>
           <Link
-            href="/user/profile"
             className={
-              currentPath === "/user/profile" ? itemActiveClass : itemBaseClass
+              pathname === "/user/profile" ? itemActiveClass : itemBaseClass
             }
+            href="/user/profile"
           >
             프로필 정보
           </Link>
@@ -269,33 +283,29 @@ function Sidebar({
     </div>
   );
 
-  /* 3. 문제 상세 에디터 풀이 사이드 메뉴 */
-  const ProblemDetailMenu = () => (
+  const problemDetailMenu = (
     <div className="w-full flex flex-col gap-4">
       <h3 className="text-base font-bold text-[#1f2937] px-2">
         전체 문제 {currentIndex + 1}/{problemSet?.problems?.length ?? 0}
       </h3>
       <ul className="flex flex-col gap-1.5 max-h-[60vh] overflow-y-auto pr-1">
         {problemSet?.problems?.map((problem, index) => {
+          const state = problemStates[index];
           const locked = canMoveProblem ? !canMoveProblem(index) : false;
-          const buttonClass = getProblemButtonClass
-            ? getProblemButtonClass(
-                problemStates[index],
-                currentIndex === index,
-              )
-            : "";
+          const buttonClass =
+            getProblemButtonClass?.(state, currentIndex === index) ?? "";
 
           return (
             <li key={problem.problemId ?? index}>
               <button
-                type="button"
-                disabled={locked}
-                onClick={() => moveProblem?.(index)}
                 className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors font-medium flex items-center justify-between cursor-pointer ${buttonClass} ${
                   locked
                     ? "bg-[#f3f4f6] text-[#9ca3af] cursor-not-allowed opacity-60"
                     : ""
                 }`}
+                disabled={locked}
+                onClick={() => moveProblem?.(index)}
+                type="button"
               >
                 <span className="truncate">{problem.title}</span>
               </button>
@@ -306,26 +316,65 @@ function Sidebar({
     </div>
   );
 
-  /* 4. AI 실시간 챗봇 메뉴 */
-  const ChatMenu = () => (
+  const problemCategoryMenu = (
+    <div className="w-full flex flex-col gap-5">
+      <div className="flex flex-col items-start px-2 py-1">
+        <span className="text-lg font-bold text-[#1f2937]">카테고리</span>
+      </div>
+      <hr className="border-[#f3f4f6] -mt-2" />
+
+      <ul className="flex flex-col gap-1">
+        <li>
+          <button
+            className={!selectedCategoryId ? itemActiveClass : itemBaseClass}
+            onClick={() => router.push("/problems")}
+            type="button"
+          >
+            전체
+          </button>
+        </li>
+
+        {problemCategories.map((category) => (
+          <li key={category.categoryId}>
+            <button
+              className={
+                selectedCategoryId === category.categoryId
+                  ? itemActiveClass
+                  : itemBaseClass
+              }
+              onClick={() =>
+                router.push(`/problems?categoryId=${category.categoryId}`)
+              }
+              type="button"
+            >
+              {category.categoryName}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  const chatMenu = (
     <div className="w-full flex flex-col gap-4">
-      <div
+      <button
         className="w-full h-11 bg-[#1a237e] text-white rounded-lg flex items-center justify-center font-semibold text-sm cursor-pointer hover:bg-[#111751] transition-colors shadow-sm"
         onClick={() => router.push("/user/chat")}
+        type="button"
       >
-        + 새대화 시작
-      </div>
-      <h3 className="text-sm font-bold text-[#6b7280] px-2 mt-2">기존대화</h3>
+        + 새 대화 시작
+      </button>
+      <h3 className="text-sm font-bold text-[#6b7280] px-2 mt-2">기존 대화</h3>
       <ul className="flex flex-col gap-1 max-h-[50vh] overflow-y-auto">
         {chatRooms.map((room) => (
           <li key={room.roomId}>
             <Link
-              href={`/user/chat/${room.roomId}`}
               className={
-                currentPath === `/user/chat/${room.roomId}`
+                pathname === `/user/chat/${room.roomId}`
                   ? itemActiveClass
                   : itemBaseClass
               }
+              href={`/user/chat/${room.roomId}`}
             >
               <span className="block truncate">{room.title}</span>
             </Link>
@@ -338,9 +387,13 @@ function Sidebar({
   if (variant === "problem-detail") {
     return (
       <aside
-        className={`w-[260px] shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 max-lg:hidden transition-all duration-300 ${isOpen ? "max-lg:block max-lg:fixed max-lg:left-0 max-lg:z-[999] max-lg:h-[calc(100vh-80px)]" : ""}`}
+        className={`w-[260px] shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 transition-all duration-300 max-lg:w-full max-lg:static ${
+          isOpen
+            ? "max-lg:block max-lg:fixed max-lg:left-0 max-lg:z-[999] max-lg:h-[calc(100vh-80px)]"
+            : ""
+        }`}
       >
-        {ProblemDetailMenu()}
+        {problemDetailMenu}
       </aside>
     );
   }
@@ -357,11 +410,10 @@ function Sidebar({
           : ""
       }`}
     >
-      {isAdminPath && AdminMenu()}
-      {isMypage && MypageMenu()}
-      {isChatPage && ChatMenu()}
+      {isAdminPath && adminMenu}
+      {isMypage && mypageMenu}
+      {isCategory && problemCategoryMenu}
+      {isChatPage && chatMenu}
     </aside>
   );
 }
-
-export default Sidebar;

@@ -3,16 +3,19 @@
 import type { ChangeEvent } from "react";
 import { useRef } from "react";
 
-import {
-  DIFFICULTY_MAP,
-  PROBLEM_CATEGORY,
-} from "../actions";
-import type { ProblemInfo, SubProblem } from "../types";
+import { DIFFICULTY_MAP } from "../actions";
+import type {
+  ProblemCategory,
+  ProblemDatasetFile,
+  ProblemInfo,
+  SubProblem,
+} from "../types";
 
 import styles from "./RegisterForm.module.css";
 
 interface RegisterFormProps {
-  file: File | null;
+  file: ProblemDatasetFile | null;
+  categories: ProblemCategory[];
   problemInfo: ProblemInfo;
   problems: SubProblem[];
   onAddProblem: () => void;
@@ -30,6 +33,7 @@ interface RegisterFormProps {
 
 export default function RegisterForm({
   file,
+  categories,
   problemInfo,
   problems,
   onAddProblem,
@@ -87,9 +91,12 @@ export default function RegisterForm({
               onChange={onProblemInfoChange}
               value={problemInfo.categoryId}
             >
-              {Object.entries(PROBLEM_CATEGORY).map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
+              <option disabled value="">
+                카테고리 선택
+              </option>
+              {categories.map((category) => (
+                <option key={category.categoryId} value={category.categoryId}>
+                  {category.categoryName}
                 </option>
               ))}
             </select>

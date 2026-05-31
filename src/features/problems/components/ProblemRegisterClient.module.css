@@ -18,7 +18,8 @@
 }
 
 .submitButton,
-.cancelButton {
+.cancelButton,
+.deleteButton {
   min-width: 92px;
   border-radius: 8px;
   padding: 12px 30px;
@@ -47,8 +48,20 @@
   background: #f3f4f6;
 }
 
+.deleteButton {
+  border: 1px solid #fb2c36;
+  background: #ffffff;
+  color: #fb2c36;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: #fb2c36;
+  color: #ffffff;
+}
+
 .submitButton:disabled,
-.cancelButton:disabled {
+.cancelButton:disabled,
+.deleteButton:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }

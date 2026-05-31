@@ -14,41 +14,50 @@ interface HeaderProps {
   isSimple?: boolean;
 }
 
+function getHeaderStatus() {
+  if (typeof window === "undefined") {
+    return {
+      isLoggedIn: false,
+      nickname: "닉네임",
+      userRole: "",
+    };
+  }
+
+  const savedNickname = localStorage.getItem("userNickname");
+  const savedRole = localStorage.getItem("userRole");
+
+  return {
+    isLoggedIn: Boolean(savedNickname),
+    nickname: savedNickname || "닉네임",
+    userRole: savedRole || "",
+  };
+}
+
 function Header({ isSimple }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [nickname, setNickname] = useState("닉네임");
-  const [userRole, setUserRole] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(() => getHeaderStatus().isLoggedIn);
+  const [nickname, setNickname] = useState(() => getHeaderStatus().nickname);
+  const [userRole, setUserRole] = useState(() => getHeaderStatus().userRole);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const syncHeaderStatus = () => {
-    if (typeof window !== "undefined") {
-      const savedNickname = localStorage.getItem("userNickname");
-      const savedRole = localStorage.getItem("userRole");
+    const status = getHeaderStatus();
 
-      if (savedNickname) {
-        setIsLoggedIn(true);
-        setNickname(savedNickname);
-        setUserRole(savedRole || "");
-      } else {
-        setIsLoggedIn(false);
-        setNickname("닉네임");
-        setUserRole("");
-      }
-    }
+    setIsLoggedIn(status.isLoggedIn);
+    setNickname(status.nickname);
+    setUserRole(status.userRole);
   };
 
   useEffect(() => {
-    syncHeaderStatus();
     window.addEventListener("loginSuccess", syncHeaderStatus);
     return () => {
       window.removeEventListener("loginSuccess", syncHeaderStatus);
     };
-  }, [pathname]);
+  }, []);
 
   const handleLogoutConfirm = async () => {
     setIsLogoutModalOpen(false);
@@ -136,7 +145,7 @@ function Header({ isSimple }: HeaderProps) {
               </span>
               <span
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/user/problems")}
+                onClick={() => router.push("/problems")}
               >
                 문제풀이
               </span>
