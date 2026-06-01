@@ -36,17 +36,17 @@ export default function CategoryNav({
 
   const currentCategory = searchParams.get("category") || "전체";
 
-  if (pathname) {
-    if (/^\/courses\/\d+$/.test(pathname)) return null;
+  // if (pathname) {
+  //   if (/^\/courses\/\d+$/.test(pathname)) return null;
 
-    if (
-      pathname.includes("myclassroom") ||
-      pathname.startsWith("/admin/courses") ||
-      pathname.startsWith("/problems/")
-    ) {
-      return null;
-    }
-  }
+  //   if (
+  //     pathname.includes("myclassroom") ||
+  //     pathname.startsWith("/admin/courses") ||
+  //     pathname.startsWith("/problems/")
+  //   ) {
+  //     return null;
+  //   }
+  // }
 
   const handleCategoryClick = (category: string) => {
     const params = new URLSearchParams(searchParams.toString());

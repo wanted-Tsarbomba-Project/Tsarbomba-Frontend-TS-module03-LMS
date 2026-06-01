@@ -2,6 +2,8 @@
 import { getProblemCategories } from "@/features/problems/actions";
 import ProblemRegisterClient from "@/features/problems/components/ProblemRegisterClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewProblemPage() {
   const categories = await getProblemCategories(3600);
 
