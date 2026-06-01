@@ -1,6 +1,11 @@
 "use client";
 
-import React, { Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import React, {
+  Suspense,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
@@ -70,7 +75,8 @@ export default function RootLayout({
     pathname.startsWith("/problems") ||
     pathname.startsWith("/user/problems") ||
     pathname.startsWith("/user/problem");
-  const isChatPath = pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
+  const isChatPath =
+    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   const showAdminAuthModal = isMount && isAdminPath && !canAccessAdmin;
 
@@ -104,23 +110,26 @@ export default function RootLayout({
           <Header />
 
           {!isAdminPath && !isMypagePath && !isProblemPath && !isChatPath && (
-            <Suspense fallback={null}>
-              <CategoryNav />
-            </Suspense>
+            //<Suspense fallback={null}>
+            <CategoryNav />
+            //</Suspense>
           )}
 
           {isFlexBodySection ? (
             <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 max-[1024px]:px-5">
-              {(isMypagePath || isChatPath || (isAdminPath && canAccessAdmin)) && (
-                <Sidebar isOpen={isOpen} />
-              )}
+              {(isMypagePath ||
+                isChatPath ||
+                (isAdminPath && canAccessAdmin)) && <Sidebar isOpen={isOpen} />}
 
-              {isOpen && (isMypagePath || isChatPath || (isAdminPath && canAccessAdmin)) && (
-                <div
-                  className="fixed inset-0 bg-[#000000]/40 z-[998] lg:hidden"
-                  onClick={() => setIsOpen(false)}
-                />
-              )}
+              {isOpen &&
+                (isMypagePath ||
+                  isChatPath ||
+                  (isAdminPath && canAccessAdmin)) && (
+                  <div
+                    className="fixed inset-0 bg-[#000000]/40 z-[998] lg:hidden"
+                    onClick={() => setIsOpen(false)}
+                  />
+                )}
 
               <main className="flex-1 min-w-0 py-10">
                 {isAdminPath ? (canAccessAdmin ? children : null) : children}
