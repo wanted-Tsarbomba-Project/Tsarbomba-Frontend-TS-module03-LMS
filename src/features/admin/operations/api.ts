@@ -211,7 +211,7 @@ export async function getAdminUserDetail(userId: string) {
 }
 
 export async function getUserCourseProgress(userId: string) {
-  return request<UserCourseProgressResponse>(
+  return request<UserCourseProgressResponse[]>(
     `/api/v1/users/${userId}/enrollments`,
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+// CSR - 회원 문제 목록 테이블: 서버에서 받은 목록 props를 그대로 렌더링하고 행 클릭 라우팅만 클라이언트에서 처리함
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -41,7 +42,6 @@ export default function UserProblemListClient({
 }: UserProblemListClientProps) {
   const router = useRouter();
 
-  const [problemSets] = useState<ProblemSetSummary[]>(initialProblemSets);
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
 
   const columns = useMemo<ListColumn<ProblemSetSummary>[]>(
@@ -87,7 +87,7 @@ export default function UserProblemListClient({
 
       <List
         columns={columns}
-        data={problemSets}
+        data={initialProblemSets}
         emptyMessage="등록된 문제가 없습니다."
         onRowClick={(item) => router.push(`/problems/${item.problemSetId}`)}
         rowKey={(item) => item.problemSetId}

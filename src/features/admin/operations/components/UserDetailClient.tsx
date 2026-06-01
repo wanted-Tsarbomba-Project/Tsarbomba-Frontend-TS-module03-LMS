@@ -42,11 +42,7 @@ const initialNoticeModal: NoticeModalState = {
 const courseColumns: ListColumn<UserCourseRow>[] = [
   { key: "index", label: "No." },
   { key: "title", label: "강의명" },
-  {
-    key: "progress",
-    label: "진행률",
-    render: (course) => `${course.progress ?? 0}%`,
-  },
+  // 진행률은 수강 목록 API 응답에 포함되지 않아 표시하지 않습니다.
   {
     key: "date",
     label: "등록일",
@@ -110,16 +106,16 @@ export default function UserDetailClient() {
 
         if (tab === "COURSE") {
           const result = await getUserCourseProgress(userId);
-          const data = result.data;
+          const data = result.data ?? [];
 
-          setCourseRows([
-            {
-              courseId: data.courseId,
-              title: data.courseTitle,
-              progress: data.averageLearningRate,
-              date: data.updatedAt,
-            },
-          ]);
+          setCourseRows(
+            data.map((course) => ({
+              enrollmentId: course.enrollmentId,
+              courseId: course.courseId,
+              title: course.courseTitle,
+              date: course.enrolledAt,
+            })),
+          );
           return;
         }
 
@@ -265,7 +261,7 @@ export default function UserDetailClient() {
               columns={courseColumns}
               data={courseRows}
               emptyMessage="조회된 강의가 없습니다."
-              rowKey={(course, index) => course.courseId ?? index}
+              rowKey={(course, index) => course.enrollmentId ?? course.courseId ?? index}
               scrollable={false}
             />
           ) : (
