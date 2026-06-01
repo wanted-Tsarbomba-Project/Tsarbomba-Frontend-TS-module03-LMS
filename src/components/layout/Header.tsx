@@ -9,27 +9,19 @@ import Logo from "../../../public/assets/img/logo-Icon.png";
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
+import { logoutService } from "@/services/authService";
 
 interface HeaderProps {
   isSimple?: boolean;
 }
 
 function getHeaderStatus() {
-  if (typeof window === "undefined") {
-    return {
-      isLoggedIn: false,
-      nickname: "닉네임",
-      userRole: "",
-    };
-  }
-
-  const savedNickname = localStorage.getItem("userNickname");
-  const savedRole = localStorage.getItem("userRole");
-
+  if (typeof window === "undefined")
+    return { isLoggedIn: false, nickname: "닉네임", userRole: "" };
   return {
-    isLoggedIn: Boolean(savedNickname),
-    nickname: savedNickname || "닉네임",
-    userRole: savedRole || "",
+    isLoggedIn: !!localStorage.getItem("userNickname"),
+    nickname: localStorage.getItem("userNickname") || "닉네임",
+    userRole: localStorage.getItem("userRole") || "",
   };
 }
 
@@ -37,6 +29,7 @@ function Header({ isSimple }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState("닉네임");
   const [userRole, setUserRole] = useState("");
@@ -53,42 +46,54 @@ function Header({ isSimple }: HeaderProps) {
   };
 
   useEffect(() => {
-    const syncTimerId = window.setTimeout(syncHeaderStatus, 0);
+    setIsMounted(true);
+    syncHeaderStatus();
     window.addEventListener("loginSuccess", syncHeaderStatus);
-    return () => {
-      window.clearTimeout(syncTimerId);
-      window.removeEventListener("loginSuccess", syncHeaderStatus);
-    };
+    return () => window.removeEventListener("loginSuccess", syncHeaderStatus);
   }, []);
 
   const handleLogoutConfirm = async () => {
-    setIsLogoutModalOpen(false);
-    localStorage.clear();
-    sessionStorage.clear();
+    try {
+      // 1. 서버 로그아웃 호출
+      await logoutService();
+    } catch (err) {
+      console.error("서버 로그아웃 실패, 로컬 데이터를 삭제합니다.", err);
+    } finally {
+      // 2. 로컬 스토리지 및 세션 비우기
+      localStorage.clear();
+      sessionStorage.clear();
 
-    const deleteCookie = (name: string) => {
-      document.cookie =
-        name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
-    };
-    deleteCookie("accessToken");
-    deleteCookie("refreshToken");
+      // 3. 쿠키 전체 삭제
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        document.cookie =
+          cookies[i].split("=")[0].trim() +
+          "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/";
+      }
 
-    setIsLoggedIn(false);
-    setTimeout(() => {
+      setIsLoggedIn(false);
+      setIsLogoutModalOpen(false);
+
+      // 4. 강제 새로고침으로 홈 이동
       window.location.href = "/";
-    }, 500);
+    }
   };
 
   const isManagementRole =
-    isLoggedIn && (userRole === "ADMIN" || userRole === "OPERATOR");
-
-  const logoTargetHref = isManagementRole ? "/admin" : "/";
-  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+    isMounted &&
+    isLoggedIn &&
+    (userRole === "ADMIN" || userRole === "OPERATOR");
+  const logoTargetHref = !isManagementRole
+    ? "/"
+    : userRole === "ADMIN"
+      ? "/admin/users"
+      : "/admin/courses";
+  const isAdminPath = pathname.startsWith("/admin");
 
   if (isSimple) {
     return (
       <header className="w-full border-b border-[#e8e8e8] bg-white">
-        <div className="flex h-16 items-center justify-between px-6 max-w-[1200px] mx-auto">
+        <div className="flex h-16 items-center justify-between px-6 max-w-300 mx-auto">
           <Link
             href={logoTargetHref}
             className="flex items-center gap-2 cursor-pointer select-none"
@@ -110,8 +115,7 @@ function Header({ isSimple }: HeaderProps) {
 
   return (
     <header className="w-full border-b border-[#e8e8e8] bg-white sticky top-0 z-50">
-      <div className="flex h-16 items-center justify-between px-6 max-w-[1200px] mx-auto">
-        {/* 좌측 로고 영역 */}
+      <div className="flex h-16 items-center justify-between px-6 max-w-300 mx-auto">
         <Link
           href={logoTargetHref}
           className="flex items-center gap-2 cursor-pointer select-none"
@@ -127,7 +131,6 @@ function Header({ isSimple }: HeaderProps) {
           </span>
         </Link>
 
-        {/* 중앙 검색바 영역 */}
         {(!isManagementRole || !isAdminPath) && (
           <div className="flex-1 max-w-md mx-8 hidden sm:block">
             <Searchbar />
@@ -147,7 +150,7 @@ function Header({ isSimple }: HeaderProps) {
               </span>
               <span
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/user/my-classroom")}
+                onClick={() => router.push("/user/myclassroom")}
               >
                 내 강의실
               </span>
@@ -211,7 +214,7 @@ function Header({ isSimple }: HeaderProps) {
 
               {/* 프로필 드롭다운 */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-0 w-full min-w-[100px] bg-white border border-[#e8e8e8] rounded-md shadow-lg py-1 z-50 flex flex-col">
+                <div className="absolute right-0 mt-0 w-full min-w-25 bg-white border border-[#e8e8e8] rounded-md shadow-lg py-1 z-50 flex flex-col">
                   {!isManagementRole && (
                     <div
                       className="flex items-center justify-center w-full px-2 py-2.5 text-sm text-[#1f2937] text-center hover:bg-[#f3f4f6] hover:text-[#1a237e] cursor-pointer whitespace-nowrap"
