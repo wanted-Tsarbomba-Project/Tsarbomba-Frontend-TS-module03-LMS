@@ -36,6 +36,18 @@ export default function CategoryNav({
 
   const currentCategory = searchParams.get("category") || "전체";
 
+  if (pathname) {
+    if (/^\/courses\/\d+$/.test(pathname)) return null;
+
+    if (
+      pathname.includes("myclassroom") ||
+      pathname.startsWith("/admin/courses") ||
+      pathname.startsWith("/problems/")
+    ) {
+      return null;
+    }
+  }
+
   const handleCategoryClick = (category: string) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -57,7 +69,7 @@ export default function CategoryNav({
   if (variant === "problem-detail") {
     return (
       <nav className="w-full border-b bg-white border-[#e8e8e8] py-3 mb-4">
-        <div className="flex items-center justify-between max-w-[1200px] mx-auto px-6">
+        <div className="flex items-center justify-between max-w-300 mx-auto px-6">
           <button className={btnBase} onClick={onBack} type="button">
             뒤로가기
           </button>
@@ -84,13 +96,16 @@ export default function CategoryNav({
     );
   }
 
-  if (pathname.startsWith("/problems/") || pathname.startsWith("/user/problems/")) {
+  if (
+    pathname.startsWith("/problems/") ||
+    pathname.startsWith("/user/problems/")
+  ) {
     return null;
   }
 
   return (
     <nav className="w-full border-b bg-white border-[#e8e8e8] py-3 mb-4">
-      <div className="flex items-center justify-between max-w-[1200px] mx-auto px-6 gap-4">
+      <div className="flex items-center justify-between max-w-300 mx-auto px-6 gap-4">
         <div className="flex items-center gap-3 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
           {CATEGORIES.map((category) => (
             <button
@@ -105,7 +120,7 @@ export default function CategoryNav({
         </div>
 
         <div className="shrink-0">
-          <select className="h-[42px] px-4 rounded-lg border border-[#e8e8e8] bg-white text-base font-normal text-[#1f2937] focus:outline-none focus:border-[#1a237e] transition-colors cursor-pointer box-border">
+          <select className="h-10.5 px-4 rounded-lg border border-[#e8e8e8] bg-white text-base font-normal text-[#1f2937] focus:outline-none focus:border-[#1a237e] transition-colors cursor-pointer box-border">
             <option>전체 정렬</option>
             <option>최신순</option>
             <option>인기순</option>

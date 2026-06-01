@@ -2,8 +2,8 @@
 
 function Footer() {
   return (
-    <footer className="w-full min-h-[50px] bg-[#f3f4f6] flex items-center justify-center mt-[15px]">
-      <div className="w-full max-w-[1200px] flex flex-col items-center justify-center box-border">
+    <footer className="w-full min-h-12.5 bg-[#f3f4f6] flex items-center justify-center mt-3.75">
+      <div className="w-full max-w-300 flex flex-col items-center justify-center box-border">
         <div className="flex justify-center items-center gap-3 lg:gap-2 text-sm lg:text-[11px] text-[#6b7280] whitespace-nowrap">
           <span className="cursor-pointer hover:underline hover:underline-offset-[3px]">
             이용약관
@@ -22,7 +22,7 @@ function Footer() {
           </span>
         </div>
 
-        <p className="mt-[5px] flex justify-center items-center text-sm lg:text-[11px] text-[#6b7280] whitespace-nowrap cursor-pointer">
+        <p className="mt-1.25 flex justify-center items-center text-sm lg:text-[11px] text-[#6b7280] whitespace-nowrap cursor-pointer">
           © 2026 Tsarbomba All rights reserved
         </p>
       </div>

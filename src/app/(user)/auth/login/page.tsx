@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "../../../../services/authService";
+import OneButtonModal from "@/components/common/OneButtonModal";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // 모달 제어 상태
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [pendingRole, setPendingRole] = useState("USER");
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,24 +30,49 @@ export default function LoginPage() {
       const res = await login(email, password);
 
       if (res && res.data) {
-        localStorage.setItem("userNickname", res.data.nickname || "유저");
-        localStorage.setItem("userRole", res.data.role || "USER");
+        const resData = (res as any)?.data || {};
+
+        const token =
+          resData.token ||
+          resData.accessToken ||
+          (res as any)?.token ||
+          (res as any)?.accessToken;
+
+        const role = resData.role || (res as any)?.role || "USER";
+        const nickname = resData.nickname || (res as any)?.nickname || "유저";
+
+        if (token) {
+          localStorage.setItem("token", token);
+        } else {
+          console.warn("토큰 정보 확인:", res.data);
+        }
+
+        localStorage.setItem("userNickname", nickname);
+        localStorage.setItem("userRole", role);
 
         window.dispatchEvent(new Event("loginSuccess"));
 
-        if (res.data.role === "ADMIN" || res.data.role === "OPERATOR") {
-          router.push("/admin");
-        } else {
-          router.push("/");
-        }
+        setPendingRole(role);
+        setModalMessage("로그인이 성공적으로 완료되었습니다.");
+        setModalOpen(true);
       }
     } catch (err: any) {
       setErrorMsg(err.message || "이메일 또는 비밀번호가 일치하지 않습니다.");
     }
   };
 
-  const handleGoogleLogin = () => {
-    alert("구글 로그인 기능은 준비 중입니다.");
+  const handleModalClose = () => {
+    setModalOpen(false);
+
+    if (modalMessage.includes("성공")) {
+      if (pendingRole === "ADMIN") {
+        window.location.href = "/admin/users";
+      } else if (pendingRole === "OPERATOR") {
+        window.location.href = "/admin/courses";
+      } else {
+        window.location.href = "/";
+      }
+    }
   };
 
   return (
@@ -49,8 +80,8 @@ export default function LoginPage() {
       <div className="h-16 w-full shrink-0" />
       <div className="h-12 w-full shrink-0" />
 
-      <div className="w-[400px] p-[30px_40px] bg-white border border-[#e8e8e8] rounded-lg text-center box-border shadow-sm">
-        <h1 className="text-2xl font-bold text-[#1f2937] mb-[30px]">로그인</h1>
+      <div className="w-100 p-[30px_40px] bg-white border border-[#e8e8e8] rounded-lg text-center box-border shadow-sm">
+        <h1 className="text-2xl font-bold text-[#1f2937] mb-7.5">로그인</h1>
 
         <form
           onSubmit={handleLoginSubmit}
@@ -143,13 +174,19 @@ export default function LoginPage() {
             <button
               type="button"
               className="w-full h-11 text-base border-none rounded-lg bg-[#e5e7eb] text-[#1f2937] font-semibold flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors mt-1"
-              onClick={handleGoogleLogin}
             >
               GOOGLE로 로그인
             </button>
           </div>
         </form>
       </div>
+
+      <OneButtonModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        modalTitle="알림"
+        modalContent={modalMessage}
+      />
     </div>
   );
 }

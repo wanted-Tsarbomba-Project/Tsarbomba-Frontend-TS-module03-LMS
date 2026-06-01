@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
@@ -8,6 +8,22 @@ import Footer from "../components/layout/Footer";
 import CategoryNav from "../components/layout/CategoryNav";
 import OneButtonModal from "../components/common/OneButtonModal";
 import "./globals.css";
+
+const subscribeToUserRole = (callback: () => void) => {
+  window.addEventListener("loginSuccess", callback);
+  window.addEventListener("storage", callback);
+
+  return () => {
+    window.removeEventListener("loginSuccess", callback);
+    window.removeEventListener("storage", callback);
+  };
+};
+
+const getStoredUserRole = () => localStorage.getItem("userRole") || "";
+const getServerUserRole = () => "";
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerHydratedSnapshot = () => false;
 
 export default function RootLayout({
   children,
@@ -18,15 +34,26 @@ export default function RootLayout({
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [userRole, setUserRole] = useState("");
-  const [isMount, setIsMount] = useState(false);
+  const userRole = useSyncExternalStore(
+    subscribeToUserRole,
+    getStoredUserRole,
+    getServerUserRole,
+  );
+  const isMount = useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerHydratedSnapshot,
+  );
 
   useEffect(() => {
-    setIsMount(true);
-    if (typeof window !== "undefined") {
-      setUserRole(localStorage.getItem("userRole") || "");
+    if (pathname !== "/") return;
+
+    if (userRole === "ADMIN") {
+      router.replace("/admin/users");
+    } else if (userRole === "OPERATOR") {
+      router.replace("/admin/courses");
     }
-  }, [pathname]);
+  }, [pathname, router, userRole]);
 
   const canAccessAdmin = userRole === "ADMIN" || userRole === "OPERATOR";
 
