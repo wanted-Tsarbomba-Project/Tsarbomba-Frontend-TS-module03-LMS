@@ -139,11 +139,11 @@ export default function Sidebar({
             <li>
               <Link
                 className={
-                  pathname === "/admin/lectures"
+                  pathname === "/admin/courses"
                     ? itemActiveClass
                     : itemBaseClass
                 }
-                href="/admin/lectures"
+                href="/admin/courses"
               >
                 강의 관리
               </Link>
