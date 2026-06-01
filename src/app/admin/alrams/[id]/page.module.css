@@ -1,0 +1,169 @@
+.wrapper {
+  padding: 24px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.status {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.topActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 20px;
+  color: #1f2937;
+  margin: 0 0 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+}
+
+.infoLabel {
+  flex: 0 0 120px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.infoValue {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: #1f2937;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.text {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.memoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.textarea {
+  width: 100%;
+  height: 120px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.count {
+  text-align: right;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.whiteBlueButton {
+  background: #ffffff;
+  border: 1px solid #1a237e;
+  color: #1a237e;
+}
+
+.whiteBlueButton:hover:not(:disabled) {
+  background: #1a237e;
+  color: #ffffff;
+}
+
+.blueButton {
+  background: #1a237e;
+  color: #ffffff;
+  border: none;
+}
+
+.blueButton:hover:not(:disabled) {
+  background: #111751;
+}
+
+.whiteRedButton {
+  background: #ffffff;
+  border: 1px solid #fb2c36;
+  color: #fb2c36;
+}
+
+.whiteRedButton:hover:not(:disabled) {
+  background: #fb2c36;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .topBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .infoLabel {
+    flex-basis: auto;
+  }
+
+  .infoValue {
+    text-align: left;
+  }
+}

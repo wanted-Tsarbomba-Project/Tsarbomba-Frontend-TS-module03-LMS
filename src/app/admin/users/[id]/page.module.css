@@ -1,0 +1,123 @@
+.container {
+  padding: 24px;
+  min-height: 100vh;
+  color: #1f2937;
+  box-sizing: border-box;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.headerButtonGroup {
+  display: flex;
+  gap: 10px;
+}
+
+.grayButton {
+  border: none;
+  background-color: #e5e5e5;
+  padding: 12px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.grayButton:hover:not(:disabled) {
+  background-color: #d9d9d9;
+}
+
+.grayButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.infoSection {
+  margin-bottom: 40px;
+}
+
+.row {
+  display: flex;
+  gap: 20px;
+}
+
+.inputGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+}
+
+.inputGroup > label {
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #666666;
+}
+
+.readonlyBox {
+  min-height: 52px;
+  border: 1px solid #dedede;
+  border-radius: 10px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+.tabGroup {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.tabButton {
+  width: 100px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #1a237e;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.active {
+  background: #1a237e;
+  color: #ffffff;
+  border: none;
+}
+
+.listSection {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .pageHeader,
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerButtonGroup {
+    flex-wrap: wrap;
+  }
+}
