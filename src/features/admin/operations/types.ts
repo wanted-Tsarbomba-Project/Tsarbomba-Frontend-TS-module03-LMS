@@ -110,16 +110,21 @@ export interface AdminUserDetail {
 }
 
 export interface UserCourseProgressResponse {
+  enrollmentId?: number;
+  studentId?: number;
   courseId?: number;
+  instructorId?: number;
   courseTitle?: string | null;
-  averageLearningRate?: number | null;
-  updatedAt?: string | null;
+  courseDescription?: string | null;
+  courseThumbnailUrl?: string | null;
+  status?: string | null;
+  enrolledAt?: string | null;
 }
 
 export interface UserCourseRow {
+  enrollmentId?: number;
   courseId?: number;
   title?: string | null;
-  progress?: number | null;
   date?: string | null;
 }
 

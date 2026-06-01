@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+// CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
 import {
-  LoadingIndicator,
   OneButtonModal,
   WarningModal,
 } from "@/components/common";
@@ -29,45 +29,77 @@ import type {
   ProblemStatus,
   SubmissionResult,
 } from "../types";
+import ProblemChatPanel from "./ProblemChatPanel";
+import ProblemResultPanel from "./ProblemResultPanel";
 
 import styles from "./UserProblemDetailClient.module.css";
 
 interface UserProblemDetailClientProps {
   problemSetId: string;
+  initialProblemSet: ProblemSetDetail;
+  initialUserId: string;
 }
 
 const updateArrayItem = <T,>(items: T[], index: number, value: T) =>
   items.map((item, itemIndex) => (itemIndex === index ? value : item));
 
-const CHAT_INPUT_MAX_HEIGHT = 144;
+function getInitialProblemIndex(problemSet: ProblemSetDetail) {
+  return Math.max(
+    problemSet.problems.findIndex((problem) =>
+      problemSet.currentProblemId
+        ? problem.problemId === problemSet.currentProblemId
+        : problem.problemNumber === problemSet.currentProblemNumber,
+    ),
+    0,
+  );
+}
 
-function resizeChatInput(textarea: HTMLTextAreaElement | null) {
-  if (!textarea) {
-    return;
-  }
+function getInitialProblemState(problemSet: ProblemSetDetail) {
+  const initialIndex = getInitialProblemIndex(problemSet);
 
-  textarea.style.height = "auto";
-  const nextHeight = Math.min(textarea.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
-  textarea.style.height = `${nextHeight}px`;
-  textarea.style.overflowY =
-    textarea.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
+  return {
+    currentIndex: initialIndex,
+    problemStates: problemSet.problems.map(
+      (problem) => problem.status ?? "UNSOLVED",
+    ),
+    hintEnabled: problemSet.problems.map(
+      (problem) => problem.status === "WRONG" || problem.status === "CORRECT",
+    ),
+    solutionEnabled: problemSet.problems.map(
+      (problem) => problem.status === "CORRECT",
+    ),
+    hints: problemSet.problems.map(() => [] as ProblemHint[]),
+    userCodes: problemSet.problems.map((problem) => problem.startCode ?? ""),
+    code: problemSet.problems[initialIndex]?.startCode ?? "",
+  };
 }
 
 export default function UserProblemDetailClient({
   problemSetId,
+  initialProblemSet,
+  initialUserId,
 }: UserProblemDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const initialState = useMemo(
+    () => getInitialProblemState(initialProblemSet),
+    [initialProblemSet],
+  );
 
-  const [problemSet, setProblemSet] = useState<ProblemSetDetail | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [code, setCode] = useState("");
-  const [userCodes, setUserCodes] = useState<string[]>([]);
-  const [problemStates, setProblemStates] = useState<ProblemStatus[]>([]);
-  const [hintEnabled, setHintEnabled] = useState<boolean[]>([]);
-  const [solutionEnabled, setSolutionEnabled] = useState<boolean[]>([]);
-  const [hints, setHints] = useState<ProblemHint[][]>([]);
+  const [problemSet, setProblemSet] = useState<ProblemSetDetail>(initialProblemSet);
+  const [currentIndex, setCurrentIndex] = useState(initialState.currentIndex);
+  const [code, setCode] = useState(initialState.code);
+  const [userCodes, setUserCodes] = useState<string[]>(initialState.userCodes);
+  const [problemStates, setProblemStates] = useState<ProblemStatus[]>(
+    initialState.problemStates,
+  );
+  const [hintEnabled, setHintEnabled] = useState<boolean[]>(
+    initialState.hintEnabled,
+  );
+  const [solutionEnabled, setSolutionEnabled] = useState<boolean[]>(
+    initialState.solutionEnabled,
+  );
+  const [hints, setHints] = useState<ProblemHint[][]>(initialState.hints);
   const [activeTab, setActiveTab] = useState<ProblemResultTab>("result");
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
@@ -92,44 +124,33 @@ export default function UserProblemDetailClient({
     return searchParams.get("userId") ?? localStorage.getItem("userId") ?? "";
   }, [searchParams]);
 
-  const currentProblem = problemSet?.problems[currentIndex];
+  const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
-
-  useEffect(() => {
-    resizeChatInput(chatInputRef.current);
-  }, [chatInput]);
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchProblemSet = async () => {
       try {
+        if (!userId || userId === initialUserId) {
+          return;
+        }
+
         const data = await getProblemSetDetail(problemSetId, userId);
-        const initialIndex = Math.max(
-          data.problems.findIndex((problem) =>
-            data.currentProblemId
-              ? problem.problemId === data.currentProblemId
-              : problem.problemNumber === data.currentProblemNumber,
-          ),
-          0,
-        );
+        const nextState = getInitialProblemState(data);
 
         if (!isMounted) {
           return;
         }
 
         setProblemSet(data);
-        setCurrentIndex(initialIndex);
-        setProblemStates(data.problems.map((problem) => problem.status ?? "UNSOLVED"));
-        setHintEnabled(
-          data.problems.map(
-            (problem) => problem.status === "WRONG" || problem.status === "CORRECT",
-          ),
-        );
-        setSolutionEnabled(data.problems.map((problem) => problem.status === "CORRECT"));
-        setHints(data.problems.map(() => []));
-        setUserCodes(data.problems.map((problem) => problem.startCode ?? ""));
-        setCode(data.problems[initialIndex]?.startCode ?? "");
+        setCurrentIndex(nextState.currentIndex);
+        setProblemStates(nextState.problemStates);
+        setHintEnabled(nextState.hintEnabled);
+        setSolutionEnabled(nextState.solutionEnabled);
+        setHints(nextState.hints);
+        setUserCodes(nextState.userCodes);
+        setCode(nextState.code);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -149,7 +170,7 @@ export default function UserProblemDetailClient({
     return () => {
       isMounted = false;
     };
-  }, [problemSetId, router, userId]);
+  }, [initialUserId, problemSetId, router, userId]);
 
   const canMoveProblem = (index: number) => problemStates[index] !== "LOCKED";
 
@@ -313,7 +334,7 @@ export default function UserProblemDetailClient({
   };
 
   const sendChat = async () => {
-    if (!chatInput.trim() || chatSending || !problemSet?.id || !currentProblem?.problemId) {
+    if (!chatInput.trim() || chatSending || !problemSet.id || !currentProblem?.problemId) {
       return;
     }
 
@@ -350,14 +371,6 @@ export default function UserProblemDetailClient({
       setChatSending(false);
     }
   };
-
-  if (!problemSet || !currentProblem) {
-    return (
-      <main className={styles.container}>
-        <LoadingIndicator message="문제를 불러오는 중입니다." />
-      </main>
-    );
-  }
 
   return (
     <>
@@ -427,7 +440,7 @@ export default function UserProblemDetailClient({
                 </button>
               </div>
 
-              <BottomPanel
+              <ProblemResultPanel
                 activeTab={activeTab}
                 currentHints={currentHints}
                 currentProblemExplanation={currentProblem.explanation}
@@ -448,66 +461,15 @@ export default function UserProblemDetailClient({
             </section>
           </section>
 
-          <aside className={`${styles.chatPanel} ${chatOpen ? styles.open : ""}`}>
-            <div className={styles.chatHeader}>
-              <span>문제 풀이 챗봇</span>
-              <button
-                aria-label="새 대화"
-                onClick={() => {
-                  resetChat();
-                }}
-                type="button"
-              >
-                +
-              </button>
-            </div>
-
-            <div className={styles.chatMessages}>
-              {chatMessages.map((message, index) => (
-                <div
-                  className={`${styles.chatMessageWrap} ${
-                    message.role === "USER" ? styles.userMessageWrap : ""
-                  }`}
-                  key={`${message.role}-${index}`}
-                >
-                  <div
-                    className={`${styles.chatMessage} ${
-                      message.role === "USER" ? styles.userMessage : styles.assistantMessage
-                    } ${message.error ? styles.errorMessage : ""}`}
-                  >
-                    {message.content}
-                  </div>
-                </div>
-              ))}
-              {chatSending && (
-                <div className={styles.chatMessageWrap}>
-                  <div className={`${styles.chatMessage} ${styles.assistantMessage}`}>
-                    AI 답변 중입니다.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.chatInputWrap}>
-              <textarea
-                disabled={chatSending}
-                onChange={(event) => setChatInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    sendChat();
-                  }
-                }}
-                placeholder="질문 입력"
-                ref={chatInputRef}
-                rows={1}
-                value={chatInput}
-              />
-              <button disabled={chatSending || !chatInput.trim()} onClick={sendChat} type="button">
-                전송
-              </button>
-            </div>
-          </aside>
+          <ProblemChatPanel
+            chatInput={chatInput}
+            chatMessages={chatMessages}
+            chatOpen={chatOpen}
+            chatSending={chatSending}
+            onChatInputChange={setChatInput}
+            onResetChat={resetChat}
+            onSendChat={sendChat}
+          />
         </div>
       </main>
 
@@ -536,84 +498,6 @@ export default function UserProblemDetailClient({
         onClose={() => setWarningModalOpen(false)}
         onConfirm={() => router.push("/problems")}
       />
-    </>
-  );
-}
-
-function BottomPanel({
-  activeTab,
-  currentHints,
-  currentProblemExplanation,
-  executionResult,
-  submissionResult,
-}: {
-  activeTab: ProblemResultTab;
-  currentHints: ProblemHint[];
-  currentProblemExplanation?: string;
-  executionResult: ExecutionResult | null;
-  submissionResult: SubmissionResult | null;
-}) {
-  if (activeTab === "hint") {
-    return (
-      <div className={styles.bottomPanel}>
-        {currentHints.length
-          ? currentHints.map((hint) => <p key={hint.hintId}>{hint.hintContent}</p>)
-          : "힌트가 없습니다."}
-      </div>
-    );
-  }
-
-  if (activeTab === "solution") {
-    return (
-      <div className={styles.bottomPanel}>
-        {submissionResult?.explanation ?? currentProblemExplanation ?? "해설이 없습니다."}
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.bottomPanel}>
-      {submissionResult ? (
-        <>
-          <p>채점 결과: {submissionResult.isCorrect ? "정답" : "오답"}</p>
-          <p>
-            통과 테스트: {submissionResult.passedTestCount ?? 0}/
-            {submissionResult.totalTestCount ?? 0}
-          </p>
-          {submissionResult.executionStatus && (
-            <p>실행 상태: {submissionResult.executionStatus}</p>
-          )}
-          {submissionResult.errorMessage && (
-            <pre className={styles.executionError}>{submissionResult.errorMessage}</pre>
-          )}
-        </>
-      ) : executionResult ? (
-        <ExecutionResultView executionResult={executionResult} />
-      ) : (
-        "결과 영역"
-      )}
-    </div>
-  );
-}
-
-function ExecutionResultView({ executionResult }: { executionResult: ExecutionResult }) {
-  const output =
-    executionResult.output ??
-    executionResult.stdout ??
-    executionResult.result ??
-    executionResult.message;
-  const error = executionResult.errorMessage ?? executionResult.stderr;
-
-  return (
-    <>
-      {executionResult.executionStatus && <p>실행 상태: {executionResult.executionStatus}</p>}
-      {output && <pre className={styles.executionOutput}>{output}</pre>}
-      {error && <pre className={styles.executionError}>{error}</pre>}
-      {!executionResult.executionStatus && !output && !error && (
-        <pre className={styles.executionOutput}>
-          {JSON.stringify(executionResult, null, 2)}
-        </pre>
-      )}
     </>
   );
 }

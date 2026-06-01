@@ -166,28 +166,38 @@ export function createProblemUpdateRequestBody(
 export async function getProblemSets(
   categoryId?: string | null,
   revalidateSeconds?: number,
+  init: NextRequestInit = {},
 ) {
-  const categoryQuery = categoryId
-    ? `?categoryId=${encodeURIComponent(categoryId)}`
-    : "";
+  const path = categoryId
+    ? `/api/v1/problem-sets?categoryId=${encodeURIComponent(categoryId)}`
+    : "/api/v1/problem-sets";
 
   const result = await requestJson<ProblemSetSummary[]>(
-    `/api/v1/problem-sets${categoryQuery}`,
+    path,
     "문제 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : {},
+    {
+      ...init,
+      ...(revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : {}),
+    },
   );
 
   return result.data ?? [];
 }
 
-export async function getProblemCategories(revalidateSeconds?: number) {
+export async function getProblemCategories(
+  revalidateSeconds?: number,
+  init: NextRequestInit = {},
+) {
   const result = (await requestJson<ProblemCategory[]>(
     "/api/v1/problem-categories",
     "카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : {},
+    {
+      ...init,
+      ...(revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : {}),
+    },
   )) as ApiResponse<ProblemCategory[]> | ProblemCategory[];
 
-  const categories = Array.isArray(result) ? result : result.data ?? [];
+  const categories = Array.isArray(result) ? result : (result.data ?? []);
 
   return categories.map((category) => ({
     ...category,
@@ -251,6 +261,7 @@ export async function deleteProblem(problemSetId: string) {
 export async function getProblemSetDetail(
   problemSetId: string,
   userId: string,
+  init: NextRequestInit = {},
 ) {
   const params = new URLSearchParams();
 
@@ -262,6 +273,7 @@ export async function getProblemSetDetail(
   const result = await requestJson<unknown>(
     `/api/v1/problem-sets/${problemSetId}${query ? `?${query}` : ""}`,
     "문제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    init,
   );
 
   return normalizeProblemSetDetail(result);
@@ -425,7 +437,9 @@ function getProblemCategoryId(
   categoryName?: string,
   categories: ProblemCategory[] = [],
 ): ProblemCategoryId {
-  const category = categories.find((item) => item.categoryName === categoryName);
+  const category = categories.find(
+    (item) => item.categoryName === categoryName,
+  );
 
   return category?.categoryId ?? INITIAL_PROBLEM_INFO.categoryId;
 }
@@ -435,8 +449,8 @@ function getProblemCategoryName(
   categories: ProblemCategory[],
 ) {
   return (
-    categories.find((category) => category.categoryId === categoryId)?.categoryName ??
-    ""
+    categories.find((category) => category.categoryId === categoryId)
+      ?.categoryName ?? ""
   );
 }
 
