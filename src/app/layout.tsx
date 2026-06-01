@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useSyncExternalStore } from "react";
+import React, { Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
@@ -104,7 +104,9 @@ export default function RootLayout({
           <Header />
 
           {!isAdminPath && !isMypagePath && !isProblemPath && !isChatPath && (
-            <CategoryNav />
+            <Suspense fallback={null}>
+              <CategoryNav />
+            </Suspense>
           )}
 
           {isFlexBodySection ? (
