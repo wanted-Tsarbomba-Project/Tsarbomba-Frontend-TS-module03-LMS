@@ -91,7 +91,7 @@ export default function RootLayout({
         <body className="bg-white min-h-screen m-0 p-0 antialiased flex flex-col">
           <div className="flex flex-col min-h-screen w-full bg-white">
             <Header isSimple={true} />
-            <div className="flex flex-1 justify-center items-center w-full max-w-[1200px] mx-auto px-5 py-10 box-border">
+            <div className="flex flex-1 justify-center items-center w-full max-w-300 mx-auto px-5 py-10 box-border">
               {children}
             </div>
           </div>
@@ -110,13 +110,13 @@ export default function RootLayout({
           <Header />
 
           {!isAdminPath && !isMypagePath && !isProblemPath && !isChatPath && (
-            //<Suspense fallback={null}>
-            <CategoryNav />
-            //</Suspense>
+            <Suspense fallback={null}>
+              <CategoryNav />
+            </Suspense>
           )}
 
           {isFlexBodySection ? (
-            <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 max-[1024px]:px-5">
+            <div className="flex flex-1 w-full max-w-300 mx-auto relative box-border gap-5 max-[1024px]:px-5">
               {(isMypagePath ||
                 isChatPath ||
                 (isAdminPath && canAccessAdmin)) && <Sidebar isOpen={isOpen} />}
@@ -126,7 +126,7 @@ export default function RootLayout({
                   isChatPath ||
                   (isAdminPath && canAccessAdmin)) && (
                   <div
-                    className="fixed inset-0 bg-[#000000]/40 z-[998] lg:hidden"
+                    className="fixed inset-0 bg-[#000000]/40 z-998 lg:hidden"
                     onClick={() => setIsOpen(false)}
                   />
                 )}
@@ -137,7 +137,7 @@ export default function RootLayout({
             </div>
           ) : (
             <main
-              className={`flex-1 w-full max-w-[1200px] mx-auto box-border ${
+              className={`flex-1 w-full max-w-300 mx-auto box-border ${
                 isProblemPath ? "py-0" : "px-5 py-10"
               }`}
             >

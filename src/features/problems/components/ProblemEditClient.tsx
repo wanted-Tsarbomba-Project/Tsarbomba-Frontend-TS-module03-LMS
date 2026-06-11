@@ -25,8 +25,16 @@ import type {
   SubProblem,
 } from "../types";
 import RegisterForm from "./RegisterForm";
+const problemFormPageClasses = {
+  "container": "min-h-screen bg-bg-main p-[30px]",
+  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary",
+  "bottomButtonGroup": "flex justify-end gap-[15px]",
+  "submitButton": "min-w-[92px] cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[30px] py-3 text-[15px] font-semibold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
+  "cancelButton": "min-w-[92px] cursor-pointer rounded-base border border-border-light bg-bg-box px-[30px] py-3 text-[15px] font-semibold text-text-primary hover:not-disabled:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
+  "deleteButton": "min-w-[92px] cursor-pointer rounded-base border border-button-red-bg bg-bg-box px-[30px] py-3 text-[15px] font-semibold text-text-red hover:not-disabled:bg-button-red-bg hover:not-disabled:text-text-white disabled:cursor-not-allowed disabled:opacity-60"
+} as const;
 
-import styles from "./ProblemRegisterClient.module.css";
+
 
 interface ProblemEditClientProps {
   problemSetId: string;
@@ -40,6 +48,13 @@ type ModalState = {
   content: string;
 };
 
+const createInitialSubProblem = (): SubProblem => ({
+  ...INITIAL_SUB_PROBLEM,
+  testCases: INITIAL_SUB_PROBLEM.testCases.map((testCase) => ({ ...testCase })),
+});
+
+const createInitialTestCase = () => ({ ...INITIAL_SUB_PROBLEM.testCases[0] });
+
 export default function ProblemEditClient({
   problemSetId,
   initialCategories,
@@ -52,7 +67,7 @@ export default function ProblemEditClient({
     initialDetail.problemInfo,
   );
   const [problems, setProblems] = useState<SubProblem[]>(
-    initialDetail.problems,
+    initialDetail.problems.length ? initialDetail.problems : [createInitialSubProblem()],
   );
   const [file, setFile] = useState<ProblemDatasetFile | null>(
     initialDetail.file,
@@ -112,6 +127,92 @@ export default function ProblemEditClient({
     );
   };
 
+  const handleTestCaseChange = (
+    problemIndex: number,
+    testCaseIndex: number,
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target;
+
+    setProblems((prev) =>
+      prev.map((problem, currentProblemIndex) => {
+        if (currentProblemIndex !== problemIndex) {
+          return problem;
+        }
+
+        return {
+          ...problem,
+          testCases: problem.testCases.map((testCase, currentTestCaseIndex) => {
+            if (currentTestCaseIndex !== testCaseIndex) {
+              return testCase;
+            }
+
+            if (name === "isHidden") {
+              return {
+                ...testCase,
+                isHidden: (event.target as HTMLInputElement).checked,
+              };
+            }
+
+            if (name === "timeoutMs") {
+              const parsedValue = Number.parseInt(value, 10);
+
+              return {
+                ...testCase,
+                timeoutMs:
+                  Number.isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue,
+              };
+            }
+
+            return {
+              ...testCase,
+              [name]: value,
+            };
+          }),
+        };
+      }),
+    );
+  };
+
+  const handleAddProblem = () => {
+    setProblems((prev) => [...prev, createInitialSubProblem()]);
+  };
+
+  const handleRemoveProblem = (index: number) => {
+    setProblems((prev) =>
+      prev.length === 1 ? prev : prev.filter((_, problemIndex) => problemIndex !== index),
+    );
+  };
+
+  const handleAddTestCase = (problemIndex: number) => {
+    setProblems((prev) =>
+      prev.map((problem, currentProblemIndex) =>
+        currentProblemIndex === problemIndex
+          ? {
+              ...problem,
+              testCases: [...problem.testCases, createInitialTestCase()],
+            }
+          : problem,
+      ),
+    );
+  };
+
+  const handleRemoveTestCase = (problemIndex: number, testCaseIndex: number) => {
+    setProblems((prev) =>
+      prev.map((problem, currentProblemIndex) =>
+        currentProblemIndex === problemIndex
+          ? {
+              ...problem,
+              testCases:
+                problem.testCases.length === 1
+                  ? problem.testCases
+                  : problem.testCases.filter((_, index) => index !== testCaseIndex),
+            }
+          : problem,
+      ),
+    );
+  };
+
   const validateForm = () => {
     if (!problemInfo.title.trim()) {
       return "문제명을 입력해 주세요.";
@@ -141,16 +242,25 @@ export default function ProblemEditClient({
         return `${label}의 문제 내용을 입력해 주세요.`;
       }
 
-      if (!problem.answer.trim()) {
-        return `${label}의 문제 정답을 입력해 주세요.`;
-      }
-
       if (!problem.hint.trim()) {
-        return `${label}의 문제 힌트를 입력해 주세요.`;
+        return `${label}의 힌트를 입력해 주세요.`;
       }
 
       if (!problem.solution.trim()) {
-        return `${label}의 문제 해설을 입력해 주세요.`;
+        return `${label}의 해설을 입력해 주세요.`;
+      }
+
+      for (let testCaseIndex = 0; testCaseIndex < problem.testCases.length; testCaseIndex += 1) {
+        const testCase = problem.testCases[testCaseIndex];
+        const testCaseLabel = `${label} 테스트 ${testCaseIndex + 1}`;
+
+        if (!testCase.testCode.trim()) {
+          return `${testCaseLabel}의 테스트 코드를 입력해 주세요.`;
+        }
+
+        if (!testCase.timeoutMs || testCase.timeoutMs < 1) {
+          return `${testCaseLabel}의 제한 시간을 입력해 주세요.`;
+        }
       }
     }
 
@@ -247,31 +357,28 @@ export default function ProblemEditClient({
   };
 
   return (
-    <main className={styles.container}>
-      <h2 className={styles.pageTitle}>문제 수정</h2>
+    <main className={problemFormPageClasses.container}>
+      <h2 className={problemFormPageClasses.pageTitle}>문제 수정</h2>
 
       <RegisterForm
         categories={categories}
         file={file}
-        onAddProblem={() => setProblems((prev) => [...prev, { ...INITIAL_SUB_PROBLEM }])}
+        onAddProblem={handleAddProblem}
+        onAddTestCase={handleAddTestCase}
         onFileChange={setFile}
         onProblemChange={handleProblemChange}
         onProblemInfoChange={handleProblemInfoChange}
         onRemoveFile={() => setFile(null)}
-        onRemoveProblem={(index) =>
-          setProblems((prev) =>
-            prev.length === 1
-              ? prev
-              : prev.filter((_, problemIndex) => problemIndex !== index),
-          )
-        }
+        onRemoveProblem={handleRemoveProblem}
+        onRemoveTestCase={handleRemoveTestCase}
+        onTestCaseChange={handleTestCaseChange}
         problemInfo={problemInfo}
         problems={problems}
       />
 
-      <div className={styles.bottomButtonGroup}>
+      <div className={problemFormPageClasses.bottomButtonGroup}>
         <button
-          className={styles.deleteButton}
+          className={problemFormPageClasses.deleteButton}
           disabled={isSubmitting}
           onClick={() => setOpenDeleteModal(true)}
           type="button"
@@ -279,7 +386,7 @@ export default function ProblemEditClient({
           삭제
         </button>
         <button
-          className={styles.submitButton}
+          className={problemFormPageClasses.submitButton}
           disabled={isSubmitting}
           onClick={handleOpenSubmitModal}
           type="button"
@@ -287,7 +394,7 @@ export default function ProblemEditClient({
           수정
         </button>
         <button
-          className={styles.cancelButton}
+          className={problemFormPageClasses.cancelButton}
           disabled={isSubmitting}
           onClick={() => setOpenCancelModal(true)}
           type="button"

@@ -19,12 +19,27 @@ import {
 } from "../actions";
 import type { ProblemCategory, ProblemInfo, SubProblem } from "../types";
 import RegisterForm from "./RegisterForm";
+const problemFormPageClasses = {
+  "container": "min-h-screen bg-bg-main p-[30px]",
+  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary",
+  "bottomButtonGroup": "flex justify-end gap-[15px]",
+  "submitButton": "min-w-[92px] cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[30px] py-3 text-[15px] font-semibold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
+  "cancelButton": "min-w-[92px] cursor-pointer rounded-base border border-border-light bg-bg-box px-[30px] py-3 text-[15px] font-semibold text-text-primary hover:not-disabled:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
+  "deleteButton": "min-w-[92px] cursor-pointer rounded-base border border-button-red-bg bg-bg-box px-[30px] py-3 text-[15px] font-semibold text-text-red hover:not-disabled:bg-button-red-bg hover:not-disabled:text-text-white disabled:cursor-not-allowed disabled:opacity-60"
+} as const;
 
-import styles from "./ProblemRegisterClient.module.css";
+
 
 interface ProblemRegisterClientProps {
   initialCategories: ProblemCategory[];
 }
+
+const createInitialSubProblem = (): SubProblem => ({
+  ...INITIAL_SUB_PROBLEM,
+  testCases: INITIAL_SUB_PROBLEM.testCases.map((testCase) => ({ ...testCase })),
+});
+
+const createInitialTestCase = () => ({ ...INITIAL_SUB_PROBLEM.testCases[0] });
 
 export default function ProblemRegisterClient({
   initialCategories,
@@ -37,7 +52,7 @@ export default function ProblemRegisterClient({
     categoryId: initialCategories[0]?.categoryId ?? "",
   });
   const [problems, setProblems] = useState<SubProblem[]>([
-    { ...INITIAL_SUB_PROBLEM },
+    createInitialSubProblem(),
   ]);
   const [file, setFile] = useState<File | null>(null);
   const categories = initialCategories;
@@ -89,8 +104,55 @@ export default function ProblemRegisterClient({
     );
   };
 
+  const handleTestCaseChange = (
+    problemIndex: number,
+    testCaseIndex: number,
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target;
+
+    setProblems((prev) =>
+      prev.map((problem, currentProblemIndex) => {
+        if (currentProblemIndex !== problemIndex) {
+          return problem;
+        }
+
+        return {
+          ...problem,
+          testCases: problem.testCases.map((testCase, currentTestCaseIndex) => {
+            if (currentTestCaseIndex !== testCaseIndex) {
+              return testCase;
+            }
+
+            if (name === "isHidden") {
+              return {
+                ...testCase,
+                isHidden: (event.target as HTMLInputElement).checked,
+              };
+            }
+
+            if (name === "timeoutMs") {
+              const parsedValue = Number.parseInt(value, 10);
+
+              return {
+                ...testCase,
+                timeoutMs:
+                  Number.isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue,
+              };
+            }
+
+            return {
+              ...testCase,
+              [name]: value,
+            };
+          }),
+        };
+      }),
+    );
+  };
+
   const handleAddProblem = () => {
-    setProblems((prev) => [...prev, { ...INITIAL_SUB_PROBLEM }]);
+    setProblems((prev) => [...prev, createInitialSubProblem()]);
   };
 
   const handleRemoveProblem = (index: number) => {
@@ -99,12 +161,41 @@ export default function ProblemRegisterClient({
     );
   };
 
+  const handleAddTestCase = (problemIndex: number) => {
+    setProblems((prev) =>
+      prev.map((problem, currentProblemIndex) =>
+        currentProblemIndex === problemIndex
+          ? {
+              ...problem,
+              testCases: [...problem.testCases, createInitialTestCase()],
+            }
+          : problem,
+      ),
+    );
+  };
+
+  const handleRemoveTestCase = (problemIndex: number, testCaseIndex: number) => {
+    setProblems((prev) =>
+      prev.map((problem, currentProblemIndex) =>
+        currentProblemIndex === problemIndex
+          ? {
+              ...problem,
+              testCases:
+                problem.testCases.length === 1
+                  ? problem.testCases
+                  : problem.testCases.filter((_, index) => index !== testCaseIndex),
+            }
+          : problem,
+      ),
+    );
+  };
+
   const resetForm = () => {
     setProblemInfo({
       ...INITIAL_PROBLEM_INFO,
       categoryId: initialCategories[0]?.categoryId ?? "",
     });
-    setProblems([{ ...INITIAL_SUB_PROBLEM }]);
+    setProblems([createInitialSubProblem()]);
     setFile(null);
   };
 
@@ -142,16 +233,25 @@ export default function ProblemRegisterClient({
         return `${label}의 문제 내용을 입력해 주세요.`;
       }
 
-      if (!problem.answer.trim()) {
-        return `${label}의 문제 정답을 입력해 주세요.`;
-      }
-
       if (!problem.hint.trim()) {
-        return `${label}의 문제 힌트를 입력해 주세요.`;
+        return `${label}의 힌트를 입력해 주세요.`;
       }
 
       if (!problem.solution.trim()) {
-        return `${label}의 문제 해설을 입력해 주세요.`;
+        return `${label}의 해설을 입력해 주세요.`;
+      }
+
+      for (let testCaseIndex = 0; testCaseIndex < problem.testCases.length; testCaseIndex += 1) {
+        const testCase = problem.testCases[testCaseIndex];
+        const testCaseLabel = `${label} 테스트 ${testCaseIndex + 1}`;
+
+        if (!testCase.testCode.trim()) {
+          return `${testCaseLabel}의 테스트 코드를 입력해 주세요.`;
+        }
+
+        if (!testCase.timeoutMs || testCase.timeoutMs < 1) {
+          return `${testCaseLabel}의 제한 시간을 입력해 주세요.`;
+        }
       }
     }
 
@@ -212,25 +312,28 @@ export default function ProblemRegisterClient({
   };
 
   return (
-    <main className={styles.container}>
-      <h2 className={styles.pageTitle}>문제 등록</h2>
+    <main className={problemFormPageClasses.container}>
+      <h2 className={problemFormPageClasses.pageTitle}>문제 등록</h2>
 
       <RegisterForm
         categories={categories}
         file={file}
         onAddProblem={handleAddProblem}
+        onAddTestCase={handleAddTestCase}
         onFileChange={setFile}
         onProblemChange={handleProblemChange}
         onProblemInfoChange={handleProblemInfoChange}
         onRemoveFile={() => setFile(null)}
         onRemoveProblem={handleRemoveProblem}
+        onRemoveTestCase={handleRemoveTestCase}
+        onTestCaseChange={handleTestCaseChange}
         problemInfo={problemInfo}
         problems={problems}
       />
 
-      <div className={styles.bottomButtonGroup}>
+      <div className={problemFormPageClasses.bottomButtonGroup}>
         <button
-          className={styles.submitButton}
+          className={problemFormPageClasses.submitButton}
           disabled={isSubmitting}
           onClick={handleOpenSubmitModal}
           type="button"
@@ -238,7 +341,7 @@ export default function ProblemRegisterClient({
           등록
         </button>
         <button
-          className={styles.cancelButton}
+          className={problemFormPageClasses.cancelButton}
           disabled={isSubmitting}
           onClick={() => setOpenCancelModal(true)}
           type="button"

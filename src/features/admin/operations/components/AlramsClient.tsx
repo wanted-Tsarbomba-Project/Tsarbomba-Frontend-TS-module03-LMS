@@ -14,7 +14,15 @@ import { handleClientError } from "@/lib/errorHandling";
 import { getOperationAlerts } from "../api";
 import type { AlertStatus, OperationAlertSummary, TargetType } from "../types";
 
-import styles from "@/app/admin/alrams/page.module.css";
+const alramListClasses = {
+  "container": "box-border p-6 text-text-primary",
+  "header": "mb-5 flex items-center justify-between gap-4 [&_h1]:m-0 [&_h1]:text-2xl [&_h1]:font-bold",
+  "statusSelect": "h-9 w-[120px] rounded-base border border-button-blue-bg bg-bg-box px-2.5 text-description text-text-primary",
+  "typeButtonGroup": "mb-5 flex gap-2.5",
+  "typeButton": "h-9 w-[88px] cursor-pointer rounded-base border border-button-blue-bg bg-bg-box text-center text-body font-medium leading-6 text-text-primary",
+  "active": "border-0 bg-button-blue-bg text-text-white"
+} as const;
+
 
 const statusLabel: Record<AlertStatus, string> = {
   OPEN: "미처리",
@@ -83,12 +91,12 @@ export default function AlramsClient() {
 
   return (
     <>
-      <div className={styles.container}>
-        <div className={styles.header}>
+      <div className={alramListClasses.container}>
+        <div className={alramListClasses.header}>
           <h1>알람 관리</h1>
 
           <select
-            className={styles.statusSelect}
+            className={alramListClasses.statusSelect}
             onChange={handleStatusChange}
             value={status}
           >
@@ -99,11 +107,11 @@ export default function AlramsClient() {
           </select>
         </div>
 
-        <div className={styles.typeButtonGroup}>
+        <div className={alramListClasses.typeButtonGroup}>
           {targetTabs.map((tab) => (
             <button
-              className={`${styles.typeButton} ${
-                type === tab.value ? styles.active : ""
+              className={`${alramListClasses.typeButton} ${
+                type === tab.value ? alramListClasses.active : ""
               }`}
               key={tab.value}
               onClick={() => setType(tab.value)}
