@@ -107,6 +107,16 @@ export async function sendChatMessage(roomId: string, userMessage: string) {
   return result.data;
 }
 
+export async function deleteChatRoom(roomId: string) {
+  return requestJson<unknown>(
+    `/api/v1/chat/${roomId}`,
+    "채팅방을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "DELETE",
+    },
+  );
+}
+
 function createApiError(
   response: Response,
   text: string,

@@ -550,6 +550,7 @@ async function updateProblemWithFormData(
   requestBody: UpdateProblemRequest,
   file: File | null,
 ) {
+  const path = `/api/v1/problems/${problemSetId}/with-dataset`;
   const formData = new FormData();
 
   formData.append(
@@ -564,7 +565,7 @@ async function updateProblemWithFormData(
   }
 
   return requestJson<unknown>(
-    `/api/v1/problems/${problemSetId}`,
+    path,
     "문제를 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     {
       method: "PUT",
