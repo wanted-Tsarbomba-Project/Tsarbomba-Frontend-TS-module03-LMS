@@ -38,12 +38,12 @@ const statusLabel: Record<AlertStatus, string> = {
 const targetTabs: Array<{ label: string; value: TargetType }> = [
   { label: "문제", value: "PROBLEM" },
   { label: "회원", value: "USER" },
-  { label: "강의", value: "COURSE" },
+  { label: "강좌", value: "COURSE" },
 ];
 
 const alertColumns: ListColumn<OperationAlertSummary>[] = [
   { key: "index", label: "No." },
-  { key: "recommendedAction", label: "알림 내용" },
+  { key: "recommendedAction", label: "알람 내용" },
   {
     key: "status",
     label: "처리상태",
@@ -74,10 +74,10 @@ export default function AlramsClient() {
         setAlerts(result.data.content);
         setTotalPages(result.data.totalPages ?? 1);
       } catch (error) {
-        console.error("알림 목록 조회 실패:", error);
+        console.error("알람 목록 조회 실패:", error);
         handleClientError(error, {
           router,
-          fallbackTitle: "알림을 불러오지 못했습니다.",
+          fallbackTitle: "알람을 불러오지 못했습니다.",
           fallbackMessage: "잠시 후 다시 시도해 주세요.",
           showModal: (title, content) =>
             setNoticeModal({
@@ -108,7 +108,7 @@ export default function AlramsClient() {
     <>
       <div className={alramListClasses.container}>
         <div className={alramListClasses.header}>
-          <h1>알림 관리</h1>
+          <h1>알람 관리</h1>
 
           <select
             className={alramListClasses.statusSelect}
@@ -138,12 +138,12 @@ export default function AlramsClient() {
         </div>
 
         {loading ? (
-          <LoadingIndicator message="알림 목록을 불러오는 중입니다." />
+          <LoadingIndicator message="알람 목록을 불러오는 중입니다." />
         ) : (
           <List
             columns={alertColumns}
             data={alerts}
-            emptyMessage="조회된 알림이 없습니다."
+            emptyMessage="조회된 알람이 없습니다."
             onRowClick={(alert) =>
               router.push(`/admin/alrams/${alert.operationAlertId}`)
             }
@@ -164,7 +164,9 @@ export default function AlramsClient() {
         isOpen={noticeModal.isOpen}
         modalContent={noticeModal.content}
         modalTitle={noticeModal.title}
-        onClose={() => setNoticeModal({ isOpen: false, title: "", content: "" })}
+        onClose={() =>
+          setNoticeModal({ isOpen: false, title: "", content: "" })
+        }
       />
     </>
   );
