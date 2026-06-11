@@ -1,7 +1,5 @@
 import type { Key, ReactNode } from "react";
 
-import styles from "./List.module.css";
-
 type ListItem = object & {
   id?: Key;
 };
@@ -22,6 +20,16 @@ interface ListProps<T extends ListItem> {
   emptyMessage?: ReactNode;
 }
 
+const listClasses = {
+  container: "w-full",
+  scrollArea:
+    "max-h-[min(520px,calc(100vh-260px))] overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+  table:
+    "w-full table-fixed border-collapse [&_td]:overflow-hidden [&_td]:text-ellipsis [&_td]:whitespace-nowrap [&_th]:overflow-hidden [&_th]:text-ellipsis [&_th]:whitespace-nowrap [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-[1] [&_thead_th]:h-[50px] [&_thead_th]:border-y [&_thead_th]:border-border-light [&_thead_th]:bg-bg-navbar [&_thead_th]:text-center [&_thead_th]:align-middle [&_thead_th]:font-semibold [&_tbody_td]:h-[50px] [&_tbody_td]:border-b [&_tbody_td]:border-border-light [&_tbody_td]:p-0 [&_tbody_td]:text-center [&_tbody_td]:align-middle [&_tbody_tr:hover_td]:cursor-pointer [&_tbody_tr:hover_td]:bg-[#f0f0f0]",
+  cellContent: "box-border whitespace-normal break-words p-2",
+  pagination: "mt-4 flex justify-center",
+};
+
 export default function List<T extends ListItem>({
   data,
   columns,
@@ -32,7 +40,7 @@ export default function List<T extends ListItem>({
   emptyMessage = "조회된 데이터가 없습니다.",
 }: ListProps<T>) {
   const table = (
-    <table className={styles.table}>
+    <table className={listClasses.table}>
       <thead>
         <tr>
           {columns.map((column) => (
@@ -50,7 +58,7 @@ export default function List<T extends ListItem>({
             >
               {columns.map((column) => (
                 <td key={String(column.key)}>
-                  <div className={styles.cellContent}>
+                  <div className={listClasses.cellContent}>
                     {getCellContent(item, column, index)}
                   </div>
                 </td>
@@ -60,7 +68,7 @@ export default function List<T extends ListItem>({
         ) : (
           <tr>
             <td colSpan={columns.length}>
-              <div className={styles.cellContent}>{emptyMessage}</div>
+              <div className={listClasses.cellContent}>{emptyMessage}</div>
             </td>
           </tr>
         )}
@@ -69,10 +77,10 @@ export default function List<T extends ListItem>({
   );
 
   return (
-    <div className={styles.container}>
-      {scrollable ? <div className={styles.scrollArea}>{table}</div> : table}
+    <div className={listClasses.container}>
+      {scrollable ? <div className={listClasses.scrollArea}>{table}</div> : table}
 
-      {pagination && <div className={styles.pagination}>{pagination}</div>}
+      {pagination && <div className={listClasses.pagination}>{pagination}</div>}
     </div>
   );
 }

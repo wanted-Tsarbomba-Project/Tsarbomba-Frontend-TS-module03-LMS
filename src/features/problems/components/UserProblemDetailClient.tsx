@@ -16,6 +16,7 @@ import {
   createProblemChatMessage,
   getProblemHints,
   getProblemSetDetail,
+  getProblemSetResult,
   runProblem,
   sendProblemChatMessage,
   submitProblem,
@@ -26,17 +27,48 @@ import type {
   ProblemHint,
   ProblemResultTab,
   ProblemSetDetail,
+  ProblemSetResult,
   ProblemStatus,
   SubmissionResult,
 } from "../types";
 import ProblemChatPanel from "./ProblemChatPanel";
 import ProblemResultPanel from "./ProblemResultPanel";
 
-import styles from "./UserProblemDetailClient.module.css";
+const problemDetailClasses = {
+  "container": "min-h-[80vh] w-full bg-bg-main",
+  "mainArea": "relative flex min-h-[calc(80vh-80px)] gap-4 overflow-hidden py-3.5 max-lg:flex-col",
+  "contentArea": "flex min-w-0 flex-1 gap-4 max-lg:flex-col",
+  "problemBox": "min-w-0 flex-1 rounded-base border border-border-light bg-bg-box p-4 [&_h2]:mt-0 [&_h2]:mb-2.5 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary",
+  "solveBox": "min-w-0 flex-1 rounded-base border border-border-light bg-bg-box p-4 [&_h2]:mt-0 [&_h2]:mb-2.5 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary",
+  "problemContent": "whitespace-pre-wrap text-body leading-normal text-text-primary",
+  "editorSection": "relative",
+  "codeEditor": "min-h-[220px] w-full resize-y rounded-base border border-border-light p-3 font-mono text-body text-text-primary",
+  "hintToast": "absolute left-1/2 top-[42px] z-10 -translate-x-1/2 whitespace-nowrap rounded-base bg-button-blue-bg px-[18px] py-3 text-body font-semibold text-text-white",
+  "tabs": "mt-3 mb-2 flex gap-2 [&_button]:min-w-24 [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-3.5 [&_button]:py-[9px] [&_button]:text-[15px] [&_button]:text-text-primary [&_button:disabled]:cursor-not-allowed [&_button:disabled]:bg-bg-navbar [&_button:disabled]:text-[#9ca3af]",
+  "activeTab": "bg-bg-navbar! text-text-blue!",
+  "bottomPanel": "min-h-[140px] w-full overflow-y-auto rounded-base border border-border-light p-3 text-body text-text-primary",
+  "executionOutput": "m-0 whitespace-pre-wrap break-words font-mono",
+  "executionError": "m-0 whitespace-pre-wrap break-words font-mono text-text-red",
+  "submitWrap": "mt-3 flex justify-end",
+  "submitButton": "h-11 min-w-[120px] cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg text-body font-semibold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
+  "chatPanel": "pointer-events-none absolute right-0 top-3.5 z-20 flex h-[calc(100%-28px)] min-h-[560px] w-[min(420px,calc(100%-32px))] translate-x-6 flex-col rounded-base border border-border-light bg-bg-box opacity-0 shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition-[opacity,transform] duration-200 ease-in-out max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-[74px] max-md:h-auto max-md:min-h-0 max-md:w-auto",
+  "open": "pointer-events-auto translate-x-0 opacity-100",
+  "chatHeader": "flex min-h-[58px] items-center justify-between border-b border-border-light px-5 text-title-md font-bold text-text-primary [&_button]:inline-flex [&_button]:h-[34px] [&_button]:w-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:rounded-base [&_button]:border [&_button]:border-text-primary [&_button]:bg-bg-box [&_button]:p-0 [&_button]:text-2xl [&_button]:leading-none [&_button]:text-text-primary",
+  "chatMessages": "flex-1 overflow-y-auto p-[18px]",
+  "chatMessageWrap": "mb-2.5 flex justify-start",
+  "userMessageWrap": "justify-end",
+  "chatMessage": "max-w-[86%] whitespace-pre-wrap break-words rounded-base px-3 py-2.5 leading-[1.6] text-text-primary",
+  "assistantMessage": "bg-[#bfd3ef]",
+  "userMessage": "border border-border-light bg-bg-box",
+  "errorMessage": "text-text-red",
+  "chatInputWrap": "flex items-end gap-2 border-t border-border-light p-3.5 [&_textarea]:box-border [&_textarea]:max-h-36 [&_textarea]:min-h-11 [&_textarea]:flex-1 [&_textarea]:resize-none [&_textarea]:overflow-y-hidden [&_textarea]:rounded-base [&_textarea]:border [&_textarea]:border-border-light [&_textarea]:p-2.5 [&_textarea]:leading-normal [&_textarea]:text-text-primary [&_textarea]:outline-none [&_button]:h-11 [&_button]:min-w-[72px] [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-button-blue-bg [&_button]:bg-button-blue-bg [&_button]:text-text-white [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-60"
+} as const;
+
 
 interface UserProblemDetailClientProps {
   problemSetId: string;
   initialProblemSet: ProblemSetDetail;
+  initialProblemSetResult: ProblemSetResult | null;
   initialUserId: string;
 }
 
@@ -54,36 +86,79 @@ function getInitialProblemIndex(problemSet: ProblemSetDetail) {
   );
 }
 
-function getInitialProblemState(problemSet: ProblemSetDetail) {
+function getCorrectSubmissionMap(problemSetResult: ProblemSetResult | null) {
+  return new Map(
+    (problemSetResult?.submissions ?? [])
+      .filter((submission) => submission.isCorrect)
+      .map((submission) => [submission.problemId, submission]),
+  );
+}
+
+function getInitialProblemState(
+  problemSet: ProblemSetDetail,
+  problemSetResult: ProblemSetResult | null,
+) {
   const initialIndex = getInitialProblemIndex(problemSet);
+  const correctSubmissionMap = getCorrectSubmissionMap(problemSetResult);
+  const submissionResults = problemSet.problems.map((problem) => {
+    const submission = correctSubmissionMap.get(problem.problemId);
+
+    if (!submission) {
+      return null;
+    }
+
+    return {
+      isCorrect: submission.isCorrect,
+      explanation: submission.explanation ?? problem.explanation,
+      submittedAt: submission.submittedAt,
+    } satisfies SubmissionResult;
+  });
 
   return {
     currentIndex: initialIndex,
-    problemStates: problemSet.problems.map(
-      (problem) => problem.status ?? "UNSOLVED",
+    problemStates: problemSet.problems.map((problem) =>
+      correctSubmissionMap.has(problem.problemId)
+        ? "CORRECT"
+        : (problem.status ?? "UNSOLVED"),
     ),
     hintEnabled: problemSet.problems.map(
-      (problem) => problem.status === "WRONG" || problem.status === "CORRECT",
+      (problem) =>
+        correctSubmissionMap.has(problem.problemId) ||
+        problem.status === "WRONG" ||
+        problem.status === "CORRECT",
     ),
     solutionEnabled: problemSet.problems.map(
-      (problem) => problem.status === "CORRECT",
+      (problem) =>
+        correctSubmissionMap.has(problem.problemId) ||
+        problem.status === "CORRECT",
     ),
     hints: problemSet.problems.map(() => [] as ProblemHint[]),
-    userCodes: problemSet.problems.map((problem) => problem.startCode ?? ""),
-    code: problemSet.problems[initialIndex]?.startCode ?? "",
+    userCodes: problemSet.problems.map(
+      (problem) =>
+        correctSubmissionMap.get(problem.problemId)?.submittedAnswer ??
+        problem.startCode ??
+        "",
+    ),
+    submissionResults,
+    code:
+      correctSubmissionMap.get(problemSet.problems[initialIndex]?.problemId)
+        ?.submittedAnswer ??
+      problemSet.problems[initialIndex]?.startCode ??
+      "",
   };
 }
 
 export default function UserProblemDetailClient({
   problemSetId,
   initialProblemSet,
+  initialProblemSetResult,
   initialUserId,
 }: UserProblemDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialState = useMemo(
-    () => getInitialProblemState(initialProblemSet),
-    [initialProblemSet],
+    () => getInitialProblemState(initialProblemSet, initialProblemSetResult),
+    [initialProblemSet, initialProblemSetResult],
   );
 
   const [problemSet, setProblemSet] = useState<ProblemSetDetail>(initialProblemSet);
@@ -102,7 +177,13 @@ export default function UserProblemDetailClient({
   const [hints, setHints] = useState<ProblemHint[][]>(initialState.hints);
   const [activeTab, setActiveTab] = useState<ProblemResultTab>("result");
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
-  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [submissionResults, setSubmissionResults] = useState<
+    Array<SubmissionResult | null>
+  >(initialState.submissionResults);
+  const [submissionResult, setSubmissionResult] =
+    useState<SubmissionResult | null>(
+      initialState.submissionResults[initialState.currentIndex],
+    );
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHintToast, setShowHintToast] = useState(false);
@@ -136,8 +217,11 @@ export default function UserProblemDetailClient({
           return;
         }
 
-        const data = await getProblemSetDetail(problemSetId, userId);
-        const nextState = getInitialProblemState(data);
+        const [data, result] = await Promise.all([
+          getProblemSetDetail(problemSetId, userId),
+          getProblemSetResult(problemSetId).catch(() => null),
+        ]);
+        const nextState = getInitialProblemState(data, result);
 
         if (!isMounted) {
           return;
@@ -150,6 +234,8 @@ export default function UserProblemDetailClient({
         setSolutionEnabled(nextState.solutionEnabled);
         setHints(nextState.hints);
         setUserCodes(nextState.userCodes);
+        setSubmissionResults(nextState.submissionResults);
+        setSubmissionResult(nextState.submissionResults[nextState.currentIndex]);
         setCode(nextState.code);
       } catch (error) {
         if (!isMounted) {
@@ -209,7 +295,7 @@ export default function UserProblemDetailClient({
     setCode(nextCodes[index] ?? "");
     setActiveTab("result");
     setExecutionResult(null);
-    setSubmissionResult(null);
+    setSubmissionResult(submissionResults[index] ?? null);
     resetChat();
   };
 
@@ -280,6 +366,7 @@ export default function UserProblemDetailClient({
 
       setExecutionResult(null);
       setSubmissionResult(result);
+      setSubmissionResults((prev) => updateArrayItem(prev, currentIndex, result));
       setActiveTab("result");
 
       if (result.isCorrect) {
@@ -374,7 +461,7 @@ export default function UserProblemDetailClient({
 
   return (
     <>
-      <main className={styles.container}>
+      <main className={problemDetailClasses.container}>
         <CategoryNav
           isProblemChatOpen={chatOpen}
           isRunning={isRunning}
@@ -384,7 +471,7 @@ export default function UserProblemDetailClient({
           variant="problem-detail"
         />
 
-        <div className={styles.mainArea}>
+        <div className={problemDetailClasses.mainArea}>
           <Sidebar
             canMoveProblem={canMoveProblem}
             currentIndex={currentIndex}
@@ -395,35 +482,35 @@ export default function UserProblemDetailClient({
             variant="problem-detail"
           />
 
-          <section className={styles.contentArea}>
-            <article className={styles.problemBox}>
+          <section className={problemDetailClasses.contentArea}>
+            <article className={problemDetailClasses.problemBox}>
               <h2>문제 내용</h2>
-              <div className={styles.problemContent}>{currentProblem.content}</div>
+              <div className={problemDetailClasses.problemContent}>{currentProblem.content}</div>
             </article>
 
-            <section className={styles.solveBox}>
-              <div className={styles.editorSection}>
+            <section className={problemDetailClasses.solveBox}>
+              <div className={problemDetailClasses.editorSection}>
                 <h2>문제풀이 영역</h2>
                 {showHintToast && (
-                  <div className={styles.hintToast}>힌트를 확인할 수 있습니다.</div>
+                  <div className={problemDetailClasses.hintToast}>힌트를 확인할 수 있습니다.</div>
                 )}
                 <textarea
-                  className={styles.codeEditor}
+                  className={problemDetailClasses.codeEditor}
                   onChange={(event) => handleCodeChange(event.target.value)}
                   value={code}
                 />
               </div>
 
-              <div className={styles.tabs}>
+              <div className={problemDetailClasses.tabs}>
                 <button
-                  className={activeTab === "result" ? styles.activeTab : ""}
+                  className={activeTab === "result" ? problemDetailClasses.activeTab : ""}
                   onClick={() => setActiveTab("result")}
                   type="button"
                 >
                   실행결과
                 </button>
                 <button
-                  className={activeTab === "hint" ? styles.activeTab : ""}
+                  className={activeTab === "hint" ? problemDetailClasses.activeTab : ""}
                   disabled={!hintEnabled[currentIndex]}
                   onClick={() => setActiveTab("hint")}
                   type="button"
@@ -431,7 +518,7 @@ export default function UserProblemDetailClient({
                   힌트
                 </button>
                 <button
-                  className={activeTab === "solution" ? styles.activeTab : ""}
+                  className={activeTab === "solution" ? problemDetailClasses.activeTab : ""}
                   disabled={!solutionEnabled[currentIndex]}
                   onClick={() => setActiveTab("solution")}
                   type="button"
@@ -448,9 +535,9 @@ export default function UserProblemDetailClient({
                 submissionResult={submissionResult}
               />
 
-              <div className={styles.submitWrap}>
+              <div className={problemDetailClasses.submitWrap}>
                 <button
-                  className={styles.submitButton}
+                  className={problemDetailClasses.submitButton}
                   disabled={isSubmitting}
                   onClick={handleSubmit}
                   type="button"

@@ -30,8 +30,8 @@ export default function ProblemsLayoutShell({
   }
 
   return (
-    <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 max-[1024px]:px-5">
-      <aside className="w-[240px] shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300">
+    <div className="flex flex-1 w-full max-w-300 mx-auto relative box-border gap-5 max-[1024px]:px-5">
+      <aside className="w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300">
         <div className="w-full flex flex-col gap-5">
           <div className="flex flex-col items-start px-2 py-1">
             <span className="text-lg font-bold text-[#1f2937]">카테고리</span>
@@ -41,7 +41,9 @@ export default function ProblemsLayoutShell({
           <ul className="flex flex-col gap-1">
             <li>
               <button
-                className={!selectedCategoryId ? itemActiveClass : itemBaseClass}
+                className={
+                  !selectedCategoryId ? itemActiveClass : itemBaseClass
+                }
                 onClick={() => router.push("/problems")}
                 type="button"
               >
