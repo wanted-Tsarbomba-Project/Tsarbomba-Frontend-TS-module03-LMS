@@ -56,16 +56,12 @@ export default function Sidebar({
   const router = useRouter();
   const pathname = usePathname();
 
-  const [nickname, setNickname] = useState(
-    propsNickname || getStoredValue("userNickname") || "닉네임",
-  );
-  const [userRole, setUserRole] = useState(getStoredValue("userRole"));
+  const [nickname, setNickname] = useState(propsNickname || "닉네임");
+  const [userRole, setUserRole] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
 
   const isAdminPath = pathname.startsWith("/admin");
-  const isMypage =
-    pathname.startsWith("/user/introduce") ||
-    pathname.startsWith("/user/profile");
+  const isMypage = pathname.startsWith("/user/profile");
   const isChatPage =
     pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
@@ -75,6 +71,7 @@ export default function Sidebar({
       setUserRole(getStoredValue("userRole"));
     };
 
+    updateUserInfo(); // 마운트 직후 1회 주입 (hydration 이후라 안전)
     window.addEventListener("loginSuccess", updateUserInfo);
     window.addEventListener("storage", updateUserInfo);
 
@@ -226,16 +223,6 @@ export default function Sidebar({
       <hr className="border-[#f3f4f6] -mt-2" />
 
       <ul className="flex flex-col gap-1">
-        <li>
-          <Link
-            className={
-              pathname === "/user/introduce" ? itemActiveClass : itemBaseClass
-            }
-            href="/user/introduce"
-          >
-            자기소개
-          </Link>
-        </li>
         <li>
           <Link
             className={

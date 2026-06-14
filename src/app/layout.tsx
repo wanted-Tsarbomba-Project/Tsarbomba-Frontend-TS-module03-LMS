@@ -68,9 +68,7 @@ export default function RootLayout({
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth");
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isMypagePath =
-    pathname.startsWith("/user/introduce") ||
-    pathname.startsWith("/user/profile");
+  const isMypagePath = pathname.startsWith("/user/profile");
   const isProblemPath =
     pathname.startsWith("/problems") ||
     pathname.startsWith("/user/problems") ||

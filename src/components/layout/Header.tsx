@@ -219,7 +219,7 @@ function Header({ isSimple }: HeaderProps) {
                     <div
                       className="flex items-center justify-center w-full px-2 py-2.5 text-sm text-[#1f2937] text-center hover:bg-[#f3f4f6] hover:text-[#1a237e] cursor-pointer whitespace-nowrap"
                       onClick={() => {
-                        router.push("/user/introduce");
+                        router.push("/user/profile");
                         setIsDropdownOpen(false);
                       }}
                     >
