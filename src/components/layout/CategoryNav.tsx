@@ -96,10 +96,7 @@ export default function CategoryNav({
     );
   }
 
-  if (
-    pathname.startsWith("/problems/") ||
-    pathname.startsWith("/user/problems/")
-  ) {
+  if (pathname !== "/") {
     return null;
   }
 

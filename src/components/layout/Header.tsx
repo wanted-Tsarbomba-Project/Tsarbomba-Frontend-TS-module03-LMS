@@ -150,7 +150,7 @@ function Header({ isSimple }: HeaderProps) {
               </span>
               <span
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/user/myclassroom")}
+                onClick={() => router.push("/myclassroom")}
               >
                 내 강의실
               </span>

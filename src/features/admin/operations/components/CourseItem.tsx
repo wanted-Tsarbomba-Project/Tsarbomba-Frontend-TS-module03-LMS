@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Course } from "@/services/courseService";
+import { Course, resolveThumbnailUrl } from "@/services/courseService";
 
 interface CourseItemProps {
   course: Course;
@@ -20,7 +20,10 @@ function CourseItem({ course }: CourseItemProps) {
     >
       {/* 강좌 썸네일 */}
       <img
-        src={thumbnailUrl || "https://placehold.co/640x360?text=No+Image"}
+        src={
+          resolveThumbnailUrl(thumbnailUrl) ||
+          "https://placehold.co/640x360?text=No+Image"
+        }
         alt={title || "강좌 이미지"}
         className="w-full h-48 object-cover"
       />
