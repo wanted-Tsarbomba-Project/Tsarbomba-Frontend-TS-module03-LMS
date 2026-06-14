@@ -74,7 +74,8 @@ export default function RootLayout({
   const isProblemPath =
     pathname.startsWith("/problems") ||
     pathname.startsWith("/user/problems") ||
-    pathname.startsWith("/user/problem");
+    pathname.startsWith("/user/problem") ||
+    /^\/courses\/[^/]+\/problems\//.test(pathname);
   const isChatPath =
     pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 

@@ -34,7 +34,8 @@ import type {
 import ProblemChatPanel from "./ProblemChatPanel";
 import ProblemResultPanel from "./ProblemResultPanel";
 
-const problemDetailClasses = {
+// 강좌 문제풀이(CourseProblemDetailClient)에서도 동일 스타일을 재사용하기 위해 export
+export const problemDetailClasses = {
   "container": "min-h-[80vh] w-full bg-bg-main",
   "mainArea": "relative flex min-h-[calc(80vh-80px)] gap-4 overflow-hidden py-3.5 max-lg:flex-col",
   "contentArea": "flex min-w-0 flex-1 gap-4 max-lg:flex-col",
