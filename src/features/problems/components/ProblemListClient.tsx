@@ -17,7 +17,13 @@ import {
 } from "../actions";
 import type { ProblemSetSummary } from "../types";
 
-import styles from "./ProblemListClient.module.css";
+const problemListClasses = {
+  "container": "min-h-screen bg-bg-main p-[30px]",
+  "header": "mb-5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
+  "pageTitle": "m-0 text-title-lg font-bold text-text-primary",
+  "registerButton": "cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[18px] py-2.5 text-description font-semibold text-text-white hover:bg-button-blue-hover-bg max-md:w-full"
+} as const;
+
 
 function formatDate(value?: string) {
   if (!value) {
@@ -121,12 +127,12 @@ export default function ProblemListClient() {
   }, [router]);
 
   return (
-    <main className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.pageTitle}>문제 관리</h2>
+    <main className={problemListClasses.container}>
+      <div className={problemListClasses.header}>
+        <h2 className={problemListClasses.pageTitle}>문제 관리</h2>
 
         <button
-          className={styles.registerButton}
+          className={problemListClasses.registerButton}
           onClick={() => router.push("/admin/problems/new")}
           type="button"
         >

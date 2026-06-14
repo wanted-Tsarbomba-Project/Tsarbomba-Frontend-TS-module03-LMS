@@ -19,7 +19,27 @@ import {
 } from "../api";
 import type { AlertStatus, OperationAlertDetail, TargetType } from "../types";
 
-import styles from "@/app/admin/alrams/[id]/page.module.css";
+const alramDetailClasses = {
+  "wrapper": "box-border bg-bg-main p-6 text-body text-text-primary",
+  "topBar": "mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start",
+  "status": "text-description text-text-secondary",
+  "topActions": "flex flex-wrap gap-2",
+  "card": "mb-4 rounded-base border border-border-light bg-bg-box p-4",
+  "title": "mt-0 mb-3 text-title-lg text-text-primary",
+  "grid": "grid grid-cols-2 gap-3 max-md:grid-cols-1",
+  "infoRow": "flex justify-between gap-4 py-1.5 max-md:flex-col max-md:gap-1",
+  "infoLabel": "shrink-0 basis-[120px] text-description text-text-secondary max-md:basis-auto",
+  "infoValue": "min-w-0 flex-1 text-right text-description text-text-primary [overflow-wrap:anywhere] max-md:text-left",
+  "text": "text-description text-text-primary",
+  "memoHeader": "flex items-center justify-between gap-4",
+  "textarea": "mt-2.5 box-border h-[120px] w-full resize-none rounded-base border border-border-light p-3 text-description text-text-primary outline-none",
+  "count": "mt-1 text-right text-xs text-text-secondary",
+  "button": "cursor-pointer rounded-base px-3 py-1.5 text-description disabled:cursor-not-allowed disabled:opacity-50",
+  "whiteBlueButton": "border border-button-blue-bg bg-bg-box text-text-blue hover:not-disabled:bg-button-blue-bg hover:not-disabled:text-text-white",
+  "blueButton": "border-0 bg-button-blue-bg text-text-white hover:not-disabled:bg-button-blue-hover-bg",
+  "whiteRedButton": "border border-button-red-bg bg-bg-box text-text-red hover:not-disabled:bg-button-red-bg hover:not-disabled:text-text-white"
+} as const;
+
 
 const statusLabel: Record<AlertStatus, string> = {
   OPEN: "미처리",
@@ -201,25 +221,25 @@ export default function AlramDetailClient() {
 
   if (loading) {
     return (
-      <div className={styles.wrapper}>
+      <div className={alramDetailClasses.wrapper}>
         <LoadingIndicator message="알림 정보를 불러오는 중입니다." />
       </div>
     );
   }
 
   if (!detail) {
-    return <div className={styles.wrapper}>알림 정보를 찾을 수 없습니다.</div>;
+    return <div className={alramDetailClasses.wrapper}>알림 정보를 찾을 수 없습니다.</div>;
   }
 
   const { alert: alertInfo, rule, target, metric, assignee } = detail;
 
   return (
     <>
-      <div className={styles.wrapper}>
-        <div className={styles.topBar}>
-          <div className={styles.status}>상태: {statusLabel[status] ?? status}</div>
+      <div className={alramDetailClasses.wrapper}>
+        <div className={alramDetailClasses.topBar}>
+          <div className={alramDetailClasses.status}>상태: {statusLabel[status] ?? status}</div>
 
-          <div className={styles.topActions}>
+          <div className={alramDetailClasses.topActions}>
             <StatusButton
               disabled={saving || status === "OPEN"}
               label="미처리"
@@ -236,7 +256,7 @@ export default function AlramDetailClient() {
               onClick={() => handleStatusButtonClick("IGNORED")}
             />
             <button
-              className={`${styles.button} ${styles.whiteRedButton}`}
+              className={`${alramDetailClasses.button} ${alramDetailClasses.whiteRedButton}`}
               disabled={saving}
               onClick={() => setDeleteModalOpen(true)}
               type="button"
@@ -246,10 +266,10 @@ export default function AlramDetailClient() {
           </div>
         </div>
 
-        <section className={styles.card}>
-          <h1 className={styles.title}>알림 정보</h1>
+        <section className={alramDetailClasses.card}>
+          <h1 className={alramDetailClasses.title}>알림 정보</h1>
 
-          <div className={styles.grid}>
+          <div className={alramDetailClasses.grid}>
             <Info label="알림 ID" value={alertInfo.operationAlertId} />
             <Info label="규칙" value={rule.ruleName} />
             <Info label="규칙 코드" value={rule.ruleCode} />
@@ -272,10 +292,10 @@ export default function AlramDetailClient() {
           </div>
         </section>
 
-        <section className={styles.card}>
-          <h2 className={styles.title}>측정 정보</h2>
+        <section className={alramDetailClasses.card}>
+          <h2 className={alramDetailClasses.title}>측정 정보</h2>
 
-          <div className={styles.grid}>
+          <div className={alramDetailClasses.grid}>
             <Info
               label={metric.observedLabel ?? "감지값"}
               value={formatMetric(metric.observedValue, metric.unit)}
@@ -295,10 +315,10 @@ export default function AlramDetailClient() {
           </div>
         </section>
 
-        <section className={styles.card}>
-          <h2 className={styles.title}>대상 상세</h2>
+        <section className={alramDetailClasses.card}>
+          <h2 className={alramDetailClasses.title}>대상 상세</h2>
 
-          <div className={styles.grid}>
+          <div className={alramDetailClasses.grid}>
             <Info label="문제집" value={target.problemSetTitle} />
             <Info label="강의" value={target.courseTitle} />
             <Info label="회원 닉네임" value={target.nickname} />
@@ -307,21 +327,21 @@ export default function AlramDetailClient() {
           </div>
         </section>
 
-        <section className={styles.card}>
-          <h2 className={styles.title}>담당자</h2>
-          <div className={styles.text}>
+        <section className={alramDetailClasses.card}>
+          <h2 className={alramDetailClasses.title}>담당자</h2>
+          <div className={alramDetailClasses.text}>
             {assignee
               ? `${assignee.name ?? "-"} (${assignee.email ?? "-"})`
               : "담당자가 지정되지 않았습니다."}
           </div>
         </section>
 
-        <section className={styles.card}>
-          <div className={styles.memoHeader}>
-            <h2 className={styles.title}>관리자 메모</h2>
+        <section className={alramDetailClasses.card}>
+          <div className={alramDetailClasses.memoHeader}>
+            <h2 className={alramDetailClasses.title}>관리자 메모</h2>
 
             <button
-              className={`${styles.button} ${styles.blueButton}`}
+              className={`${alramDetailClasses.button} ${alramDetailClasses.blueButton}`}
               disabled={saving}
               onClick={() => void handleMemoSave()}
               type="button"
@@ -331,14 +351,14 @@ export default function AlramDetailClient() {
           </div>
 
           <textarea
-            className={styles.textarea}
+            className={alramDetailClasses.textarea}
             maxLength={500}
             onChange={(event) => setAdminMemo(event.target.value)}
             placeholder="관리자 메모를 입력하세요."
             value={adminMemo}
           />
 
-          <div className={styles.count}>{adminMemo.length}/500</div>
+          <div className={alramDetailClasses.count}>{adminMemo.length}/500</div>
         </section>
       </div>
 
@@ -385,7 +405,7 @@ function StatusButton({
 }) {
   return (
     <button
-      className={`${styles.button} ${styles.whiteBlueButton}`}
+      className={`${alramDetailClasses.button} ${alramDetailClasses.whiteBlueButton}`}
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -403,9 +423,9 @@ function Info({
   value?: number | string | null;
 }) {
   return (
-    <div className={styles.infoRow}>
-      <div className={styles.infoLabel}>{label}</div>
-      <div className={styles.infoValue}>{value ?? "-"}</div>
+    <div className={alramDetailClasses.infoRow}>
+      <div className={alramDetailClasses.infoLabel}>{label}</div>
+      <div className={alramDetailClasses.infoValue}>{value ?? "-"}</div>
     </div>
   );
 }

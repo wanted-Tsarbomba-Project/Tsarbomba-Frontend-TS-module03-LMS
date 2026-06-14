@@ -14,7 +14,11 @@ import { handleClientError } from "@/lib/errorHandling";
 import { getAdminUsers } from "../api";
 import type { AdminUserSummary } from "../types";
 
-import styles from "@/app/admin/users/page.module.css";
+const userListClasses = {
+  "container": "box-border p-6 text-text-primary",
+  "title": "mt-0 mb-5 text-2xl font-bold"
+} as const;
+
 
 const userColumns: ListColumn<AdminUserSummary>[] = [
   { key: "index", label: "No." },
@@ -71,8 +75,8 @@ export default function UsersClient() {
 
   return (
     <>
-      <div className={styles.container}>
-        <h1 className={styles.title}>회원 관리</h1>
+      <div className={userListClasses.container}>
+        <h1 className={userListClasses.title}>회원 관리</h1>
 
         {loading ? (
           <LoadingIndicator message="회원 목록을 불러오는 중입니다." />
