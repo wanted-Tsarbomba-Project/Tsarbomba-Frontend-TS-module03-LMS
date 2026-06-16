@@ -65,6 +65,7 @@ export default function ProblemChatPanel({
   onSendChat,
 }: ProblemChatPanelProps) {
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const isChatDisabled = chatSending || !chatOpen;
 
   useEffect(() => {
     resizeChatInput(chatInputRef.current);
@@ -72,6 +73,7 @@ export default function ProblemChatPanel({
 
   return (
     <aside
+      aria-hidden={!chatOpen}
       className={`${problemChatClasses.chatPanel} ${
         chatOpen ? problemChatClasses.open : problemChatClasses.closed
       }`}
@@ -123,7 +125,7 @@ export default function ProblemChatPanel({
 
       <div className={problemChatClasses.chatInputWrap}>
         <textarea
-          disabled={chatSending}
+          disabled={isChatDisabled}
           onChange={(event) => onChatInputChange(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
@@ -137,7 +139,7 @@ export default function ProblemChatPanel({
           value={chatInput}
         />
         <button
-          disabled={chatSending || !chatInput.trim()}
+          disabled={isChatDisabled || !chatInput.trim()}
           onClick={onSendChat}
           type="button"
         >
