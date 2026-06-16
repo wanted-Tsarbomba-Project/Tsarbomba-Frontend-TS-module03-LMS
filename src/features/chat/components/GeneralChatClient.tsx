@@ -4,7 +4,11 @@ import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { OneButtonModal, WarningModal } from "@/components/common";
+import {
+  OneButtonModal,
+  TwoButtonModal,
+  WarningModal,
+} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -13,37 +17,58 @@ import {
   getChatMessages,
   getChatRooms,
   sendChatMessage,
+  updateChatRoomTitle,
 } from "../api";
 import type { ChatMessage } from "../types";
 
 const chatClasses = {
-  "page": "flex h-[66vh] max-h-[720px] min-h-[480px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-120px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
-  "header": "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
-  "title": "min-w-0 truncate",
-  "deleteButton": "shrink-0 cursor-pointer rounded-base border border-button-red-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-red hover:bg-button-red-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
-  "messageContainer": "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5",
-  "messageWrapper": "flex w-full",
-  "assistantWrapper": "justify-start",
-  "userWrapper": "justify-end",
-  "message": "max-w-[70%] whitespace-pre-wrap break-words rounded-base px-[18px] py-3.5 text-body leading-[1.6] text-text-primary max-md:max-w-[90%]",
-  "assistantMessage": "bg-[#bfd3ef]",
-  "userMessage": "border border-border-light bg-bg-box",
-  "errorMessage": "text-text-red",
-  "inputWrapper": "flex shrink-0 items-end gap-3 border-t border-border-light bg-bg-box px-6 py-4 max-md:px-5 max-md:py-3.5",
-  "input": "box-border max-h-36 min-h-[52px] flex-1 resize-none overflow-y-hidden rounded-base border border-border-light px-4 py-3.5 text-body leading-normal text-text-primary outline-none placeholder:text-text-placeholder focus:border-button-blue-bg max-md:min-h-12",
-  "sendButton": "h-[52px] min-w-[88px] cursor-pointer rounded-base border-0 bg-button-blue-bg text-body font-bold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-50 max-md:h-12 max-md:min-w-[76px]"
+  page: "flex h-[66vh] max-h-[720px] min-h-[480px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-120px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
+  header:
+    "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
+  title: "min-w-0 truncate",
+  titleInput:
+    "min-w-0 flex-1 rounded-base border border-border-light bg-bg-box px-3 py-2 text-body font-semibold text-text-primary outline-none focus:border-button-blue-bg",
+  headerActions: "flex shrink-0 items-center gap-2",
+  editButton:
+    "shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-blue hover:bg-button-blue-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
+  deleteButton:
+    "shrink-0 cursor-pointer rounded-base border border-button-red-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-red hover:bg-button-red-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
+  cancelEditButton:
+    "shrink-0 cursor-pointer rounded-base border border-border-light bg-bg-box px-3.5 py-2 text-body font-semibold text-text-primary hover:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
+  messageContainer:
+    "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5",
+  messageWrapper: "flex w-full",
+  assistantWrapper: "justify-start",
+  userWrapper: "justify-end",
+  message:
+    "max-w-[70%] whitespace-pre-wrap break-words rounded-base px-[18px] py-3.5 text-body leading-[1.6] text-text-primary max-md:max-w-[90%]",
+  assistantMessage: "bg-[#bfd3ef]",
+  userMessage: "border border-border-light bg-bg-box",
+  errorMessage: "text-text-red",
+  spinnerWrap: "flex items-center gap-2",
+  spinner:
+    "h-4 w-4 animate-spin rounded-full border-2 border-[#93a9c8] border-t-button-blue-bg",
+  spinnerText: "text-body text-text-primary",
+  inputWrapper:
+    "flex shrink-0 items-end gap-3 border-t border-border-light bg-bg-box px-6 py-4 max-md:px-5 max-md:py-3.5",
+  input:
+    "box-border max-h-36 min-h-[52px] flex-1 resize-none overflow-y-hidden rounded-base border border-border-light px-4 py-3.5 text-body leading-normal text-text-primary outline-none placeholder:text-text-placeholder focus:border-button-blue-bg max-md:min-h-12",
+  sendButton:
+    "h-[52px] min-w-[88px] cursor-pointer rounded-base border-0 bg-button-blue-bg text-body font-bold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-50 max-md:h-12 max-md:min-w-[76px]",
 } as const;
 
-
 const DEFAULT_CHAT_TITLE = "새 대화";
-
 const CHAT_INPUT_MAX_HEIGHT = 144;
 
 interface GeneralChatClientProps {
   roomId?: string;
 }
 
-function createMessage(role: ChatMessage["role"], content: string, error = false) {
+function createMessage(
+  role: ChatMessage["role"],
+  content: string,
+  error = false,
+) {
   return {
     role,
     content,
@@ -72,8 +97,12 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const [inputValue, setInputValue] = useState("");
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updatingTitle, setUpdatingTitle] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [titleConfirmOpen, setTitleConfirmOpen] = useState(false);
   const [chatTitle, setChatTitle] = useState(DEFAULT_CHAT_TITLE);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInputValue, setTitleInputValue] = useState("");
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
 
   const activeRoomId = useMemo(() => roomId, [roomId]);
@@ -104,6 +133,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         );
 
         setChatTitle(currentRoom?.title || DEFAULT_CHAT_TITLE);
+        setTitleInputValue(currentRoom?.title || DEFAULT_CHAT_TITLE);
         setMessages(roomMessages);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -113,8 +143,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         handleClientError(error, {
           router,
           fallbackTitle: "채팅 조회 실패",
-          fallbackMessage: "채팅 내용을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          showModal: (title, content) => setModal({ open: true, title, content }),
+          fallbackMessage:
+            "채팅 내용을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          showModal: (title, content) =>
+            setModal({ open: true, title, content }),
         });
       }
     };
@@ -147,7 +179,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         : await createGeneralChatMessage(userMessage);
 
       appendMessage(
-        createMessage("ASSISTANT", response?.answer ?? "답변을 받지 못했습니다."),
+        createMessage(
+          "ASSISTANT",
+          response?.answer ?? "답변을 받지 못했습니다.",
+        ),
       );
       window.dispatchEvent(new Event("chatRoomUpdated"));
 
@@ -166,7 +201,8 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       handleClientError(error, {
         router,
         fallbackTitle: "메시지 전송 실패",
-        fallbackMessage: "메시지를 전송하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        fallbackMessage:
+          "메시지를 전송하지 못했습니다. 잠시 후 다시 시도해 주세요.",
         showModal: (title, content) => setModal({ open: true, title, content }),
       });
     } finally {
@@ -198,7 +234,8 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       handleClientError(error, {
         router,
         fallbackTitle: "채팅방 삭제 실패",
-        fallbackMessage: "채팅방을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        fallbackMessage:
+          "채팅방을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.",
         showModal: (title, content) => setModal({ open: true, title, content }),
       });
     } finally {
@@ -206,19 +243,129 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     }
   };
 
+  const startTitleEdit = () => {
+    setTitleInputValue(chatTitle);
+    setEditingTitle(true);
+  };
+
+  const cancelTitleEdit = () => {
+    setTitleInputValue(chatTitle);
+    setEditingTitle(false);
+    setTitleConfirmOpen(false);
+  };
+
+  const requestTitleUpdate = () => {
+    const nextTitle = titleInputValue.trim();
+
+    if (!nextTitle || nextTitle === chatTitle) {
+      cancelTitleEdit();
+      return;
+    }
+
+    setTitleConfirmOpen(true);
+  };
+
+  const handleUpdateTitle = async () => {
+    if (!activeRoomId || updatingTitle) {
+      return;
+    }
+
+    const nextTitle = titleInputValue.trim();
+
+    if (!nextTitle) {
+      return;
+    }
+
+    setUpdatingTitle(true);
+
+    try {
+      const updatedRoom = await updateChatRoomTitle(activeRoomId, nextTitle);
+      const updatedTitle = updatedRoom?.title ?? nextTitle;
+
+      setChatTitle(updatedTitle);
+      setTitleInputValue(updatedTitle);
+      setEditingTitle(false);
+      setTitleConfirmOpen(false);
+      window.dispatchEvent(new Event("chatRoomUpdated"));
+    } catch (error) {
+      setTitleConfirmOpen(false);
+      handleClientError(error, {
+        router,
+        fallbackTitle: "채팅방 이름 수정 실패",
+        fallbackMessage:
+          "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => setModal({ open: true, title, content }),
+      });
+    } finally {
+      setUpdatingTitle(false);
+    }
+  };
+
   return (
     <main className={chatClasses.page}>
       <div className={chatClasses.header}>
-        <span className={chatClasses.title}>{chatTitle}</span>
+        {editingTitle ? (
+          <input
+            aria-label="채팅방 이름"
+            className={chatClasses.titleInput}
+            disabled={updatingTitle}
+            maxLength={80}
+            onChange={(event) => setTitleInputValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                requestTitleUpdate();
+              }
+
+              if (event.key === "Escape") {
+                cancelTitleEdit();
+              }
+            }}
+            value={titleInputValue}
+          />
+        ) : (
+          <span className={chatClasses.title}>{chatTitle}</span>
+        )}
         {activeRoomId && (
-          <button
-            className={chatClasses.deleteButton}
-            disabled={deleting}
-            onClick={() => setDeleteModalOpen(true)}
-            type="button"
-          >
-            삭제
-          </button>
+          <div className={chatClasses.headerActions}>
+            {editingTitle ? (
+              <>
+                <button
+                  className={chatClasses.editButton}
+                  disabled={updatingTitle}
+                  onClick={requestTitleUpdate}
+                  type="button"
+                >
+                  저장
+                </button>
+                <button
+                  className={chatClasses.cancelEditButton}
+                  disabled={updatingTitle}
+                  onClick={cancelTitleEdit}
+                  type="button"
+                >
+                  취소
+                </button>
+              </>
+            ) : (
+              <button
+                className={chatClasses.editButton}
+                disabled={deleting || updatingTitle}
+                onClick={startTitleEdit}
+                type="button"
+              >
+                수정
+              </button>
+            )}
+            <button
+              className={chatClasses.deleteButton}
+              disabled={deleting || updatingTitle}
+              onClick={() => setDeleteModalOpen(true)}
+              type="button"
+            >
+              삭제
+            </button>
+          </div>
         )}
       </div>
 
@@ -226,13 +373,17 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         {messages.map((message, index) => (
           <div
             className={`${chatClasses.messageWrapper} ${
-              message.role === "USER" ? chatClasses.userWrapper : chatClasses.assistantWrapper
+              message.role === "USER"
+                ? chatClasses.userWrapper
+                : chatClasses.assistantWrapper
             }`}
             key={`${message.role}-${index}`}
           >
             <div
               className={`${chatClasses.message} ${
-                message.role === "USER" ? chatClasses.userMessage : chatClasses.assistantMessage
+                message.role === "USER"
+                  ? chatClasses.userMessage
+                  : chatClasses.assistantMessage
               } ${message.error ? chatClasses.errorMessage : ""}`}
             >
               {message.content}
@@ -241,9 +392,20 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         ))}
 
         {sending && (
-          <div className={`${chatClasses.messageWrapper} ${chatClasses.assistantWrapper}`}>
-            <div className={`${chatClasses.message} ${chatClasses.assistantMessage}`}>
-              AI 답변 중입니다.
+          <div
+            className={`${chatClasses.messageWrapper} ${chatClasses.assistantWrapper}`}
+          >
+            <div
+              aria-live="polite"
+              className={`${chatClasses.message} ${chatClasses.assistantMessage}`}
+              role="status"
+            >
+              <span className={chatClasses.spinnerWrap}>
+                <span aria-hidden="true" className={chatClasses.spinner} />
+                <span className={chatClasses.spinnerText}>
+                  AI 답변 중입니다.
+                </span>
+              </span>
             </div>
           </div>
         )}
@@ -292,6 +454,20 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           }
         }}
         onConfirm={handleDeleteChatRoom}
+      />
+
+      <TwoButtonModal
+        cancelDisabled={updatingTitle}
+        confirmDisabled={updatingTitle || !titleInputValue.trim()}
+        isOpen={titleConfirmOpen}
+        modalContent={`채팅방 이름을 "${titleInputValue.trim()}"(으)로 변경합니다.`}
+        modalTitle="채팅방 이름을 수정하시겠습니까?"
+        onClose={() => {
+          if (!updatingTitle) {
+            setTitleConfirmOpen(false);
+          }
+        }}
+        onConfirm={handleUpdateTitle}
       />
     </main>
   );

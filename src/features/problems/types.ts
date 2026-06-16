@@ -197,6 +197,12 @@ export interface ChatResponse {
   roomId?: number;
 }
 
+export interface ChatRoomTitleUpdate {
+  roomId: number;
+  title: string;
+  updatedAt: string;
+}
+
 export interface ProblemChatRoom {
   roomId: number;
   title: string;

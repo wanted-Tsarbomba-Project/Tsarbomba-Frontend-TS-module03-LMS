@@ -1,13 +1,14 @@
 "use client";
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
 import {
   OneButtonModal,
+  TwoButtonModal,
   WarningModal,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
@@ -22,6 +23,7 @@ import {
   runProblem,
   sendProblemChatMessage,
   submitProblem,
+  updateProblemChatRoomTitle,
 } from "../actions";
 import type {
   ChatMessage,
@@ -230,10 +232,19 @@ export default function UserProblemDetailClient({
   const [chatOpen, setChatOpen] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
   const [chatRoomTitle, setChatRoomTitle] = useState<string | null>(null);
+  const [chatRoomTitleInput, setChatRoomTitleInput] = useState("");
+  const [chatRoomTitleEditing, setChatRoomTitleEditing] = useState(false);
+  const [chatRoomTitleConfirmOpen, setChatRoomTitleConfirmOpen] = useState(false);
+  const [chatRoomTitleUpdating, setChatRoomTitleUpdating] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
+  const activeChatRoomIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeChatRoomIdRef.current = chatRoomId;
+  }, [chatRoomId]);
 
   const userId = useMemo(() => {
     if (typeof window === "undefined") {
@@ -249,6 +260,9 @@ export default function UserProblemDetailClient({
   const resetChatState = useCallback(() => {
     setChatRoomId(null);
     setChatRoomTitle(null);
+    setChatRoomTitleInput("");
+    setChatRoomTitleEditing(false);
+    setChatRoomTitleConfirmOpen(false);
     setChatMessages([]);
     setChatInput("");
     setChatSending(false);
@@ -330,6 +344,7 @@ export default function UserProblemDetailClient({
 
         setChatRoomId(room.roomId);
         setChatRoomTitle(room.title || null);
+        setChatRoomTitleInput(room.title || "");
 
         const messages = await getProblemChatMessages(room.roomId);
 
@@ -520,6 +535,70 @@ export default function UserProblemDetailClient({
     }
   };
 
+  const startChatRoomTitleEdit = () => {
+    setChatRoomTitleInput(chatRoomTitle ?? "");
+    setChatRoomTitleEditing(true);
+  };
+
+  const cancelChatRoomTitleEdit = () => {
+    setChatRoomTitleInput(chatRoomTitle ?? "");
+    setChatRoomTitleEditing(false);
+    setChatRoomTitleConfirmOpen(false);
+  };
+
+  const requestChatRoomTitleUpdate = () => {
+    const nextTitle = chatRoomTitleInput.trim();
+
+    if (!nextTitle || nextTitle === (chatRoomTitle ?? "")) {
+      cancelChatRoomTitleEdit();
+      return;
+    }
+
+    setChatRoomTitleConfirmOpen(true);
+  };
+
+  const handleChatRoomTitleUpdate = async () => {
+    if (!chatRoomId || chatRoomTitleUpdating) {
+      return;
+    }
+
+    const targetRoomId = chatRoomId;
+    const nextTitle = chatRoomTitleInput.trim();
+
+    if (!nextTitle) {
+      return;
+    }
+
+    setChatRoomTitleUpdating(true);
+
+    try {
+      const updatedRoom = await updateProblemChatRoomTitle(targetRoomId, nextTitle);
+
+      if (activeChatRoomIdRef.current !== targetRoomId) {
+        return;
+      }
+
+      const updatedTitle = updatedRoom?.title ?? nextTitle;
+
+      setChatRoomTitle(updatedTitle);
+      setChatRoomTitleInput(updatedTitle);
+      setChatRoomTitleEditing(false);
+      setChatRoomTitleConfirmOpen(false);
+      window.dispatchEvent(new Event("chatRoomUpdated"));
+    } catch (error) {
+      setChatRoomTitleConfirmOpen(false);
+      handleClientError(error, {
+        router,
+        fallbackTitle: "채팅방 이름 수정 실패",
+        fallbackMessage:
+          "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+      });
+    } finally {
+      setChatRoomTitleUpdating(false);
+    }
+  };
+
   const sendChat = async () => {
     if (
       !chatInput.trim() ||
@@ -655,12 +734,19 @@ export default function UserProblemDetailClient({
           </section>
 
           <ProblemChatPanel
+            canEditChatRoomTitle={Boolean(chatRoomId)}
             chatInput={chatInput}
             chatMessages={chatMessages}
             chatOpen={chatOpen}
+            chatRoomTitleEditing={chatRoomTitleEditing}
+            chatRoomTitleInput={chatRoomTitleInput}
             chatRoomTitle={chatRoomTitle}
             chatSending={chatSending || chatLoading}
             onChatInputChange={setChatInput}
+            onChatRoomTitleCancel={cancelChatRoomTitleEdit}
+            onChatRoomTitleChange={setChatRoomTitleInput}
+            onChatRoomTitleEdit={startChatRoomTitleEdit}
+            onChatRoomTitleSubmit={requestChatRoomTitleUpdate}
             onSendChat={sendChat}
           />
         </div>
@@ -683,6 +769,19 @@ export default function UserProblemDetailClient({
         modalContent={alertModal.content}
         modalTitle={alertModal.title}
         onClose={() => setAlertModal((prev) => ({ ...prev, open: false }))}
+      />
+      <TwoButtonModal
+        cancelDisabled={chatRoomTitleUpdating}
+        confirmDisabled={chatRoomTitleUpdating || !chatRoomTitleInput.trim()}
+        isOpen={chatRoomTitleConfirmOpen}
+        modalContent={`채팅방 이름을 "${chatRoomTitleInput.trim()}"(으)로 변경합니다.`}
+        modalTitle="채팅방 이름을 수정하시겠습니까?"
+        onClose={() => {
+          if (!chatRoomTitleUpdating) {
+            setChatRoomTitleConfirmOpen(false);
+          }
+        }}
+        onConfirm={handleChatRoomTitleUpdate}
       />
       <WarningModal
         isOpen={warningModalOpen}

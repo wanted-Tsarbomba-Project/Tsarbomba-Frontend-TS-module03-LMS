@@ -1,6 +1,11 @@
 import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 
-import type { ChatMessage, ChatResponse, ChatRoom } from "./types";
+import type {
+  ChatMessage,
+  ChatResponse,
+  ChatRoom,
+  ChatRoomTitleUpdate,
+} from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -115,6 +120,19 @@ export async function deleteChatRoom(roomId: string) {
       method: "DELETE",
     },
   );
+}
+
+export async function updateChatRoomTitle(roomId: string, title: string) {
+  const result = await requestJson<ChatRoomTitleUpdate>(
+    `/api/v1/chat/${roomId}`,
+    "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
+    },
+  );
+
+  return result.data;
 }
 
 function createApiError(
