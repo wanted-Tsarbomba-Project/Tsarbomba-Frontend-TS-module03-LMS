@@ -8,6 +8,7 @@ import type {
   ProblemCategory,
   ChatMessage,
   ChatResponse,
+  ChatRoomTitleUpdate,
   ExecutionResult,
   ProblemHint,
   ProblemInfo,
@@ -408,6 +409,19 @@ export async function sendProblemChatMessage(
     {
       method: "POST",
       body: JSON.stringify({ userMessage }),
+    },
+  );
+
+  return result.data;
+}
+
+export async function updateProblemChatRoomTitle(roomId: number, title: string) {
+  const result = await requestJson<ChatRoomTitleUpdate>(
+    `/api/v1/chat/${roomId}`,
+    "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
     },
   );
 

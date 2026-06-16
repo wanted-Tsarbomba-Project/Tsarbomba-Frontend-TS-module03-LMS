@@ -4,7 +4,7 @@ import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { OneButtonModal, WarningModal } from "@/components/common";
+import { OneButtonModal, TwoButtonModal, WarningModal } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -13,6 +13,7 @@ import {
   getChatMessages,
   getChatRooms,
   sendChatMessage,
+  updateChatRoomTitle,
 } from "../api";
 import type { ChatMessage } from "../types";
 
@@ -21,8 +22,15 @@ const chatClasses = {
   header:
     "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
   title: "min-w-0 truncate",
+  titleInput:
+    "min-w-0 flex-1 rounded-base border border-border-light bg-bg-box px-3 py-2 text-body font-semibold text-text-primary outline-none focus:border-button-blue-bg",
+  headerActions: "flex shrink-0 items-center gap-2",
+  editButton:
+    "shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-blue hover:bg-button-blue-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
   deleteButton:
     "shrink-0 cursor-pointer rounded-base border border-button-red-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-red hover:bg-button-red-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
+  cancelEditButton:
+    "shrink-0 cursor-pointer rounded-base border border-border-light bg-bg-box px-3.5 py-2 text-body font-semibold text-text-primary hover:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
   messageContainer:
     "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5",
   messageWrapper: "flex w-full",
@@ -85,8 +93,12 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const [inputValue, setInputValue] = useState("");
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updatingTitle, setUpdatingTitle] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [titleConfirmOpen, setTitleConfirmOpen] = useState(false);
   const [chatTitle, setChatTitle] = useState(DEFAULT_CHAT_TITLE);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInputValue, setTitleInputValue] = useState("");
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
 
   const activeRoomId = useMemo(() => roomId, [roomId]);
@@ -117,6 +129,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         );
 
         setChatTitle(currentRoom?.title || DEFAULT_CHAT_TITLE);
+        setTitleInputValue(currentRoom?.title || DEFAULT_CHAT_TITLE);
         setMessages(roomMessages);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -225,19 +238,128 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     }
   };
 
+  const startTitleEdit = () => {
+    setTitleInputValue(chatTitle);
+    setEditingTitle(true);
+  };
+
+  const cancelTitleEdit = () => {
+    setTitleInputValue(chatTitle);
+    setEditingTitle(false);
+    setTitleConfirmOpen(false);
+  };
+
+  const requestTitleUpdate = () => {
+    const nextTitle = titleInputValue.trim();
+
+    if (!nextTitle || nextTitle === chatTitle) {
+      cancelTitleEdit();
+      return;
+    }
+
+    setTitleConfirmOpen(true);
+  };
+
+  const handleUpdateTitle = async () => {
+    if (!activeRoomId || updatingTitle) {
+      return;
+    }
+
+    const nextTitle = titleInputValue.trim();
+
+    if (!nextTitle) {
+      return;
+    }
+
+    setUpdatingTitle(true);
+
+    try {
+      const updatedRoom = await updateChatRoomTitle(activeRoomId, nextTitle);
+      const updatedTitle = updatedRoom?.title ?? nextTitle;
+
+      setChatTitle(updatedTitle);
+      setTitleInputValue(updatedTitle);
+      setEditingTitle(false);
+      setTitleConfirmOpen(false);
+      window.dispatchEvent(new Event("chatRoomUpdated"));
+    } catch (error) {
+      setTitleConfirmOpen(false);
+      handleClientError(error, {
+        router,
+        fallbackTitle: "채팅방 이름 수정 실패",
+        fallbackMessage:
+          "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => setModal({ open: true, title, content }),
+      });
+    } finally {
+      setUpdatingTitle(false);
+    }
+  };
+
   return (
     <main className={chatClasses.page}>
       <div className={chatClasses.header}>
-        <span className={chatClasses.title}>{chatTitle}</span>
+        {editingTitle ? (
+          <input
+            className={chatClasses.titleInput}
+            disabled={updatingTitle}
+            maxLength={80}
+            onChange={(event) => setTitleInputValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                requestTitleUpdate();
+              }
+
+              if (event.key === "Escape") {
+                cancelTitleEdit();
+              }
+            }}
+            value={titleInputValue}
+          />
+        ) : (
+          <span className={chatClasses.title}>{chatTitle}</span>
+        )}
         {activeRoomId && (
-          <button
-            className={chatClasses.deleteButton}
-            disabled={deleting}
-            onClick={() => setDeleteModalOpen(true)}
-            type="button"
-          >
-            삭제
-          </button>
+          <div className={chatClasses.headerActions}>
+            {editingTitle ? (
+              <>
+                <button
+                  className={chatClasses.editButton}
+                  disabled={updatingTitle}
+                  onClick={requestTitleUpdate}
+                  type="button"
+                >
+                  저장
+                </button>
+                <button
+                  className={chatClasses.cancelEditButton}
+                  disabled={updatingTitle}
+                  onClick={cancelTitleEdit}
+                  type="button"
+                >
+                  취소
+                </button>
+              </>
+            ) : (
+              <button
+                className={chatClasses.editButton}
+                disabled={deleting || updatingTitle}
+                onClick={startTitleEdit}
+                type="button"
+              >
+                수정
+              </button>
+            )}
+            <button
+              className={chatClasses.deleteButton}
+              disabled={deleting || updatingTitle}
+              onClick={() => setDeleteModalOpen(true)}
+              type="button"
+            >
+              삭제
+            </button>
+          </div>
         )}
       </div>
 
@@ -326,6 +448,20 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           }
         }}
         onConfirm={handleDeleteChatRoom}
+      />
+
+      <TwoButtonModal
+        cancelDisabled={updatingTitle}
+        confirmDisabled={updatingTitle || !titleInputValue.trim()}
+        isOpen={titleConfirmOpen}
+        modalContent={`채팅방 이름을 "${titleInputValue.trim()}"(으)로 변경합니다.`}
+        modalTitle="채팅방 이름을 수정하시겠습니까?"
+        onClose={() => {
+          if (!updatingTitle) {
+            setTitleConfirmOpen(false);
+          }
+        }}
+        onConfirm={handleUpdateTitle}
       />
     </main>
   );
