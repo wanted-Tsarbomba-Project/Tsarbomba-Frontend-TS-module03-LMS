@@ -1,7 +1,7 @@
 "use client";
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
@@ -14,6 +14,8 @@ import { handleClientError } from "@/lib/errorHandling";
 
 import {
   createProblemChatMessage,
+  getProblemChatMessages,
+  getProblemChatRooms,
   getProblemHints,
   getProblemSetDetail,
   getProblemSetResult,
@@ -28,6 +30,7 @@ import type {
   ProblemResultTab,
   ProblemSetDetail,
   ProblemSetResult,
+  ProblemChatRoom,
   ProblemStatus,
   SubmissionResult,
 } from "../types";
@@ -149,6 +152,38 @@ function getInitialProblemState(
   };
 }
 
+function normalizeId(value?: number | string | null) {
+  return value == null ? "" : String(value);
+}
+
+function getRoomProblemSetId(room: ProblemChatRoom) {
+  return (
+    room.problemSetId ??
+    room.problemSet?.problemSetId ??
+    room.problemSet?.id ??
+    null
+  );
+}
+
+function getRoomProblemId(room: ProblemChatRoom) {
+  return room.problemId ?? room.problem?.problemId ?? room.problem?.id ?? null;
+}
+
+function findProblemChatRoom(
+  rooms: ProblemChatRoom[],
+  problemSetId: number,
+  problemId: number,
+) {
+  const targetProblemSetId = normalizeId(problemSetId);
+  const targetProblemId = normalizeId(problemId);
+
+  return rooms.find(
+    (room) =>
+      normalizeId(getRoomProblemSetId(room)) === targetProblemSetId &&
+      normalizeId(getRoomProblemId(room)) === targetProblemId,
+  );
+}
+
 export default function UserProblemDetailClient({
   problemSetId,
   initialProblemSet,
@@ -194,9 +229,11 @@ export default function UserProblemDetailClient({
   const [alertModal, setAlertModal] = useState({ open: false, title: "", content: "" });
   const [chatOpen, setChatOpen] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
+  const [chatRoomTitle, setChatRoomTitle] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
 
   const userId = useMemo(() => {
     if (typeof window === "undefined") {
@@ -208,6 +245,14 @@ export default function UserProblemDetailClient({
 
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
+
+  const resetChatState = useCallback(() => {
+    setChatRoomId(null);
+    setChatRoomTitle(null);
+    setChatMessages([]);
+    setChatInput("");
+    setChatSending(false);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -259,6 +304,67 @@ export default function UserProblemDetailClient({
     };
   }, [initialUserId, problemSetId, router, userId]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProblemChatRoom = async () => {
+      if (!problemSet.id || !currentProblem?.problemId) {
+        resetChatState();
+        return;
+      }
+
+      resetChatState();
+      setChatLoading(true);
+
+      try {
+        const rooms = await getProblemChatRooms();
+        const room = findProblemChatRoom(
+          rooms,
+          problemSet.id,
+          currentProblem.problemId,
+        );
+
+        if (!isMounted || !room) {
+          return;
+        }
+
+        setChatRoomId(room.roomId);
+        setChatRoomTitle(room.title || null);
+
+        const messages = await getProblemChatMessages(room.roomId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setChatMessages(messages);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        handleClientError(error, {
+          router,
+          fallbackTitle: "채팅방 조회 실패",
+          fallbackMessage:
+            "문제 전용 채팅방을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          showModal: (title, content) =>
+            setAlertModal({ open: true, title, content }),
+        });
+      } finally {
+        if (isMounted) {
+          setChatLoading(false);
+        }
+      }
+    };
+
+    loadProblemChatRoom();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentProblem?.problemId, problemSet.id, resetChatState, router]);
+
   const canMoveProblem = (index: number) => problemStates[index] !== "LOCKED";
 
   const getProblemButtonClass = (state: ProblemStatus | undefined, isCurrent: boolean) => {
@@ -277,13 +383,6 @@ export default function UserProblemDetailClient({
     return "border border-[#e8e8e8] text-[#1f2937] bg-white hover:bg-[#f3f4f6]";
   };
 
-  const resetChat = () => {
-    setChatRoomId(null);
-    setChatMessages([]);
-    setChatInput("");
-    setChatSending(false);
-  };
-
   const moveProblem = (index: number) => {
     if (!canMoveProblem(index)) {
       return;
@@ -297,7 +396,7 @@ export default function UserProblemDetailClient({
     setActiveTab("result");
     setExecutionResult(null);
     setSubmissionResult(submissionResults[index] ?? null);
-    resetChat();
+    resetChatState();
   };
 
   const handleCodeChange = (nextCode: string) => {
@@ -422,7 +521,13 @@ export default function UserProblemDetailClient({
   };
 
   const sendChat = async () => {
-    if (!chatInput.trim() || chatSending || !problemSet.id || !currentProblem?.problemId) {
+    if (
+      !chatInput.trim() ||
+      chatSending ||
+      chatLoading ||
+      !problemSet.id ||
+      !currentProblem?.problemId
+    ) {
       return;
     }
 
@@ -553,9 +658,9 @@ export default function UserProblemDetailClient({
             chatInput={chatInput}
             chatMessages={chatMessages}
             chatOpen={chatOpen}
-            chatSending={chatSending}
+            chatRoomTitle={chatRoomTitle}
+            chatSending={chatSending || chatLoading}
             onChatInputChange={setChatInput}
-            onResetChat={resetChat}
             onSendChat={sendChat}
           />
         </div>
