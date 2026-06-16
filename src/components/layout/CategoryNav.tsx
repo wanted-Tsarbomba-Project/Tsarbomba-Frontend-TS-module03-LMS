@@ -88,7 +88,7 @@ export default function CategoryNav({
               onClick={onToggleProblemChat}
               type="button"
             >
-              챗봇
+              문제챗봇
             </button>
           </div>
         </div>

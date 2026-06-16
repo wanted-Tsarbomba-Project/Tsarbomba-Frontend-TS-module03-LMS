@@ -431,7 +431,6 @@ export default function CourseProblemDetailClient({
             chatOpen={chatOpen}
             chatSending={chatSending}
             onChatInputChange={setChatInput}
-            onResetChat={resetChat}
             onSendChat={sendChat}
           />
         </div>

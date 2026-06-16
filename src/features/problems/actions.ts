@@ -6,10 +6,13 @@ import type {
   ProblemDatasetFile,
   ProblemCategoryId,
   ProblemCategory,
+  ChatMessage,
   ChatResponse,
+  ChatRoomTitleUpdate,
   ExecutionResult,
   ProblemHint,
   ProblemInfo,
+  ProblemChatRoom,
   ProblemSetDetail,
   ProblemSetDetailProblem,
   ProblemSetResult,
@@ -367,6 +370,35 @@ export async function createProblemChatMessage(
   return result.data;
 }
 
+export async function getProblemChatRooms(init: NextRequestInit = {}) {
+  const result = await requestJson<ProblemChatRoom[]>(
+    "/api/v1/chat/list",
+    "채팅방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "GET",
+      ...init,
+    },
+  );
+
+  return result.data ?? [];
+}
+
+export async function getProblemChatMessages(
+  roomId: number,
+  init: NextRequestInit = {},
+) {
+  const result = await requestJson<ChatMessage[]>(
+    `/api/v1/chat/${roomId}/messages`,
+    "채팅 내용을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "GET",
+      ...init,
+    },
+  );
+
+  return result.data ?? [];
+}
+
 export async function sendProblemChatMessage(
   roomId: number,
   userMessage: string,
@@ -377,6 +409,19 @@ export async function sendProblemChatMessage(
     {
       method: "POST",
       body: JSON.stringify({ userMessage }),
+    },
+  );
+
+  return result.data;
+}
+
+export async function updateProblemChatRoomTitle(roomId: number, title: string) {
+  const result = await requestJson<ChatRoomTitleUpdate>(
+    `/api/v1/chat/${roomId}`,
+    "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
     },
   );
 
