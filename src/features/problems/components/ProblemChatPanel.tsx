@@ -23,6 +23,10 @@ const problemChatClasses = {
   assistantMessage: "bg-[#bfd3ef]",
   userMessage: "border border-border-light bg-bg-box",
   errorMessage: "text-text-red",
+  spinnerWrap: "flex items-center gap-2",
+  spinner:
+    "h-4 w-4 animate-spin rounded-full border-2 border-[#93a9c8] border-t-button-blue-bg",
+  spinnerText: "text-body text-text-primary",
   chatInputWrap:
     "flex items-end gap-2 border-t border-border-light p-3.5 [&_textarea]:box-border [&_textarea]:max-h-36 [&_textarea]:min-h-11 [&_textarea]:flex-1 [&_textarea]:resize-none [&_textarea]:overflow-y-hidden [&_textarea]:rounded-base [&_textarea]:border [&_textarea]:border-border-light [&_textarea]:p-2.5 [&_textarea]:leading-normal [&_textarea]:text-text-primary [&_textarea]:outline-none [&_button]:h-11 [&_button]:min-w-[72px] [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-button-blue-bg [&_button]:bg-button-blue-bg [&_button]:text-text-white [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-60",
 } as const;
@@ -115,9 +119,19 @@ export default function ProblemChatPanel({
             className={`${problemChatClasses.chatMessageWrap} ${problemChatClasses.assistantMessageWrap}`}
           >
             <div
+              aria-live="polite"
               className={`${problemChatClasses.chatMessage} ${problemChatClasses.assistantMessage}`}
+              role="status"
             >
-              AI 응답 중입니다.
+              <span className={problemChatClasses.spinnerWrap}>
+                <span
+                  aria-hidden="true"
+                  className={problemChatClasses.spinner}
+                />
+                <span className={problemChatClasses.spinnerText}>
+                  AI 응답 중입니다.
+                </span>
+              </span>
             </div>
           </div>
         )}
