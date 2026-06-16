@@ -4,7 +4,11 @@ import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { OneButtonModal, TwoButtonModal, WarningModal } from "@/components/common";
+import {
+  OneButtonModal,
+  TwoButtonModal,
+  WarningModal,
+} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -141,7 +145,8 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           fallbackTitle: "채팅 조회 실패",
           fallbackMessage:
             "채팅 내용을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          showModal: (title, content) => setModal({ open: true, title, content }),
+          showModal: (title, content) =>
+            setModal({ open: true, title, content }),
         });
       }
     };
@@ -301,6 +306,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       <div className={chatClasses.header}>
         {editingTitle ? (
           <input
+            aria-label="채팅방 이름"
             className={chatClasses.titleInput}
             disabled={updatingTitle}
             maxLength={80}

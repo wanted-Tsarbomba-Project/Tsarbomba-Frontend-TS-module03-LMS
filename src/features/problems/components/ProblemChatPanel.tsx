@@ -115,6 +115,7 @@ export default function ProblemChatPanel({
             {chatRoomTitleEditing ? (
               <>
                 <input
+                  aria-label="채팅방 이름"
                   className={problemChatClasses.chatRoomTitleInput}
                   maxLength={80}
                   onChange={(event) =>

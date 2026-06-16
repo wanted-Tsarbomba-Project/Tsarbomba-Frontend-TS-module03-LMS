@@ -1,7 +1,7 @@
 "use client";
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
@@ -240,6 +240,11 @@ export default function UserProblemDetailClient({
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
+  const activeChatRoomIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeChatRoomIdRef.current = chatRoomId;
+  }, [chatRoomId]);
 
   const userId = useMemo(() => {
     if (typeof window === "undefined") {
@@ -557,6 +562,7 @@ export default function UserProblemDetailClient({
       return;
     }
 
+    const targetRoomId = chatRoomId;
     const nextTitle = chatRoomTitleInput.trim();
 
     if (!nextTitle) {
@@ -566,7 +572,12 @@ export default function UserProblemDetailClient({
     setChatRoomTitleUpdating(true);
 
     try {
-      const updatedRoom = await updateProblemChatRoomTitle(chatRoomId, nextTitle);
+      const updatedRoom = await updateProblemChatRoomTitle(targetRoomId, nextTitle);
+
+      if (activeChatRoomIdRef.current !== targetRoomId) {
+        return;
+      }
+
       const updatedTitle = updatedRoom?.title ?? nextTitle;
 
       setChatRoomTitle(updatedTitle);
@@ -730,7 +741,7 @@ export default function UserProblemDetailClient({
             chatRoomTitleEditing={chatRoomTitleEditing}
             chatRoomTitleInput={chatRoomTitleInput}
             chatRoomTitle={chatRoomTitle}
-            chatSending={chatSending || chatLoading || chatRoomTitleUpdating}
+            chatSending={chatSending || chatLoading}
             onChatInputChange={setChatInput}
             onChatRoomTitleCancel={cancelChatRoomTitleEdit}
             onChatRoomTitleChange={setChatRoomTitleInput}
