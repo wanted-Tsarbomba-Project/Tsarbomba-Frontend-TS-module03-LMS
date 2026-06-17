@@ -183,7 +183,9 @@ export default function SignupForm() {
       }
     } catch (err: unknown) {
       setNicknameErr(
-        err instanceof Error ? err.message : "이미 사용 중인 닉네임입니다.",
+        err instanceof Error
+          ? err.message
+          : "닉네임 중복 확인 중 오류가 발생했습니다.",
       );
       setIsNicknameChecked(false);
     }
@@ -270,7 +272,7 @@ export default function SignupForm() {
       setConfirmErr("비밀번호가 일치하지 않습니다.");
       isValid = false;
     }
-    if (!name) {
+    if (!name.trim()) {
       setNameErr("이름을 입력해주세요.");
       isValid = false;
     }
@@ -298,11 +300,14 @@ export default function SignupForm() {
         setIsSuccess(true);
         setModalOpen(true);
       } catch (error: unknown) {
-        alert(
+        setModalTitle("회원가입 실패");
+        setModalContent(
           error instanceof Error
             ? error.message
             : "회원가입 처리 중 오류가 발생했습니다.",
         );
+        setIsSuccess(false);
+        setModalOpen(true);
       }
     }
   };
@@ -319,7 +324,7 @@ export default function SignupForm() {
             <label className="auth-label">이메일*</label>
             <div className="flex gap-2 items-center">
               <input
-                type="text"
+                type="email"
                 className={`w-full auth-input ${emailErr ? "border-text-red" : "focus:border-text-blue"}`}
                 placeholder="your@email.com"
                 value={email}

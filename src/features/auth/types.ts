@@ -1,11 +1,14 @@
-/** 공통 응답 래퍼 */
-export interface AuthResponse {
+/** 공통 응답 래퍼 (data 타입을 제네릭으로 고정 가능) */
+export interface AuthResponse<TData = unknown> {
   status?: string;
   success?: boolean;
   statusCode?: number;
   message?: string;
-  data?: unknown;
+  data?: TData;
 }
+
+/** 사용자 권한 */
+export type UserRole = "ADMIN" | "OPERATOR" | "INSTRUCTOR" | "STUDENT" | "USER";
 
 /** 로그인 요청 */
 export interface LoginRequest {
@@ -16,7 +19,7 @@ export interface LoginRequest {
 /** 로그인 응답 data */
 export interface LoginResponseData {
   nickname?: string;
-  role?: string;
+  role?: UserRole;
 }
 
 /** 회원가입 요청 */

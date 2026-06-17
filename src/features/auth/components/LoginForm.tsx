@@ -50,6 +50,9 @@ export default function LoginForm() {
         } else {
           window.location.href = "/";
         }
+      } else {
+        // 성공 응답이지만 data가 없는 비정상 케이스 — 무반응 방지
+        setErrorMsg("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
@@ -65,9 +68,12 @@ export default function LoginForm() {
 
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div className="text-left">
-            <label className="auth-label">아이디</label>
+            <label htmlFor="login-email" className="auth-label">
+              아이디
+            </label>
             <input
-              type="text"
+              id="login-email"
+              type="email"
               className={`w-full auth-input ${
                 errorMsg && !email ? "border-text-red" : ""
               }`}
@@ -81,8 +87,11 @@ export default function LoginForm() {
           </div>
 
           <div className="text-left">
-            <label className="auth-label">비밀번호</label>
+            <label htmlFor="login-password" className="auth-label">
+              비밀번호
+            </label>
             <input
+              id="login-password"
               type="password"
               className={`w-full auth-input ${
                 errorMsg && !password ? "border-text-red" : ""
@@ -103,19 +112,21 @@ export default function LoginForm() {
           )}
 
           <div className="flex items-center justify-center gap-3 pt-1 text-sm text-text-blue select-none font-medium">
-            <span
-              className="cursor-pointer hover:underline transition-all"
+            <button
+              type="button"
+              className="cursor-pointer hover:underline transition-all bg-transparent border-none p-0 text-text-blue"
               onClick={() => router.push("/auth/find-id")}
             >
               아이디 찾기
-            </span>
+            </button>
             <span className="text-text-placeholder">|</span>
-            <span
-              className="cursor-pointer hover:underline transition-all"
+            <button
+              type="button"
+              className="cursor-pointer hover:underline transition-all bg-transparent border-none p-0 text-text-blue"
               onClick={() => router.push("/auth/reset-pw")}
             >
               비밀번호 찾기
-            </span>
+            </button>
           </div>
 
           <div className="flex flex-col gap-3 pt-2">

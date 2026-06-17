@@ -19,11 +19,7 @@ const handleBadResponse = async (
       const jsonData = JSON.parse(textData);
       return jsonData?.message || jsonData?.data?.message || defaultMessage;
     } catch {
-      if (textData.includes("default message")) {
-        const match = textData.match(/default message \[(.*?)\]\]/);
-        if (match && match[1]) return match[1];
-      }
-      return textData || defaultMessage;
+      return defaultMessage;
     }
   } catch {
     return defaultMessage;
@@ -79,7 +75,7 @@ export const signup = async (
 export const checkEmail = async (email: string): Promise<AuthResponse> => {
   const response = await fetch(
     `${BASE_URL}/api/v1/auth/check/email?email=${encodeURIComponent(email)}`,
-    { method: "GET", headers: HEADERS },
+    { method: "GET" },
   );
 
   if (!response.ok) {
@@ -99,7 +95,7 @@ export const checkNickname = async (
 ): Promise<AuthResponse> => {
   const response = await fetch(
     `${BASE_URL}/api/v1/auth/check/nickname?nickname=${encodeURIComponent(nickname)}`,
-    { method: "GET", headers: HEADERS },
+    { method: "GET" },
   );
 
   if (!response.ok) {
