@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   signup,
@@ -33,6 +33,14 @@ export default function SignupForm() {
   const [modalTitle, setModalTitle] = useState("");
   const [modalContent, setModalContent] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const emailRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const pwRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const nicknameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
 
   const [emailErr, setEmailErr] = useState("");
   const [codeErr, setCodeErr] = useState("");
@@ -205,7 +213,7 @@ export default function SignupForm() {
     try {
       await sendVerificationCode(email);
       setIsSent(true);
-      setTimer(180); // 3분 만료 타이머 시작/재시작
+      setTimer(180);
       setEmailErr("");
       setModalTitle("인증번호 발송");
       setModalContent("입력하신 이메일로 인증번호가 발송되었습니다.");
@@ -250,42 +258,59 @@ export default function SignupForm() {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let isValid = true;
-
-    if (!email || emailErr) {
-      setEmailErr("이메일을 확인해주세요.");
-      isValid = false;
+    if (!email.trim() || emailErr) {
+      setEmailErr(
+        email.trim() ? "이메일 형식을 확인해주세요." : "이메일을 입력해주세요.",
+      );
+      emailRef.current?.focus();
+      return;
     }
     if (!isEmailChecked) {
       setEmailErr("이메일 중복확인을 완료해주세요.");
-      isValid = false;
+      emailRef.current?.focus();
+      return;
     }
     if (!isVerified) {
       setCodeErr("이메일 인증을 완료해주세요.");
-      isValid = false;
+      codeRef.current?.focus();
+      return;
     }
     if (!pw || pwErr) {
-      setPwErr("비밀번호를 확인해주세요.");
-      isValid = false;
+      setPwErr(
+        pw ? "비밀번호 형식을 확인해주세요." : "비밀번호를 입력해주세요.",
+      );
+      pwRef.current?.focus();
+      return;
     }
     if (pw !== confirm || confirmErr) {
       setConfirmErr("비밀번호가 일치하지 않습니다.");
-      isValid = false;
+      confirmRef.current?.focus();
+      return;
     }
     if (!name.trim()) {
       setNameErr("이름을 입력해주세요.");
-      isValid = false;
+      nameRef.current?.focus();
+      return;
     }
-    if (!nickname || !isNicknameChecked) {
+    if (!nickname.trim()) {
+      setNicknameErr("닉네임을 입력해주세요.");
+      nicknameRef.current?.focus();
+      return;
+    }
+    if (!isNicknameChecked) {
       setNicknameErr("닉네임 중복확인을 완료해주세요.");
-      isValid = false;
+      nicknameRef.current?.focus();
+      return;
     }
     if (!phone || phoneErr) {
-      setPhoneErr("전화번호를 확인해주세요.");
-      isValid = false;
+      setPhoneErr(
+        phone ? "전화번호 형식을 확인해주세요." : "전화번호를 입력해주세요.",
+      );
+      phoneRef.current?.focus();
+      return;
     }
 
-    if (isValid) {
+    {
       try {
         await signup({
           email,
@@ -319,16 +344,18 @@ export default function SignupForm() {
           회원가입
         </h1>
 
-        <form onSubmit={handleSignupSubmit} className="space-y-4">
+        <form onSubmit={handleSignupSubmit} className="space-y-4" noValidate>
           <div className="text-left">
             <label className="auth-label">이메일*</label>
             <div className="flex gap-2 items-center">
               <input
+                ref={emailRef}
                 type="email"
                 className={`w-full auth-input ${emailErr ? "border-text-red" : "focus:border-text-blue"}`}
                 placeholder="your@email.com"
                 value={email}
                 disabled={isVerified}
+                onBlur={(e) => checkEmailFormat(e.target.value)}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setIsEmailChecked(false);
@@ -351,6 +378,7 @@ export default function SignupForm() {
             <label className="auth-label">이메일 확인*</label>
             <div className="flex gap-2 items-center">
               <input
+                ref={codeRef}
                 type="text"
                 className={`flex-1 auth-input ${codeErr ? "border-text-red" : "focus:border-text-blue"}`}
                 placeholder="인증번호 입력"
@@ -396,6 +424,7 @@ export default function SignupForm() {
           <div className="text-left">
             <label className="auth-label">비밀번호*</label>
             <input
+              ref={pwRef}
               type="password"
               className={`w-full auth-input ${pwErr ? "border-text-red" : "focus:border-text-blue"}`}
               placeholder="비밀번호를 입력해주세요"
@@ -415,6 +444,7 @@ export default function SignupForm() {
           <div className="text-left">
             <label className="auth-label">비밀번호 확인*</label>
             <input
+              ref={confirmRef}
               type="password"
               className={`w-full auth-input ${confirmErr ? "border-text-red" : "focus:border-text-blue"}`}
               placeholder="비밀번호를 한 번 더 입력해주세요"
@@ -431,10 +461,14 @@ export default function SignupForm() {
           <div className="text-left">
             <label className="auth-label">이름*</label>
             <input
+              ref={nameRef}
               type="text"
               className={`w-full auth-input ${nameErr ? "border-text-red" : "focus:border-text-blue"}`}
               placeholder="이름을 입력해주세요"
               value={name}
+              onBlur={(e) =>
+                setNameErr(e.target.value.trim() ? "" : "이름을 입력해주세요.")
+              }
               onChange={(e) => {
                 setName(e.target.value);
                 if (e.target.value) setNameErr("");
@@ -447,10 +481,15 @@ export default function SignupForm() {
             <label className="auth-label">닉네임*</label>
             <div className="flex gap-2 items-center">
               <input
+                ref={nicknameRef}
                 type="text"
                 className={`flex-1 auth-input ${nicknameErr ? "border-text-red" : "focus:border-text-blue"}`}
                 placeholder="닉네임을 입력해주세요"
                 value={nickname}
+                onBlur={(e) => {
+                  if (!e.target.value.trim())
+                    setNicknameErr("닉네임을 입력해주세요.");
+                }}
                 onChange={(e) => {
                   setNickname(e.target.value);
                   setIsNicknameChecked(false);
@@ -471,7 +510,8 @@ export default function SignupForm() {
           <div className="text-left">
             <label className="auth-label">전화번호*</label>
             <input
-              type="text"
+              ref={phoneRef}
+              type="tel"
               className={`w-full auth-input ${phoneErr ? "border-text-red" : "focus:border-text-blue"}`}
               placeholder="010-0000-0000"
               value={phone}

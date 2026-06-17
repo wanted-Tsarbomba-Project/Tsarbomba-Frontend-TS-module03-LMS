@@ -16,11 +16,13 @@ export default function LoginForm() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!email && !password) {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail && !password) {
       setErrorMsg("이메일과 비밀번호를 입력해주세요.");
       return;
     }
-    if (!email) {
+    if (!normalizedEmail) {
       setErrorMsg("이메일을 입력해주세요.");
       return;
     }
@@ -30,13 +32,19 @@ export default function LoginForm() {
     }
 
     try {
-      const res = await login(email, password);
+      const res = await login(normalizedEmail, password);
 
       if (res && res.data) {
-        const resData = (res.data ?? {}) as LoginResponseData;
+        const resData = res.data as Partial<LoginResponseData>;
+        const role = resData.role;
+        const nickname = resData.nickname;
 
-        const role = resData.role || "USER";
-        const nickname = resData.nickname || "유저";
+        if (!role || !nickname) {
+          setErrorMsg(
+            "로그인 응답 형식이 올바르지 않습니다. 다시 시도해 주세요.",
+          );
+          return;
+        }
 
         localStorage.setItem("userNickname", nickname);
         localStorage.setItem("userRole", role);
@@ -51,7 +59,6 @@ export default function LoginForm() {
           window.location.href = "/";
         }
       } else {
-        // 성공 응답이지만 data가 없는 비정상 케이스 — 무반응 방지
         setErrorMsg("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       }
     } catch (err: unknown) {
@@ -66,7 +73,7 @@ export default function LoginForm() {
       <div className="w-100 p-[30px_40px] bg-white border border-border-light rounded-base text-center box-border shadow-sm">
         <h1 className="text-2xl font-bold text-text-primary mb-7.5">로그인</h1>
 
-        <form onSubmit={handleLoginSubmit} className="space-y-4">
+        <form onSubmit={handleLoginSubmit} className="space-y-4" noValidate>
           <div className="text-left">
             <label htmlFor="login-email" className="auth-label">
               아이디
@@ -74,6 +81,8 @@ export default function LoginForm() {
             <input
               id="login-email"
               type="email"
+              aria-invalid={!!errorMsg && !email}
+              aria-describedby={errorMsg ? "login-error" : undefined}
               className={`w-full auth-input ${
                 errorMsg && !email ? "border-text-red" : ""
               }`}
@@ -93,6 +102,8 @@ export default function LoginForm() {
             <input
               id="login-password"
               type="password"
+              aria-invalid={!!errorMsg && !password}
+              aria-describedby={errorMsg ? "login-error" : undefined}
               className={`w-full auth-input ${
                 errorMsg && !password ? "border-text-red" : ""
               }`}
@@ -106,7 +117,12 @@ export default function LoginForm() {
           </div>
 
           {errorMsg && (
-            <p className="text-xs text-text-red mt-2 pl-1 text-left font-medium">
+            <p
+              id="login-error"
+              role="alert"
+              aria-live="polite"
+              className="text-xs text-text-red mt-2 pl-1 text-left font-medium"
+            >
               {errorMsg}
             </p>
           )}

@@ -24,19 +24,17 @@ export default function FindIdPage() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] flex flex-col items-center justify-start bg-white px-4 pb-16">
-      <div className="h-16 w-full shrink-0" />
-      <div className="h-12 w-full shrink-0" />
-
-      <div className="w-[400px] px-10 py-8 bg-white border border-[#e8e8e8] rounded-lg text-center box-border shadow-sm">
+    <div className="w-full flex flex-col items-center justify-start bg-white px-4 pb-16">
+      <div className="w-100 px-10 py-8 bg-white border border-[#e8e8e8] rounded-lg text-center box-border shadow-sm">
         {!resultEmail ? (
           <>
-            <h1 className="text-2xl font-bold text-[#1f2937] mb-[30px]">
+            <h1 className="text-2xl font-bold text-[#1f2937] mb-7.5">
               아이디 찾기
             </h1>
             <form
               onSubmit={handleFindIdSubmit}
               className="space-y-4"
+              noValidate
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
@@ -93,7 +91,7 @@ export default function FindIdPage() {
               )}
               <button
                 type="submit"
-                className="w-full h-11 text-base border-none rounded-lg bg-[#1a237e] text-white font-medium flex items-center justify-center cursor-pointer mt-[25px] hover:bg-[#111751] transition-colors"
+                className="w-full h-11 text-base border-none rounded-lg bg-[#1a237e] text-white font-medium flex items-center justify-center cursor-pointer mt-6.25 hover:bg-[#111751] transition-colors"
               >
                 확인
               </button>
@@ -101,7 +99,7 @@ export default function FindIdPage() {
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-[#1f2937] mb-[30px]">
+            <h1 className="text-2xl font-bold text-[#1f2937] mb-7.5">
               아이디 찾기 결과
             </h1>
             <div className="text-lg font-bold text-[#1a237e] my-12 text-center select-all">
