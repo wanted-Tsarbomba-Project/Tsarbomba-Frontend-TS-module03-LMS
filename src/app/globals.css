@@ -77,3 +77,21 @@ select {
   color: var(--color-text-primary);
   font-family: inherit;
 }
+
+/* ── Auth 폼 공통 클래스 ── */
+@layer components {
+  /* 입력 라벨 */
+  .auth-label {
+    @apply block text-base font-bold text-text-primary mb-2.5;
+  }
+
+  /* 입력칸 */
+  .auth-input {
+    @apply h-11 px-4 border border-border-light rounded-base text-base text-text-primary outline-none box-border placeholder:text-text-placeholder focus:border-text-blue disabled:bg-bg-gray-box;
+  }
+
+  /* 필드 에러 문구 */
+  .auth-error {
+    @apply text-xs text-text-red mt-1.5 pl-1;
+  }
+}

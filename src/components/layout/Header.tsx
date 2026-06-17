@@ -9,7 +9,7 @@ import Logo from "../../../public/assets/img/logo-Icon.png";
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
-import { logoutService } from "@/services/authService";
+import { logoutService } from "@/features/auth/actions";
 
 interface HeaderProps {
   isSimple?: boolean;
@@ -74,7 +74,6 @@ function Header({ isSimple }: HeaderProps) {
       setIsLoggedIn(false);
       setIsLogoutModalOpen(false);
 
-      // 4. 강제 새로고침으로 홈 이동
       window.location.href = "/";
     }
   };
