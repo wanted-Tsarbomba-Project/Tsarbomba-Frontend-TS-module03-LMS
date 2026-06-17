@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -9,6 +9,7 @@ import {
   TwoButtonModal,
   WarningModal,
 } from "@/components/common";
+import { getProblemSetDetail } from "@/features/problems/actions";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -19,16 +20,21 @@ import {
   sendChatMessage,
   updateChatRoomTitle,
 } from "../api";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, ChatRoom } from "../types";
 
 const chatClasses = {
-  page: "flex h-[66vh] max-h-[720px] min-h-[480px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-120px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
+  page: "relative flex h-[66vh] max-h-[720px] min-h-[480px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-120px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
   header:
-    "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
+    "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 py-2.5 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
+  titleGroup: "flex min-w-0 flex-1 flex-col gap-1",
   title: "min-w-0 truncate",
+  linkedProblemTitle:
+    "min-w-0 truncate text-description font-semibold text-text-secondary",
   titleInput:
     "min-w-0 flex-1 rounded-base border border-border-light bg-bg-box px-3 py-2 text-body font-semibold text-text-primary outline-none focus:border-button-blue-bg",
   headerActions: "flex shrink-0 items-center gap-2",
+  moveButton:
+    "shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-3.5 py-2 text-body font-semibold text-text-white hover:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
   editButton:
     "shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-blue hover:bg-button-blue-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
   deleteButton:
@@ -36,7 +42,7 @@ const chatClasses = {
   cancelEditButton:
     "shrink-0 cursor-pointer rounded-base border border-border-light bg-bg-box px-3.5 py-2 text-body font-semibold text-text-primary hover:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
   messageContainer:
-    "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5",
+    "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 pb-28 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5 max-md:pb-28",
   messageWrapper: "flex w-full",
   assistantWrapper: "justify-start",
   userWrapper: "justify-end",
@@ -49,10 +55,11 @@ const chatClasses = {
   spinner:
     "h-4 w-4 animate-spin rounded-full border-2 border-[#93a9c8] border-t-button-blue-bg",
   spinnerText: "text-body text-text-primary",
-  inputWrapper:
-    "flex shrink-0 items-end gap-3 border-t border-border-light bg-bg-box px-6 py-4 max-md:px-5 max-md:py-3.5",
+  inputAreaBase:
+    "absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-bg-box from-[70%] via-bg-box/75 via-[86%] to-transparent px-6 pt-5 pb-4 max-md:px-5 max-md:pb-3.5",
+  inputRow: "flex items-end gap-3",
   input:
-    "box-border max-h-36 min-h-[52px] flex-1 resize-none overflow-y-hidden rounded-base border border-border-light px-4 py-3.5 text-body leading-normal text-text-primary outline-none placeholder:text-text-placeholder focus:border-button-blue-bg max-md:min-h-12",
+    "box-border max-h-36 min-h-[52px] flex-1 resize-none overflow-y-hidden rounded-base border border-border-light bg-bg-box px-4 py-3.5 text-body leading-normal text-text-primary outline-none placeholder:text-text-placeholder focus:border-button-blue-bg disabled:bg-bg-gray disabled:text-text-secondary max-md:min-h-12",
   sendButton:
     "h-[52px] min-w-[88px] cursor-pointer rounded-base border-0 bg-button-blue-bg text-body font-bold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-50 max-md:h-12 max-md:min-w-[76px]",
 } as const;
@@ -62,6 +69,13 @@ const CHAT_INPUT_MAX_HEIGHT = 144;
 
 interface GeneralChatClientProps {
   roomId?: string;
+}
+
+interface LinkedProblem {
+  problemSetId: string;
+  problemId: string;
+  problemSetTitle?: string;
+  problemTitle?: string;
 }
 
 function createMessage(
@@ -88,6 +102,70 @@ function resizeChatInput(textarea: HTMLTextAreaElement | null) {
     textarea.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
 }
 
+function normalizeId(value?: number | string | null) {
+  return value == null ? "" : String(value);
+}
+
+function getRoomProblemSetId(room: ChatRoom) {
+  return (
+    room.problemSetId ??
+    room.problemSet?.problemSetId ??
+    room.problemSet?.id ??
+    null
+  );
+}
+
+function getRoomProblemId(room: ChatRoom) {
+  return room.problemId ?? room.problem?.problemId ?? room.problem?.id ?? null;
+}
+
+function getLinkedProblem(room?: ChatRoom): LinkedProblem | null {
+  if (!room) {
+    return null;
+  }
+
+  const problemSetId = normalizeId(getRoomProblemSetId(room));
+  const problemId = normalizeId(getRoomProblemId(room));
+
+  if (!problemSetId || !problemId) {
+    return null;
+  }
+
+  return { problemSetId, problemId };
+}
+
+async function enrichLinkedProblem(linkedProblem: LinkedProblem | null) {
+  if (!linkedProblem) {
+    return null;
+  }
+
+  try {
+    const problemSet = await getProblemSetDetail(linkedProblem.problemSetId, "");
+    const problem = problemSet.problems.find(
+      (item) => normalizeId(item.problemId) === linkedProblem.problemId,
+    );
+
+    return {
+      ...linkedProblem,
+      problemSetTitle: problemSet.title,
+      problemTitle: problem?.title,
+    };
+  } catch {
+    return linkedProblem;
+  }
+}
+
+function getLinkedProblemLabel(linkedProblem: LinkedProblem) {
+  if (linkedProblem.problemSetTitle || linkedProblem.problemTitle) {
+    return [
+      linkedProblem.problemSetTitle ?? `문제 세트 ${linkedProblem.problemSetId}`,
+      linkedProblem.problemTitle ?? `문제 ${linkedProblem.problemId}`,
+    ].join(" - ");
+  }
+
+  return `문제 세트 ${linkedProblem.problemSetId} - 문제 ${linkedProblem.problemId}`;
+}
+
 export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -100,12 +178,20 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const [updatingTitle, setUpdatingTitle] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [titleConfirmOpen, setTitleConfirmOpen] = useState(false);
+  const [moveConfirmOpen, setMoveConfirmOpen] = useState(false);
   const [chatTitle, setChatTitle] = useState(DEFAULT_CHAT_TITLE);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInputValue, setTitleInputValue] = useState("");
+  const [linkedProblemState, setLinkedProblemState] =
+    useState<LinkedProblem | null>(null);
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
 
-  const activeRoomId = useMemo(() => roomId, [roomId]);
+  const activeRoomId = roomId;
+  const linkedProblem = activeRoomId ? linkedProblemState : null;
+  const linkedProblemLabel = linkedProblem
+    ? getLinkedProblemLabel(linkedProblem)
+    : "";
+  const headerActionDisabled = deleting || updatingTitle;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -134,6 +220,9 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
 
         setChatTitle(currentRoom?.title || DEFAULT_CHAT_TITLE);
         setTitleInputValue(currentRoom?.title || DEFAULT_CHAT_TITLE);
+        setLinkedProblemState(
+          await enrichLinkedProblem(getLinkedProblem(currentRoom)),
+        );
         setMessages(roomMessages);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -301,6 +390,15 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     }
   };
 
+  const handleMoveProblem = () => {
+    if (!linkedProblem) {
+      return;
+    }
+
+    setMoveConfirmOpen(false);
+    router.push(`/problems/${linkedProblem.problemSetId}`);
+  };
+
   return (
     <main className={chatClasses.page}>
       <div className={chatClasses.header}>
@@ -324,10 +422,27 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
             value={titleInputValue}
           />
         ) : (
-          <span className={chatClasses.title}>{chatTitle}</span>
+          <div className={chatClasses.titleGroup}>
+            <span className={chatClasses.title}>{chatTitle}</span>
+            {linkedProblem && (
+              <span className={chatClasses.linkedProblemTitle}>
+                연결된 문제풀이방: {linkedProblemLabel}
+              </span>
+            )}
+          </div>
         )}
         {activeRoomId && (
           <div className={chatClasses.headerActions}>
+            {linkedProblem && !editingTitle && (
+              <button
+                className={chatClasses.moveButton}
+                disabled={headerActionDisabled}
+                onClick={() => setMoveConfirmOpen(true)}
+                type="button"
+              >
+                문제 이동
+              </button>
+            )}
             {editingTitle ? (
               <>
                 <button
@@ -350,7 +465,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
             ) : (
               <button
                 className={chatClasses.editButton}
-                disabled={deleting || updatingTitle}
+                disabled={headerActionDisabled}
                 onClick={startTitleEdit}
                 type="button"
               >
@@ -359,7 +474,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
             )}
             <button
               className={chatClasses.deleteButton}
-              disabled={deleting || updatingTitle}
+              disabled={headerActionDisabled}
               onClick={() => setDeleteModalOpen(true)}
               type="button"
             >
@@ -403,7 +518,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
               <span className={chatClasses.spinnerWrap}>
                 <span aria-hidden="true" className={chatClasses.spinner} />
                 <span className={chatClasses.spinnerText}>
-                  AI 답변 중입니다.
+                  AI 응답 중입니다.
                 </span>
               </span>
             </div>
@@ -413,26 +528,28 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className={chatClasses.inputWrapper}>
-        <textarea
-          className={chatClasses.input}
-          disabled={sending}
-          onChange={(event) => setInputValue(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="질문 입력"
-          ref={inputRef}
-          rows={1}
-          value={inputValue}
-        />
+      <div className={chatClasses.inputAreaBase}>
+        <div className={chatClasses.inputRow}>
+          <textarea
+            className={chatClasses.input}
+            disabled={sending}
+            onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="질문 입력"
+            ref={inputRef}
+            rows={1}
+            value={inputValue}
+          />
 
-        <button
-          className={chatClasses.sendButton}
-          disabled={sending || !inputValue.trim()}
-          onClick={sendMessage}
-          type="button"
-        >
-          전송
-        </button>
+          <button
+            className={chatClasses.sendButton}
+            disabled={sending || !inputValue.trim()}
+            onClick={sendMessage}
+            type="button"
+          >
+            전송
+          </button>
+        </div>
       </div>
 
       <OneButtonModal
@@ -468,6 +585,14 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           }
         }}
         onConfirm={handleUpdateTitle}
+      />
+
+      <TwoButtonModal
+        isOpen={moveConfirmOpen}
+        modalContent="현재 채팅방을 나가고 연결된 문제풀이방으로 이동합니다."
+        modalTitle="이동하시겠습니까?"
+        onClose={() => setMoveConfirmOpen(false)}
+        onConfirm={handleMoveProblem}
       />
     </main>
   );
