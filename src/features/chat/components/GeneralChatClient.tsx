@@ -134,13 +134,18 @@ function getLinkedProblem(room?: ChatRoom): LinkedProblem | null {
   return { problemSetId, problemId };
 }
 
-async function enrichLinkedProblem(linkedProblem: LinkedProblem | null) {
+async function enrichLinkedProblem(
+  linkedProblem: LinkedProblem | null,
+  signal?: AbortSignal,
+) {
   if (!linkedProblem) {
     return null;
   }
 
   try {
-    const problemSet = await getProblemSetDetail(linkedProblem.problemSetId, "");
+    const problemSet = await getProblemSetDetail(linkedProblem.problemSetId, "", {
+      signal,
+    });
     const problem = problemSet.problems.find(
       (item) => normalizeId(item.problemId) === linkedProblem.problemId,
     );
@@ -218,11 +223,24 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           (room) => String(room.roomId) === String(activeRoomId),
         );
 
-        setChatTitle(currentRoom?.title || DEFAULT_CHAT_TITLE);
-        setTitleInputValue(currentRoom?.title || DEFAULT_CHAT_TITLE);
-        setLinkedProblemState(
-          await enrichLinkedProblem(getLinkedProblem(currentRoom)),
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const enrichedLinkedProblem = await enrichLinkedProblem(
+          getLinkedProblem(currentRoom),
+          controller.signal,
         );
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const nextTitle = currentRoom?.title || DEFAULT_CHAT_TITLE;
+
+        setChatTitle(nextTitle);
+        setTitleInputValue(nextTitle);
+        setLinkedProblemState(enrichedLinkedProblem);
         setMessages(roomMessages);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -531,6 +549,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       <div className={chatClasses.inputAreaBase}>
         <div className={chatClasses.inputRow}>
           <textarea
+            aria-label="채팅 메시지 입력"
             className={chatClasses.input}
             disabled={sending}
             onChange={(event) => setInputValue(event.target.value)}
