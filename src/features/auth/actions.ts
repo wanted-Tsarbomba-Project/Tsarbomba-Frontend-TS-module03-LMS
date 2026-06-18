@@ -172,7 +172,7 @@ export const findId = async (
 /* 비밀번호 재설정 - 코드 이메일 발송 — POST /api/v1/auth/password/forgot */
 export const requestPasswordReset = async (
   email: string,
-): Promise<AuthResponse> => {
+): Promise<AuthResponse | null> => {
   const response = await fetch(`${BASE_URL}/api/v1/auth/password/forgot`, {
     method: "POST",
     headers: HEADERS,
@@ -192,7 +192,7 @@ export const requestPasswordReset = async (
 export const verifyPasswordResetCode = async (
   email: string,
   code: string,
-): Promise<AuthResponse> => {
+): Promise<AuthResponse | null> => {
   const response = await fetch(`${BASE_URL}/api/v1/auth/password/verify-code`, {
     method: "POST",
     headers: HEADERS,

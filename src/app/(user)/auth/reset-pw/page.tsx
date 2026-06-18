@@ -32,6 +32,7 @@ export default function ResetPwPage() {
   const [infoMsg, setInfoMsg] = useState("");
 
   const [timer, setTimer] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const [emailErr, setEmailErr] = useState("");
   const [codeErr, setCodeErr] = useState("");
@@ -56,6 +57,8 @@ export default function ResetPwPage() {
       setEmailErr("이메일을 입력하세요.");
       return;
     }
+    if (loading) return;
+    setLoading(true);
     try {
       await requestPasswordReset(email);
       setInfoMsg("인증번호가 발송되었습니다.");
@@ -69,6 +72,8 @@ export default function ResetPwPage() {
           "재설정 코드 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.",
         ),
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,6 +84,8 @@ export default function ResetPwPage() {
       setCodeErr("인증번호를 입력하세요.");
       return;
     }
+    if (loading) return;
+    setLoading(true);
     try {
       await verifyPasswordResetCode(email, code);
       setInfoMsg("인증이 완료되었습니다. 새 비밀번호를 입력해 주세요.");
@@ -88,6 +95,8 @@ export default function ResetPwPage() {
       setCodeErr(
         toUserMessage(err, "인증번호가 일치하지 않거나 만료되었습니다."),
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -107,7 +116,8 @@ export default function ResetPwPage() {
       isValid = false;
     }
     if (!isValid) return;
-
+    if (loading) return;
+    setLoading(true);
     try {
       await resetPassword(email, code, password);
       setModalOpen(true);
@@ -118,6 +128,8 @@ export default function ResetPwPage() {
           "비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해 주세요.",
         ),
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,8 +171,9 @@ export default function ResetPwPage() {
                 {!isSent && (
                   <button
                     type="button"
-                    className="shrink-0 h-11 px-3.5 text-xs bg-button-blue-bg text-text-white border-none rounded-base cursor-pointer whitespace-nowrap flex items-center justify-center hover:bg-button-blue-hover-bg transition-colors"
+                    className="shrink-0 h-11 px-3.5 text-xs bg-button-blue-bg text-text-white border-none rounded-base cursor-pointer whitespace-nowrap flex items-center justify-center hover:bg-button-blue-hover-bg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={handleSendEmail}
+                    disabled={loading}
                   >
                     인증번호 전송
                   </button>
@@ -187,7 +200,7 @@ export default function ResetPwPage() {
                     type="button"
                     className="shrink-0 h-11 px-3.5 text-xs bg-bg-navbar text-text-primary border border-border-light rounded-base whitespace-nowrap flex items-center justify-center hover:bg-bg-gray-box-hover transition-colors disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                     onClick={handleSendEmail}
-                    disabled={timer > 0}
+                    disabled={timer > 0 || loading}
                   >
                     {timer > 0 ? formatTimer(timer) : "재발송"}
                   </button>
@@ -198,7 +211,8 @@ export default function ResetPwPage() {
 
             <button
               type="submit"
-              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-6 hover:bg-button-blue-hover-bg transition-colors"
+              disabled={loading}
+              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-6 hover:bg-button-blue-hover-bg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               확인
             </button>
@@ -249,7 +263,8 @@ export default function ResetPwPage() {
 
             <button
               type="submit"
-              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-8 hover:bg-button-blue-hover-bg transition-colors"
+              disabled={loading}
+              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-8 hover:bg-button-blue-hover-bg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               확인
             </button>
