@@ -169,18 +169,64 @@ export const findId = async (
   };
 };
 
-/* 비밀번호 재설정 — 백엔드 개발 전, 목업 응답 */
+/* 비밀번호 재설정 - 코드 이메일 발송 — POST /api/v1/auth/password/forgot */
+export const requestPasswordReset = async (
+  email: string,
+): Promise<AuthResponse | null> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/password/forgot`, {
+    method: "POST",
+    headers: HEADERS,
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "재설정 코드 발송에 실패했습니다."),
+    );
+  }
+
+  return response.json().catch(() => null);
+};
+
+/* 비밀번호 재설정 - 코드 검증 — POST /api/v1/auth/password/verify-code */
+export const verifyPasswordResetCode = async (
+  email: string,
+  code: string,
+): Promise<AuthResponse | null> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/password/verify-code`, {
+    method: "POST",
+    headers: HEADERS,
+    body: JSON.stringify({ email, code }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "인증번호 확인에 실패했습니다."),
+    );
+  }
+
+  return response.json().catch(() => null);
+};
+
+/* 비밀번호 재설정 — PUT /api/v1/auth/password/reset */
 export const resetPassword = async (
-  _email: string,
-  _newPassword: string,
-): Promise<AuthResponse> => {
-  return {
-    status: "OK",
-    success: true,
-    statusCode: 200,
-    message: "비밀번호 변경 성공",
-    data: true,
-  };
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<AuthResponse | null> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/password/reset`, {
+    method: "PUT",
+    headers: HEADERS,
+    body: JSON.stringify({ email, code, newPassword }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "비밀번호 변경에 실패했습니다."),
+    );
+  }
+
+  return response.json().catch(() => null);
 };
 
 /* 로그아웃 */
