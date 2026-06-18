@@ -9,6 +9,15 @@ import {
   resetPassword,
 } from "@/features/auth/actions";
 
+const toUserMessage = (err: unknown, fallback: string): string => {
+  const msg = err instanceof Error ? err.message : "";
+  const technical = /JDBC|Hikari|Connection|Exception|SQL|timeout|timed out/i;
+  if (msg && !msg.includes("\n") && msg.length <= 60 && !technical.test(msg)) {
+    return msg;
+  }
+  return fallback;
+};
+
 export default function ResetPwPage() {
   const router = useRouter();
 
@@ -55,7 +64,10 @@ export default function ResetPwPage() {
       setEmailErr("");
     } catch (err: unknown) {
       setEmailErr(
-        err instanceof Error ? err.message : "재설정 코드 발송에 실패했습니다.",
+        toUserMessage(
+          err,
+          "재설정 코드 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
       );
     }
   };
@@ -74,9 +86,7 @@ export default function ResetPwPage() {
       setCodeErr("");
     } catch (err: unknown) {
       setCodeErr(
-        err instanceof Error
-          ? err.message
-          : "인증번호가 일치하지 않거나 만료되었습니다.",
+        toUserMessage(err, "인증번호가 일치하지 않거나 만료되었습니다."),
       );
     }
   };
@@ -103,7 +113,10 @@ export default function ResetPwPage() {
       setModalOpen(true);
     } catch (err: unknown) {
       setPasswordErr(
-        err instanceof Error ? err.message : "비밀번호 변경에 실패했습니다.",
+        toUserMessage(
+          err,
+          "비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
       );
     }
   };
