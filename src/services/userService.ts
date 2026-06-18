@@ -69,10 +69,11 @@ export const getMyProfile = async (): Promise<MyProfile> => {
 
 /**
  * 내 프로필 수정 — PUT /api/v1/users/me (API 명세 기준)
- * 명세상 닉네임/전화번호 수정 가능하나, 현재 화면은 닉네임만 변경.
+ * 명세상 닉네임/전화번호 수정 가능.
  */
 export const updateMyProfile = async (body: {
   nickname: string;
+  phone?: string;
 }): Promise<void> => {
   await request(
     "/api/v1/users/me",
