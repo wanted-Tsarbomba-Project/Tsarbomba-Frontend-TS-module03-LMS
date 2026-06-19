@@ -256,6 +256,7 @@ export default function UserProblemDetailClient({
 
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
+  const isCurrentProblemCorrect = problemStates[currentIndex] === "CORRECT";
 
   const resetChatState = useCallback(() => {
     setChatRoomId(null);
@@ -465,7 +466,7 @@ export default function UserProblemDetailClient({
   };
 
   const handleSubmit = async () => {
-    if (!currentProblem?.problemId || isSubmitting) {
+    if (!currentProblem?.problemId || isSubmitting || isCurrentProblemCorrect) {
       return;
     }
 
@@ -723,11 +724,15 @@ export default function UserProblemDetailClient({
               <div className={problemDetailClasses.submitWrap}>
                 <button
                   className={problemDetailClasses.submitButton}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCurrentProblemCorrect}
                   onClick={handleSubmit}
                   type="button"
                 >
-                  {isSubmitting ? "제출 중" : "제출하기"}
+                  {isCurrentProblemCorrect
+                    ? "제출 완료"
+                    : isSubmitting
+                      ? "제출 중"
+                      : "제출하기"}
                 </button>
               </div>
             </section>
