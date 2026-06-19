@@ -29,11 +29,12 @@ export default function ProfileEditForm({
 
   // 전화번호 형식 검증 (회원가입과 동일 양식)
   const validatePhone = (value: string) => {
-    if (!value.trim()) {
+    const normalized = value.trim();
+    if (!normalized) {
       setPhoneErr("전화번호를 입력해주세요.");
       return false;
     }
-    if (!PHONE_REGEX.test(value)) {
+    if (!PHONE_REGEX.test(normalized)) {
       setPhoneErr("전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)");
       return false;
     }
@@ -48,18 +49,23 @@ export default function ProfileEditForm({
   };
 
   const handleConfirm = async () => {
+    const normalizedNickname = nickname.trim();
+    const normalizedPhone = phone.trim();
     setConfirmOpen(false);
     setSaving(true);
     try {
-      await updateMyProfile({ nickname, phone });
+      await updateMyProfile({
+        nickname: normalizedNickname,
+        phone: normalizedPhone,
+      });
 
       // 상단 닉네임 동기화 (Header/Sidebar 반영)
       if (typeof window !== "undefined") {
-        localStorage.setItem("userNickname", nickname);
+        localStorage.setItem("userNickname", normalizedNickname);
         window.dispatchEvent(new Event("loginSuccess"));
       }
 
-      onSaved({ nickname, phone });
+      onSaved({ nickname: normalizedNickname, phone: normalizedPhone });
     } catch (err) {
       setAlertMsg(toUserMessage(err, "프로필 수정에 실패했습니다."));
     } finally {
