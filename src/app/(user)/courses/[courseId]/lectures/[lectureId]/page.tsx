@@ -175,6 +175,7 @@ export default function LectureDetailPage() {
                   src={embedUrl}
                   title={lecture.title}
                   className="w-full h-full"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
