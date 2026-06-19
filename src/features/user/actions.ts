@@ -1,21 +1,11 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// userService — 마이페이지(회원) API
+// 마이페이지(회원) API
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
+import type { MyProfile } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-/** 내 프로필 (GET /api/v1/users/me 응답) */
-export interface MyProfile {
-  email: string;
-  name: string;
-  nickname: string;
-  phone: string;
-  role: string;
-  provider: string;
-  emailVerified: boolean;
-}
 
 async function request<T>(
   path: string,
@@ -36,7 +26,6 @@ async function request<T>(
 
   const text = await response.text();
 
-  // 실패 시
   if (!response.ok) {
     let payload: BackendErrorPayload = {};
     try {
@@ -67,10 +56,7 @@ export const getMyProfile = async (): Promise<MyProfile> => {
   );
 };
 
-/**
- * 내 프로필 수정 — PUT /api/v1/users/me (API 명세 기준)
- * 명세상 닉네임/전화번호 수정 가능.
- */
+/** 내 프로필 수정 — PUT /api/v1/users/me (닉네임/전화번호) */
 export const updateMyProfile = async (body: {
   nickname: string;
   phone?: string;
