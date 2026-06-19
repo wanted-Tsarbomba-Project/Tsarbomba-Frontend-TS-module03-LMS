@@ -97,6 +97,18 @@ export function VideoLectureCard({
 
         <div>
           <label className="block text-sm font-medium text-gray-800 mb-1">
+            영상 링크 *
+          </label>
+          <input
+            value={item.videoUrl}
+            onChange={(e) => onUpdate(item.id, "videoUrl", e.target.value)}
+            placeholder="유튜브 링크를 첨부하세요 (예: https://youtu.be/xxxxxxxxxxx)"
+            className="w-full h-10 px-4 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-blue-900 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-800 mb-1">
             영상 상세 설명 *
           </label>
           <textarea

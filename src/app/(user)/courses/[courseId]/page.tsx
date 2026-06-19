@@ -299,7 +299,7 @@ export default function CourseDetailPage() {
                   <button
                     type="button"
                     onClick={handleEnrollClick}
-                    className="px-6 py-2 text-sm font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors whitespace-nowrap"
+                    className="px-6 py-2 text-sm font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors whitespace-nowrap"
                   >
                     수강 신청
                   </button>
@@ -325,7 +325,7 @@ export default function CourseDetailPage() {
                   type="button"
                   onClick={() => handleLectureClick(lecture.lectureId)}
                   className={[
-                    "w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-100 transition-colors",
+                    "w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer hover:bg-gray-100 transition-colors",
                     index < lectures.length - 1
                       ? "border-b border-gray-200"
                       : "",

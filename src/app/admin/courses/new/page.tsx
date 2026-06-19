@@ -9,6 +9,7 @@ import {
   createLecture,
   configureCourseProblemSets,
   publishCourse,
+  isValidYoutubeUrl,
   type ProblemSetConnection,
 } from "@/services/courseService";
 import OneButtonModal from "@/components/common/OneButtonModal";
@@ -214,7 +215,14 @@ export default function CourseNewPage() {
     setShowAddMenu(false);
     setLectures((prev) => [
       ...prev,
-      { id: uid(), type: "video", title: "", description: "", file: null },
+      {
+        id: uid(),
+        type: "video",
+        title: "",
+        videoUrl: "",
+        description: "",
+        file: null,
+      },
     ]);
   };
 
@@ -339,6 +347,12 @@ export default function CourseNewPage() {
     if (!title.trim()) return "강좌 제목을 입력해주세요.";
     if (!courseCategoryId) return "카테고리를 선택해주세요.";
     if (!description.trim()) return "강좌 설명을 입력해주세요.";
+    for (const lec of lectures) {
+      if (lec.type !== "video") continue;
+      if (!lec.videoUrl.trim()) return "영상 링크(유튜브)를 입력해주세요.";
+      if (!isValidYoutubeUrl(lec.videoUrl.trim()))
+        return "유효한 유튜브 링크를 입력해주세요. (예: https://youtu.be/xxxxxxxxxxx)";
+    }
     return null;
   };
 
@@ -385,6 +399,7 @@ export default function CourseNewPage() {
                   ?.title ?? "문제 강의")
               : "문제 강의",
           description: isVideo ? v!.description : null,
+          videoUrl: isVideo ? v!.videoUrl.trim() || null : null,
           lectureOrder: i + 1,
           lectureType: isVideo ? "VIDEO" : "PROBLEM",
         });
