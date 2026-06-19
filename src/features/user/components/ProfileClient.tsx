@@ -24,9 +24,10 @@ export default function ProfileClient({
   const handleSaved = async () => {
     try {
       setProfile(await getMyProfile());
+      setDoneOpen(true);
+    } catch {
     } finally {
       setMode("view");
-      setDoneOpen(true);
     }
   };
 

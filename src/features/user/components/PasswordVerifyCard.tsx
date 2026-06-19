@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { verifyPassword } from "../actions";
+import { toUserMessage } from "../validation";
 
 // 비밀번호 확인 — POST /me/verify-password 성공 시 onVerified 호출
 export default function PasswordVerifyCard({
@@ -21,9 +22,7 @@ export default function PasswordVerifyCard({
       await verifyPassword(pw);
       onVerified();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "비밀번호가 일치하지 않습니다.",
-      );
+      setError(toUserMessage(err, "비밀번호가 일치하지 않습니다."));
     } finally {
       setVerifying(false);
     }
@@ -46,6 +45,7 @@ export default function PasswordVerifyCard({
             if (e.key === "Enter") handleConfirm();
           }}
           placeholder="비밀번호를 입력하세요"
+          aria-label="비밀번호"
           autoFocus
           className={`w-full border-b pb-2 text-base text-text-primary outline-none mb-2 ${
             error

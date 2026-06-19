@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { withdrawUser } from "../actions";
+import { toUserMessage } from "../validation";
 import { fieldBase } from "./styles";
 
 // 회원 탈퇴
@@ -44,9 +45,7 @@ export default function WithdrawModal({
         window.location.href = "/";
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "회원 탈퇴에 실패했습니다.",
-      );
+      setError(toUserMessage(err, "회원 탈퇴에 실패했습니다."));
       setLoading(false);
     }
   };
@@ -90,6 +89,7 @@ export default function WithdrawModal({
             if (e.key === "Enter") handleConfirm();
           }}
           placeholder="비밀번호를 입력하세요"
+          aria-label="비밀번호"
           autoFocus
           className={`${fieldBase} mt-6 ${error ? "border-text-red" : ""}`}
         />

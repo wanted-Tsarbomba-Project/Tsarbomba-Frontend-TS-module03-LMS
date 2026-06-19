@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { OneButtonModal, TwoButtonModal } from "@/components/common";
 import { updateMyProfile } from "../actions";
-import { PHONE_REGEX } from "../validation";
+import { PHONE_REGEX, toUserMessage } from "../validation";
 import type { MyProfile } from "../types";
 import { fieldBase, fieldLabel } from "./styles";
 import ReadonlyField from "./ReadonlyField";
@@ -18,6 +18,8 @@ export default function ProfileEditForm({
   onSaved: () => void | Promise<void>;
   onWithdraw: () => void;
 }) {
+  const nicknameId = useId();
+  const phoneId = useId();
   const [nickname, setNickname] = useState(profile.nickname);
   const [phone, setPhone] = useState(profile.phone);
   const [phoneErr, setPhoneErr] = useState("");
@@ -59,9 +61,7 @@ export default function ProfileEditForm({
 
       await onSaved();
     } catch (err) {
-      setAlertMsg(
-        err instanceof Error ? err.message : "프로필 수정에 실패했습니다.",
-      );
+      setAlertMsg(toUserMessage(err, "프로필 수정에 실패했습니다."));
     } finally {
       setSaving(false);
     }
@@ -77,16 +77,22 @@ export default function ProfileEditForm({
         <ReadonlyField label="이름" value={profile.name} muted />
         <ReadonlyField label="이메일" value={profile.email} muted />
         <div>
-          <p className={fieldLabel}>닉네임</p>
+          <label htmlFor={nicknameId} className={fieldLabel}>
+            닉네임
+          </label>
           <input
+            id={nicknameId}
             className={fieldBase}
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
           />
         </div>
         <div>
-          <p className={fieldLabel}>전화번호</p>
+          <label htmlFor={phoneId} className={fieldLabel}>
+            전화번호
+          </label>
           <input
+            id={phoneId}
             type="tel"
             className={`${fieldBase} ${phoneErr ? "border-text-red" : ""}`}
             value={phone}

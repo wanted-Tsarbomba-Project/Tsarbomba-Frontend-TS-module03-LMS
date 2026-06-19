@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { OneButtonModal } from "@/components/common";
 import {
   requestPasswordReset,
@@ -12,6 +12,9 @@ import { fieldBase, fieldLabel } from "./styles";
 
 // 비밀번호 재설정 (로그인 비밀번호 찾기 사용)
 export default function PasswordResetPanel({ email }: { email: string }) {
+  const codeId = useId();
+  const newPwId = useId();
+  const newPwConfirmId = useId();
   const [newPw, setNewPw] = useState("");
   const [newPwConfirm, setNewPwConfirm] = useState("");
   const [code, setCode] = useState("");
@@ -125,9 +128,12 @@ export default function PasswordResetPanel({ email }: { email: string }) {
         // 1) 이메일 인증번호 발송 + 검증
         <div className="flex flex-col gap-4">
           <div>
-            <p className={fieldLabel}>인증번호</p>
+            <label htmlFor={codeId} className={fieldLabel}>
+              인증번호
+            </label>
             <div className="flex gap-2">
               <input
+                id={codeId}
                 type="text"
                 className={`${fieldBase} ${codeErr ? "border-text-red" : ""}`}
                 value={code}
@@ -168,8 +174,11 @@ export default function PasswordResetPanel({ email }: { email: string }) {
         // 2) 새 비밀번호 입력
         <div className="flex flex-col gap-4">
           <div>
-            <p className={fieldLabel}>새 비밀번호 입력</p>
+            <label htmlFor={newPwId} className={fieldLabel}>
+              새 비밀번호 입력
+            </label>
             <input
+              id={newPwId}
               type="password"
               className={`${fieldBase} ${pwErr ? "border-text-red" : ""}`}
               value={newPw}
@@ -181,8 +190,11 @@ export default function PasswordResetPanel({ email }: { email: string }) {
             />
           </div>
           <div>
-            <p className={fieldLabel}>새 비밀번호 입력 확인</p>
+            <label htmlFor={newPwConfirmId} className={fieldLabel}>
+              새 비밀번호 입력 확인
+            </label>
             <input
+              id={newPwConfirmId}
               type="password"
               className={`${fieldBase} ${pwMismatch ? "border-text-red" : ""}`}
               value={newPwConfirm}
