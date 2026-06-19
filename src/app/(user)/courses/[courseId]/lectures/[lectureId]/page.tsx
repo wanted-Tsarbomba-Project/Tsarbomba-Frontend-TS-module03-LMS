@@ -17,6 +17,24 @@ import ErrorPageView from "@/components/common/ErrorPageView";
 // ────────────────────────────────────────────────────────────────────────────────
 // 강의 상세 (영상 시청) 화면
 // ────────────────────────────────────────────────────────────────────────────────
+const getYoutubeEmbedUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\.|^m\./, "");
+    let id = "";
+    if (host === "youtu.be") {
+      id = u.pathname.slice(1).split("/")[0];
+    } else if (host === "youtube.com") {
+      if (u.pathname === "/watch") id = u.searchParams.get("v") ?? "";
+      else if (u.pathname.startsWith("/embed/")) id = u.pathname.split("/")[2];
+      else if (u.pathname.startsWith("/shorts/")) id = u.pathname.split("/")[2];
+    }
+    return id ? `https://www.youtube.com/embed/${id}` : null;
+  } catch {
+    return null;
+  }
+};
 
 export default function LectureDetailPage() {
   const router = useRouter();
@@ -101,6 +119,7 @@ export default function LectureDetailPage() {
     return <ErrorPageView status={404} message="강의를 찾을 수 없습니다." />;
   }
 
+  const embedUrl = getYoutubeEmbedUrl(lecture.videoUrl);
   const videoSrc = resolveThumbnailUrl(lecture.videoUrl);
 
   return (
@@ -151,7 +170,16 @@ export default function LectureDetailPage() {
             </div>
           ) : (
             <div className="w-full aspect-video bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
-              {videoSrc ? (
+              {embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title={lecture.title}
+                  className="w-full h-full"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : videoSrc ? (
                 <video src={videoSrc} controls className="w-full h-full" />
               ) : (
                 <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
@@ -168,10 +196,32 @@ export default function LectureDetailPage() {
             </div>
           )}
 
-          {!currentLink && lecture.description && (
-            <p className="text-sm text-gray-500 mt-4 leading-relaxed">
-              {lecture.description}
-            </p>
+          {!currentLink && (
+            <div className="mt-4 flex items-start justify-between gap-4">
+              <p className="flex-1 text-sm text-gray-500 leading-relaxed">
+                {lecture.description}
+              </p>
+              <button
+                type="button"
+                disabled
+                title="준비 중인 기능입니다"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-400 cursor-not-allowed"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 2v8m0 0l3-3m-3 3L5 7M3 12h10" />
+                </svg>
+                첨부 파일
+              </button>
+            </div>
           )}
 
           {/* 이전 / 다음 */}
