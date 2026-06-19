@@ -159,6 +159,12 @@ function Header({ isSimple }: HeaderProps) {
               >
                 문제풀이
               </span>
+              <span
+                className="cursor-pointer hover:text-[#1a237e] transition-colors"
+                onClick={() => router.push("/ranking")}
+              >
+                랭킹
+              </span>
             </nav>
           )}
 

@@ -15,6 +15,7 @@ interface ListProps<T extends ListItem> {
   columns: ListColumn<T>[];
   onRowClick?: (item: T) => void;
   rowKey?: (item: T, index: number) => Key;
+  rowClassName?: string | ((item: T, index: number) => string);
   scrollable?: boolean;
   pagination?: ReactNode;
   emptyMessage?: ReactNode;
@@ -35,6 +36,7 @@ export default function List<T extends ListItem>({
   columns,
   onRowClick,
   rowKey,
+  rowClassName,
   scrollable = true,
   pagination = null,
   emptyMessage = "조회된 데이터가 없습니다.",
@@ -53,6 +55,7 @@ export default function List<T extends ListItem>({
         {data.length > 0 ? (
           data.map((item, index) => (
             <tr
+              className={getRowClassName(rowClassName, item, index)}
               key={rowKey?.(item, index) ?? item.id ?? index}
               onClick={() => onRowClick?.(item)}
             >
@@ -83,6 +86,18 @@ export default function List<T extends ListItem>({
       {pagination && <div className={listClasses.pagination}>{pagination}</div>}
     </div>
   );
+}
+
+function getRowClassName<T extends ListItem>(
+  rowClassName: ListProps<T>["rowClassName"],
+  item: T,
+  index: number,
+) {
+  if (typeof rowClassName === "function") {
+    return rowClassName(item, index);
+  }
+
+  return rowClassName;
 }
 
 function getCellContent<T extends ListItem>(
