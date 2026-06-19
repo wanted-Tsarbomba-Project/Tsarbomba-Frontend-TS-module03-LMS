@@ -15,7 +15,7 @@ export default function ProfileEditForm({
   onWithdraw,
 }: {
   profile: MyProfile;
-  onSaved: () => void | Promise<void>;
+  onSaved: (updated: { nickname: string; phone: string }) => void;
   onWithdraw: () => void;
 }) {
   const nicknameId = useId();
@@ -59,7 +59,7 @@ export default function ProfileEditForm({
         window.dispatchEvent(new Event("loginSuccess"));
       }
 
-      await onSaved();
+      onSaved({ nickname, phone });
     } catch (err) {
       setAlertMsg(toUserMessage(err, "프로필 수정에 실패했습니다."));
     } finally {

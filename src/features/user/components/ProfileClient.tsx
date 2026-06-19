@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { OneButtonModal } from "@/components/common";
-import { getMyProfile } from "../actions";
 import type { Mode, MyProfile } from "../types";
 import ProfileView from "./ProfileView";
 import PasswordVerifyCard from "./PasswordVerifyCard";
@@ -20,15 +19,11 @@ export default function ProfileClient({
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
 
-  // 수정 저장 완료
-  const handleSaved = async () => {
-    try {
-      setProfile(await getMyProfile());
-      setDoneOpen(true);
-    } catch {
-    } finally {
-      setMode("view");
-    }
+  // 저장 성공
+  const handleSaved = (updated: { nickname: string; phone: string }) => {
+    setProfile((prev) => ({ ...prev, ...updated }));
+    setMode("view");
+    setDoneOpen(true);
   };
 
   if (mode === "verify") {
