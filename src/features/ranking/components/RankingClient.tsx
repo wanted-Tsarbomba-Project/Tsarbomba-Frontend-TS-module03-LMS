@@ -89,6 +89,17 @@ export default function RankingClient({
   const [rankings, setRankings] = useState(initialRankings);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
+  const currentMyRanking = useMemo(() => {
+    if (!myRanking) {
+      return null;
+    }
+
+    if (mode === "total") {
+      return myRanking;
+    }
+
+    return rankings.find((item) => item.userId === myRanking.userId) ?? null;
+  }, [mode, rankings, myRanking]);
 
   const columns = useMemo<ListColumn<RankingUser>[]>(
     () => [
@@ -140,7 +151,6 @@ export default function RankingClient({
       return;
     }
 
-    setMode(nextMode);
     setLoading(true);
 
     try {
@@ -150,6 +160,7 @@ export default function RankingClient({
           : await getWeeklyPointRankings();
 
       setRankings(nextRankings);
+      setMode(nextMode);
     } catch (error) {
       handleClientError(error, {
         router,
@@ -206,7 +217,9 @@ export default function RankingClient({
             data={rankings}
             emptyMessage="표시할 랭킹이 없습니다."
             rowClassName={(item) =>
-              isMyRankingItem(item, myRanking) ? MY_RANKING_ROW_CLASS : ""
+              isMyRankingItem(item, currentMyRanking)
+                ? MY_RANKING_ROW_CLASS
+                : ""
             }
             rowKey={(item) => item.rank}
             scrollable={false}
@@ -214,22 +227,22 @@ export default function RankingClient({
         )}
       </div>
 
-      {myRanking ? (
+      {currentMyRanking ? (
         <div className={rankingClasses.myRanking}>
           <span className={`${rankingClasses.myCell} ${rankingClasses.myLabel}`}>
-            {formatRank(myRanking.rank)}
+            {formatRank(currentMyRanking.rank)}
           </span>
           <span className={rankingClasses.myCell}>
-            <BadgeImage user={myRanking} />
+            <BadgeImage user={currentMyRanking} />
           </span>
           <span className={`${rankingClasses.myCell} ${rankingClasses.myLabel}`}>
-            {getDisplayName(myRanking)}
+            {getDisplayName(currentMyRanking)}
           </span>
           <span className={`${rankingClasses.myCell} ${rankingClasses.myLabel}`}>
-            {formatPoint(myRanking.weeklyPoint)}
+            {formatPoint(currentMyRanking.weeklyPoint)}
           </span>
           <span className={`${rankingClasses.myCell} ${rankingClasses.myLabel}`}>
-            {formatPoint(myRanking.totalPoint)}
+            {formatPoint(currentMyRanking.totalPoint)}
           </span>
         </div>
       ) : (

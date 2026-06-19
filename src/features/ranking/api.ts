@@ -58,7 +58,17 @@ async function requestJson<T>(
     return { data: undefined as T };
   }
 
-  return JSON.parse(text) as ApiResponse<T>;
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    throw new ApiClientError(
+      {
+        message: fallbackMessage,
+        path,
+      },
+      fallbackMessage,
+    );
+  }
 }
 
 export async function getTotalPointRankings(init: NextRequestInit = {}) {
