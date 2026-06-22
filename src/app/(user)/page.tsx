@@ -6,12 +6,16 @@ import {
 import CourseListClient from "@/features/course/components/CourseListClient";
 
 export default async function StudentCourseListPage() {
+  let courses;
+
   try {
-    const courses = await getUserCoursesServer();
-    const activeCourses = courses.filter((c) => c.status === "ACTIVE");
-    return <CourseListClient initialCourses={activeCourses} />;
+    courses = await getUserCoursesServer();
   } catch (error) {
     if (error instanceof UnauthorizedError) redirect("/auth/login");
     throw error;
   }
+
+  const activeCourses = courses.filter((course) => course.status === "ACTIVE");
+
+  return <CourseListClient initialCourses={activeCourses} />;
 }

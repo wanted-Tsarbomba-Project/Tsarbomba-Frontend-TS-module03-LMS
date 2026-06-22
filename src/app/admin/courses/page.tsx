@@ -6,11 +6,14 @@ import {
 import OperatorCourseListClient from "@/features/course/components/OperatorCourseListClient";
 
 export default async function AdminLectureManagementPage() {
+  let courses;
+
   try {
-    const courses = await getUserCoursesServer();
-    return <OperatorCourseListClient initialCourses={courses} />;
+    courses = await getUserCoursesServer();
   } catch (error) {
     if (error instanceof UnauthorizedError) redirect("/auth/login");
     throw error;
   }
+
+  return <OperatorCourseListClient initialCourses={courses} />;
 }

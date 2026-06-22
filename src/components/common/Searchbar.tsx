@@ -45,8 +45,6 @@ export default function Searchbar({
   const handleSearch = () => {
     const trimmed = keyword.trim();
 
-    if (!trimmed) return;
-
     onSearch?.(trimmed);
   };
 
