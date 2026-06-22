@@ -162,16 +162,6 @@ export default function Sidebar({
 
         {userRole === "ADMIN" && (
           <>
-            <li>
-              <Link
-                className={
-                  pathname === "/admin/users" ? itemActiveClass : itemBaseClass
-                }
-                href="/admin/users"
-              >
-                회원 관리
-              </Link>
-            </li>
             {/* <li>
               <Link
                 className={pathname === "/admin/badges" ? itemActiveClass : itemBaseClass}
@@ -198,6 +188,16 @@ export default function Sidebar({
                 href="/admin/alrams"
               >
                 알람 관리
+              </Link>
+            </li>
+            <li>
+              <Link
+                className={
+                  pathname === "/admin/users" ? itemActiveClass : itemBaseClass
+                }
+                href="/admin/users"
+              >
+                회원 관리
               </Link>
             </li>
           </>

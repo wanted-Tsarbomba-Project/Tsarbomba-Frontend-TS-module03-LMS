@@ -96,7 +96,7 @@ function Header({ isSimple }: HeaderProps) {
   const logoTargetHref = !isManagementRole
     ? "/"
     : userRole === "ADMIN"
-      ? "/admin/users"
+      ? "/admin/rules"
       : "/admin/courses";
   const isAdminPath = pathname.startsWith("/admin");
   const courseKeyword =
