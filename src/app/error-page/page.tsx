@@ -1,3 +1,4 @@
+// SSR - 에러 페이지: URL query로 전달된 에러 정보를 서버에서 읽어 공통 에러 화면을 구성함
 import ErrorPageView from "@/components/common/ErrorPageView";
 
 interface ErrorPageProps {

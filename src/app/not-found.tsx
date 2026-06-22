@@ -1,3 +1,4 @@
+// Static/Server - 404 페이지: 존재하지 않는 경로에 대해 공통 404 화면을 서버에서 제공함
 import ErrorPageView from "@/components/common/ErrorPageView";
 
 export default function NotFound() {

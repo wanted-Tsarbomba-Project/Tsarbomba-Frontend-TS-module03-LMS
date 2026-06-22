@@ -5,11 +5,13 @@ import { useRouter, useParams } from "next/navigation";
 import {
   getLecture,
   getCourseLectures,
-  getCourseProblemSets,
-  resolveThumbnailUrl,
-  type LectureSummary,
-  type CourseProblemSetLink,
-} from "@/services/courseService";
+} from "@/features/course/lectureActions";
+import { getCourseProblemSets } from "@/features/course/problemSetActions";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import type {
+  LectureSummary,
+  CourseProblemSetLink,
+} from "@/features/course/types";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 import ErrorPageView from "@/components/common/ErrorPageView";
@@ -101,9 +103,9 @@ export default function LectureDetailPage() {
   const handleListItemClick = (item: LectureSummary) => {
     const link = linkByLecture.get(item.lectureId);
     if (link) {
-      setProblemNavTarget(link); // 문제 → "이동하시겠습니까?" 모달
+      setProblemNavTarget(link);
     } else {
-      goToLecture(item.lectureId); // 영상 → 바로 이동
+      goToLecture(item.lectureId);
     }
   };
 

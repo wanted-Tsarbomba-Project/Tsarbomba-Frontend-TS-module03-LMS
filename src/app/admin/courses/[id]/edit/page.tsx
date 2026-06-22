@@ -4,18 +4,23 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   getCourse,
-  getCourseLectures,
-  getCourseProblemSets,
   getCourseCategories,
   uploadCourseThumbnail,
   updateCourse,
+} from "@/features/course/actions";
+import {
+  getCourseLectures,
   createLecture,
   updateLecture,
   deleteLecture,
+} from "@/features/course/lectureActions";
+import {
+  getCourseProblemSets,
   configureCourseProblemSets,
-  resolveThumbnailUrl,
-  type ProblemSetConnection,
-} from "@/services/courseService";
+} from "@/features/course/problemSetActions";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import { isValidYoutubeUrl } from "@/features/course/youtube";
+import type { ProblemSetConnection } from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
@@ -27,11 +32,11 @@ import type {
   VideoLecture,
   ProblemLecture,
   LectureItem,
-} from "@/features/courseForm/types";
+} from "@/features/course/form/types";
 import {
   VideoLectureCard,
   ProblemLectureCard,
-} from "@/features/courseForm/components/LectureCards";
+} from "@/features/course/form/components/LectureCards";
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 강좌 수정 페이지
@@ -208,6 +213,7 @@ export default function CourseEditPage() {
               lectureId: l.lectureId,
               type: "video" as const,
               title: l.title ?? "",
+              videoUrl: l.videoUrl ?? "",
               description: l.description ?? "",
               file: null,
               lectureOrder: l.lectureOrder,
@@ -343,6 +349,7 @@ export default function CourseEditPage() {
         id: uid(),
         type: "video",
         title: "",
+        videoUrl: "",
         description: "",
         file: null,
         lectureOrder: prev.length + 1,
@@ -470,6 +477,12 @@ export default function CourseEditPage() {
     if (!title.trim()) return "강좌 제목을 입력해주세요.";
     if (!courseCategoryId) return "카테고리를 선택해주세요.";
     if (!description.trim()) return "강좌 설명을 입력해주세요.";
+    for (const lec of lectures) {
+      if (lec.type !== "video") continue;
+      if (!lec.videoUrl.trim()) return "영상 링크(유튜브)를 입력해주세요.";
+      if (!isValidYoutubeUrl(lec.videoUrl.trim()))
+        return "유효한 유튜브 링크를 입력해주세요. (예: https://youtu.be/xxxxxxxxxxx)";
+    }
     return null;
   };
 
@@ -517,6 +530,7 @@ export default function CourseEditPage() {
                   ?.title ?? "문제 강의")
               : "문제 강의",
           description: isVideo ? v!.description : null,
+          videoUrl: isVideo ? v!.videoUrl.trim() || null : null,
           lectureOrder: i + 1,
           lectureType: isVideo ? "VIDEO" : "PROBLEM",
         };

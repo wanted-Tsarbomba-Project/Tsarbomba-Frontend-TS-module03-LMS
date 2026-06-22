@@ -8,8 +8,8 @@ import List, { type ListColumn } from "../../../components/common/List";
 import {
   getUserCourses,
   updateCourseStatus,
-  Course,
-} from "../../../services/courseService";
+} from "@/features/course/actions";
+import type { Course } from "@/features/course/types";
 
 export default function AdminLectureManagementPage() {
   const router = useRouter();

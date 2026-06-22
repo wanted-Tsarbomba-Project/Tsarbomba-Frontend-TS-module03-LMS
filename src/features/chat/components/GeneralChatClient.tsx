@@ -1,5 +1,6 @@
 "use client";
 
+// CSR - 범용 챗봇: 사용자 입력, AI 응답, 채팅방 수정/삭제가 즉시 반영되는 대화형 화면
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,119 +20,21 @@ import {
   getChatRooms,
   sendChatMessage,
   updateChatRoomTitle,
-} from "../api";
-import type { ChatMessage, ChatRoom } from "../types";
-
-const chatClasses = {
-  page: "relative flex h-[66vh] max-h-[720px] min-h-[480px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-120px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
-  header:
-    "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 py-2.5 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
-  titleGroup: "flex min-w-0 flex-1 flex-col gap-1",
-  title: "min-w-0 truncate",
-  linkedProblemTitle:
-    "min-w-0 truncate text-description font-semibold text-text-secondary",
-  titleInput:
-    "min-w-0 flex-1 rounded-base border border-border-light bg-bg-box px-3 py-2 text-body font-semibold text-text-primary outline-none focus:border-button-blue-bg",
-  headerActions: "flex shrink-0 items-center gap-2",
-  moveButton:
-    "shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-3.5 py-2 text-body font-semibold text-text-white hover:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
-  editButton:
-    "shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-blue hover:bg-button-blue-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
-  deleteButton:
-    "shrink-0 cursor-pointer rounded-base border border-button-red-bg bg-bg-box px-3.5 py-2 text-body font-semibold text-text-red hover:bg-button-red-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
-  cancelEditButton:
-    "shrink-0 cursor-pointer rounded-base border border-border-light bg-bg-box px-3.5 py-2 text-body font-semibold text-text-primary hover:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
-  messageContainer:
-    "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 pb-28 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5 max-md:pb-28",
-  messageWrapper: "flex w-full",
-  assistantWrapper: "justify-start",
-  userWrapper: "justify-end",
-  message:
-    "max-w-[70%] whitespace-pre-wrap break-words rounded-base px-[18px] py-3.5 text-body leading-[1.6] text-text-primary max-md:max-w-[90%]",
-  assistantMessage: "bg-[#bfd3ef]",
-  userMessage: "border border-border-light bg-bg-box",
-  errorMessage: "text-text-red",
-  spinnerWrap: "flex items-center gap-2",
-  spinner:
-    "h-4 w-4 animate-spin rounded-full border-2 border-[#93a9c8] border-t-button-blue-bg",
-  spinnerText: "text-body text-text-primary",
-  inputAreaBase:
-    "absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-bg-box from-[70%] via-bg-box/75 via-[86%] to-transparent px-6 pt-5 pb-4 max-md:px-5 max-md:pb-3.5",
-  inputRow: "flex items-end gap-3",
-  input:
-    "box-border max-h-36 min-h-[52px] flex-1 resize-none overflow-y-hidden rounded-base border border-border-light bg-bg-box px-4 py-3.5 text-body leading-normal text-text-primary outline-none placeholder:text-text-placeholder focus:border-button-blue-bg disabled:bg-bg-gray disabled:text-text-secondary max-md:min-h-12",
-  sendButton:
-    "h-[52px] min-w-[88px] cursor-pointer rounded-base border-0 bg-button-blue-bg text-body font-bold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-50 max-md:h-12 max-md:min-w-[76px]",
-} as const;
-
-const DEFAULT_CHAT_TITLE = "새 대화";
-const CHAT_INPUT_MAX_HEIGHT = 144;
+} from "../actions";
+import { chatClasses } from "../styles";
+import type { ChatMessage } from "../types";
+import {
+  createMessage,
+  DEFAULT_CHAT_TITLE,
+  getLinkedProblem,
+  getLinkedProblemLabel,
+  type LinkedProblem,
+  normalizeId,
+  resizeChatInput,
+} from "../utils";
 
 interface GeneralChatClientProps {
   roomId?: string;
-}
-
-interface LinkedProblem {
-  problemSetId: string;
-  problemId: string;
-  problemSetTitle?: string;
-  problemTitle?: string;
-}
-
-function createMessage(
-  role: ChatMessage["role"],
-  content: string,
-  error = false,
-) {
-  return {
-    role,
-    content,
-    error,
-  };
-}
-
-function resizeChatInput(textarea: HTMLTextAreaElement | null) {
-  if (!textarea) {
-    return;
-  }
-
-  textarea.style.height = "auto";
-  const nextHeight = Math.min(textarea.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
-  textarea.style.height = `${nextHeight}px`;
-  textarea.style.overflowY =
-    textarea.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
-}
-
-function normalizeId(value?: number | string | null) {
-  return value == null ? "" : String(value);
-}
-
-function getRoomProblemSetId(room: ChatRoom) {
-  return (
-    room.problemSetId ??
-    room.problemSet?.problemSetId ??
-    room.problemSet?.id ??
-    null
-  );
-}
-
-function getRoomProblemId(room: ChatRoom) {
-  return room.problemId ?? room.problem?.problemId ?? room.problem?.id ?? null;
-}
-
-function getLinkedProblem(room?: ChatRoom): LinkedProblem | null {
-  if (!room) {
-    return null;
-  }
-
-  const problemSetId = normalizeId(getRoomProblemSetId(room));
-  const problemId = normalizeId(getRoomProblemId(room));
-
-  if (!problemSetId || !problemId) {
-    return null;
-  }
-
-  return { problemSetId, problemId };
 }
 
 async function enrichLinkedProblem(
@@ -158,17 +61,6 @@ async function enrichLinkedProblem(
   } catch {
     return linkedProblem;
   }
-}
-
-function getLinkedProblemLabel(linkedProblem: LinkedProblem) {
-  if (linkedProblem.problemSetTitle || linkedProblem.problemTitle) {
-    return [
-      linkedProblem.problemSetTitle ?? `문제 세트 ${linkedProblem.problemSetId}`,
-      linkedProblem.problemTitle ?? `문제 ${linkedProblem.problemId}`,
-    ].join(" - ");
-  }
-
-  return `문제 세트 ${linkedProblem.problemSetId} - 문제 ${linkedProblem.problemId}`;
 }
 
 export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
@@ -258,7 +150,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       }
     };
 
-    loadChat();
+    void loadChat();
 
     return () => {
       controller.abort();
@@ -288,7 +180,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       appendMessage(
         createMessage(
           "ASSISTANT",
-          response?.answer ?? "답변을 받지 못했습니다.",
+          response?.answer ?? "응답을 받지 못했습니다.",
         ),
       );
       window.dispatchEvent(new Event("chatRoomUpdated"));
@@ -300,7 +192,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       appendMessage(
         createMessage(
           "ASSISTANT",
-          "AI 답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          "AI 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
           true,
         ),
       );
@@ -320,7 +212,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      sendMessage();
+      void sendMessage();
     }
   };
 
@@ -449,6 +341,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
             )}
           </div>
         )}
+
         {activeRoomId && (
           <div className={chatClasses.headerActions}>
             {linkedProblem && !editingTitle && (
@@ -563,7 +456,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           <button
             className={chatClasses.sendButton}
             disabled={sending || !inputValue.trim()}
-            onClick={sendMessage}
+            onClick={() => void sendMessage()}
             type="button"
           >
             전송

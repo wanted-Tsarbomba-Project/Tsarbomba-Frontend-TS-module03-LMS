@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Course, resolveThumbnailUrl } from "@/services/courseService";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import type { Course } from "@/features/course/types";
 
 interface CourseItemProps {
   course: Course;

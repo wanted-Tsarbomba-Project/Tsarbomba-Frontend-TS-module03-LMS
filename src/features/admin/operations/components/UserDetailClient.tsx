@@ -17,7 +17,7 @@ import {
   getUserCourseProgress,
   getUserProblemList,
   toggleUserLock,
-} from "../api";
+} from "../actions";
 import type {
   AdminUserDetail,
   UserCourseRow,

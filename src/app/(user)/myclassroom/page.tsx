@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   getMyEnrollments,
   cancelEnrollment,
-  resolveThumbnailUrl,
-  type Enrollment,
-} from "@/services/courseService";
+} from "@/features/course/enrollmentActions";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import type { Enrollment } from "@/features/course/types";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 import ErrorPageView from "@/components/common/ErrorPageView";

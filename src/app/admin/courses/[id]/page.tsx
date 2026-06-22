@@ -2,16 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import {
-  getCourse,
-  getCourseLectures,
-  deleteCourse,
-  getCourseLearningProgress,
-  resolveThumbnailUrl,
-  type CourseDetail,
-  type LectureSummary,
-  type LearningProgressItem,
-} from "@/services/courseService";
+import { getCourse, deleteCourse } from "@/features/course/actions";
+import { getCourseLectures } from "@/features/course/lectureActions";
+import { getCourseLearningProgress } from "@/features/course/progressActions";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import type {
+  CourseDetail,
+  LectureSummary,
+  LearningProgressItem,
+} from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";
@@ -124,7 +123,7 @@ export default function AdminCourseDetailPage() {
   ];
 
   const outlineBtn =
-    "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
+    "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg cursor-pointer hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
 
   if (loading) {
     return <LoadingIndicator message="강좌 정보를 불러오는 중입니다." />;
@@ -207,7 +206,7 @@ export default function AdminCourseDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 text-sm font-medium bg-white text-red-500 border border-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors whitespace-nowrap"
+                  className="px-4 py-2 text-sm font-medium bg-white text-red-500 border border-red-500 rounded-lg cursor-pointer hover:bg-red-500 hover:text-white transition-colors whitespace-nowrap"
                 >
                   삭제하기
                 </button>
@@ -232,7 +231,7 @@ export default function AdminCourseDetailPage() {
                   type="button"
                   onClick={() => handleLectureClick(lecture.lectureId)}
                   className={[
-                    "w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-100 transition-colors",
+                    "w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer hover:bg-gray-100 transition-colors",
                     index < lectures.length - 1 ? "border-b border-gray-200" : "",
                   ].join(" ")}
                 >
