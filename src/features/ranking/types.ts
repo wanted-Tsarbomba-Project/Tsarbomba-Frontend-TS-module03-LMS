@@ -1,7 +1,7 @@
 export type RankingMode = "total" | "weekly";
 
 export interface RankingUser {
-  rank: number;
+  rank: number | null;
   userId: number;
   name: string;
   nickname: string;
