@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,6 +10,10 @@ import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
 import { logoutService } from "@/features/auth/actions";
+import {
+  buildCourseSearchHref,
+  COURSE_SEARCH_PARAM,
+} from "@/features/course/search";
 
 interface HeaderProps {
   isSimple?: boolean;
@@ -28,6 +32,7 @@ function getHeaderStatus() {
 function Header({ isSimple }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -94,6 +99,12 @@ function Header({ isSimple }: HeaderProps) {
       ? "/admin/users"
       : "/admin/courses";
   const isAdminPath = pathname.startsWith("/admin");
+  const courseKeyword =
+    pathname === "/" ? (searchParams.get(COURSE_SEARCH_PARAM) ?? "") : "";
+
+  const handleCourseSearch = (keyword: string) => {
+    router.replace(buildCourseSearchHref(searchParams, keyword));
+  };
 
   if (isSimple) {
     return (
@@ -138,7 +149,12 @@ function Header({ isSimple }: HeaderProps) {
 
         {(!isManagementRole || !isAdminPath) && (
           <div className="flex-1 max-w-md mx-8 hidden sm:block">
-            <Searchbar />
+            <Searchbar
+              defaultValue={courseKeyword}
+              key={courseKeyword}
+              onSearch={handleCourseSearch}
+              placeholder="강좌 제목 검색"
+            />
           </div>
         )}
 

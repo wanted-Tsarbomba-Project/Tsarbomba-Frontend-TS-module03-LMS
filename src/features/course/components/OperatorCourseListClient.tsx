@@ -1,18 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import TwoButtonModal from "@/components/common/TwoButtonModal";
-import OneButtonModal from "@/components/common/OneButtonModal";
+
+import Searchbar from "@/components/common/Searchbar";
 import List, { type ListColumn } from "@/components/common/List";
+import OneButtonModal from "@/components/common/OneButtonModal";
+import TwoButtonModal from "@/components/common/TwoButtonModal";
 import { updateCourseStatus } from "@/features/course/actions";
-import type { Course } from "@/features/course/types";
+import { filterCourses } from "@/features/course/search";
+import type { Course, CourseStatusFilter } from "@/features/course/types";
 
 interface OperatorCourseListClientProps {
   initialCourses: Course[];
 }
 
-type SortFilter = "all" | "open" | "hidden";
 type CourseStatus = "ACTIVE" | "DRAFT" | "DELETED";
 
 export default function OperatorCourseListClient({
@@ -20,7 +22,9 @@ export default function OperatorCourseListClient({
 }: OperatorCourseListClientProps) {
   const router = useRouter();
 
-  const [sortFilter, setSortFilter] = useState<SortFilter>("all");
+  const [sortFilter, setSortFilter] = useState<CourseStatusFilter>("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [keyword, setKeyword] = useState("");
 
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [currentStatus, setCurrentStatus] = useState<CourseStatus | null>(null);
@@ -30,19 +34,21 @@ export default function OperatorCourseListClient({
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const filteredCourses = initialCourses.filter((course) => {
-    if (sortFilter === "open") return course.status === "ACTIVE";
-    if (sortFilter === "hidden")
-      return course.status === "DRAFT" || course.status === "DELETED";
-    return true;
-  });
+  const filteredCourses = useMemo(
+    () =>
+      filterCourses(initialCourses, {
+        keyword,
+        statusFilter: sortFilter,
+      }),
+    [initialCourses, keyword, sortFilter],
+  );
 
   const handleStatusButtonClick = (
-    e: React.MouseEvent,
+    event: React.MouseEvent,
     id: number,
     status: CourseStatus,
   ) => {
-    e.stopPropagation();
+    event.stopPropagation();
     setSelectedCourseId(id);
     setCurrentStatus(status);
     setConfirmModalOpen(true);
@@ -51,7 +57,9 @@ export default function OperatorCourseListClient({
   const handleConfirmChange = async () => {
     setConfirmModalOpen(false);
 
-    if (selectedCourseId === null || currentStatus === null) return;
+    if (selectedCourseId === null || currentStatus === null) {
+      return;
+    }
 
     try {
       const nextStatus = currentStatus === "ACTIVE" ? "DRAFT" : "ACTIVE";
@@ -80,15 +88,15 @@ export default function OperatorCourseListClient({
       label: "상태",
       render: (course) => (
         <button
-          type="button"
-          onClick={(e) =>
-            handleStatusButtonClick(e, course.courseId, course.status)
-          }
-          className={`inline-block px-3 py-1 rounded-md text-xs font-semibold border transition cursor-pointer ${
+          className={`inline-block cursor-pointer rounded-md border px-3 py-1 text-xs font-semibold transition ${
             course.status === "ACTIVE"
-              ? "border-blue-900 text-blue-900 bg-white hover:bg-blue-900 hover:text-white"
-              : "border-red-500 text-red-500 bg-white hover:bg-red-500 hover:text-white"
+              ? "border-blue-900 bg-white text-blue-900 hover:bg-blue-900 hover:text-white"
+              : "border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white"
           }`}
+          onClick={(event) =>
+            handleStatusButtonClick(event, course.courseId, course.status)
+          }
+          type="button"
         >
           {course.status === "ACTIVE" ? "공개" : "비공개"}
         </button>
@@ -97,22 +105,32 @@ export default function OperatorCourseListClient({
   ];
 
   return (
-    <div className="w-full min-h-screen p-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen w-full p-8">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">강의 관리</h1>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <Searchbar
+            className="max-w-[260px]"
+            onChange={setSearchInput}
+            onSearch={setKeyword}
+            value={searchInput}
+          />
+
           <button
-            className="bg-blue-900 hover:bg-blue-950 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition cursor-pointer"
+            className="cursor-pointer rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-950"
             onClick={() => router.push("/admin/courses/new")}
+            type="button"
           >
             등록하기
           </button>
 
           <select
+            className="cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-800 shadow-sm focus:outline-none"
+            onChange={(event) =>
+              setSortFilter(event.target.value as CourseStatusFilter)
+            }
             value={sortFilter}
-            onChange={(e) => setSortFilter(e.target.value as SortFilter)}
-            className="border border-gray-200 rounded-lg text-sm px-4 py-2 text-gray-800 bg-white shadow-sm focus:outline-none cursor-pointer"
           >
             <option value="all">전체 정렬</option>
             <option value="open">공개</option>
@@ -122,35 +140,35 @@ export default function OperatorCourseListClient({
       </div>
 
       <List
-        data={filteredCourses}
         columns={courseColumns}
-        rowKey={(course, index) => course.courseId ?? index}
+        data={filteredCourses}
+        emptyMessage="조건에 맞는 강의가 없습니다."
         onRowClick={(course) =>
           router.push(`/admin/courses/${course.courseId}`)
         }
-        emptyMessage="등록된 강의가 없습니다."
+        rowKey={(course, index) => course.courseId ?? index}
       />
 
       <TwoButtonModal
         isOpen={confirmModalOpen}
+        modalContent="해당 강좌의 공개/비공개 상태를 변경하시겠습니까?"
+        modalTitle="상태 변경 확인"
         onClose={() => setConfirmModalOpen(false)}
         onConfirm={handleConfirmChange}
-        modalTitle="상태 변경 확인"
-        modalContent="해당 강좌의 공개/비공개 상태를 변경하시겠습니까?"
       />
 
       <OneButtonModal
         isOpen={successModalOpen}
-        onClose={() => setSuccessModalOpen(false)}
-        modalTitle="변경 완료"
         modalContent="상태가 성공적으로 변경되었습니다."
+        modalTitle="변경 완료"
+        onClose={() => setSuccessModalOpen(false)}
       />
 
       <OneButtonModal
         isOpen={errorModalOpen}
-        onClose={() => setErrorModalOpen(false)}
-        modalTitle="변경 실패"
         modalContent={errorMessage}
+        modalTitle="변경 실패"
+        onClose={() => setErrorModalOpen(false)}
       />
     </div>
   );
