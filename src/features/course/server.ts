@@ -1,0 +1,70 @@
+// 강좌 도메인 — 서버 컴포넌트 전용 조회
+import { cookies } from "next/headers";
+import type { Course, CourseDetail, Enrollment, LectureSummary } from "./types";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+/** 미인증(401) 식별용 */
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("인증이 필요합니다.");
+    this.name = "UnauthorizedError";
+  }
+}
+
+async function getJson<T>(path: string, fallbackMessage: string): Promise<T> {
+  const cookieHeader = (await cookies()).toString();
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    headers: { Accept: "application/json", Cookie: cookieHeader },
+    cache: "no-store",
+  });
+
+  if (response.status === 401) throw new UnauthorizedError();
+  if (!response.ok) throw new Error(fallbackMessage);
+
+  const text = await response.text();
+  let parsed: { data?: unknown } | null = null;
+  if (text) {
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = null;
+    }
+  }
+  return (parsed?.data ?? parsed) as T;
+}
+export async function getUserCoursesServer(): Promise<Course[]> {
+  const data = await getJson<Course[]>(
+    "/api/v1/courses",
+    "강좌 목록을 불러오지 못했습니다.",
+  );
+  return data ?? [];
+}
+
+export async function getMyEnrollmentsServer(): Promise<Enrollment[]> {
+  const data = await getJson<Enrollment[]>(
+    "/api/v1/users/me/enrollments",
+    "수강 목록을 불러오지 못했습니다.",
+  );
+  return data ?? [];
+}
+
+export async function getCourseServer(
+  courseId: string | number,
+): Promise<CourseDetail> {
+  return getJson<CourseDetail>(
+    `/api/v1/courses/${courseId}`,
+    "강좌 정보를 불러오지 못했습니다.",
+  );
+}
+
+export async function getCourseLecturesServer(
+  courseId: string | number,
+): Promise<LectureSummary[]> {
+  const data = await getJson<LectureSummary[]>(
+    `/api/v1/courses/${courseId}/lectures`,
+    "강의 목록을 불러오지 못했습니다.",
+  );
+  return (data ?? []).sort((a, b) => a.lectureOrder - b.lectureOrder);
+}
