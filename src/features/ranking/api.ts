@@ -1,7 +1,5 @@
 import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 
-import type { RankingListData, RankingUser } from "./types";
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_BASE_URL) {
@@ -12,16 +10,16 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-type NextRequestInit = RequestInit & {
+export type RankingRequestInit = RequestInit & {
   next?: {
     revalidate?: number;
   };
 };
 
-async function requestJson<T>(
+export async function requestRankingJson<T>(
   path: string,
   fallbackMessage: string,
-  init: NextRequestInit = {},
+  init: RankingRequestInit = {},
 ): Promise<ApiResponse<T>> {
   let response: Response;
 
@@ -69,36 +67,6 @@ async function requestJson<T>(
       fallbackMessage,
     );
   }
-}
-
-export async function getTotalPointRankings(init: NextRequestInit = {}) {
-  const result = await requestJson<RankingListData>(
-    "/api/v1/rankings/points",
-    "전체 랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    init,
-  );
-
-  return result.data?.rankings ?? [];
-}
-
-export async function getWeeklyPointRankings(init: NextRequestInit = {}) {
-  const result = await requestJson<RankingListData>(
-    "/api/v1/rankings/points/weekly",
-    "주간 랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    init,
-  );
-
-  return result.data?.rankings ?? [];
-}
-
-export async function getMyPointRanking(init: NextRequestInit = {}) {
-  const result = await requestJson<RankingUser>(
-    "/api/v1/rankings/points/me",
-    "내 랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    init,
-  );
-
-  return result.data ?? null;
 }
 
 function createApiError(
