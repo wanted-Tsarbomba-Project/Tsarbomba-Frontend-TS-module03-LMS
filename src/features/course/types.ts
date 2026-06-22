@@ -10,6 +10,8 @@ export interface Course {
   status: "ACTIVE" | "DRAFT" | "DELETED";
 }
 
+export type CourseStatusFilter = "all" | "open" | "hidden";
+
 /* 강좌 상세 */
 export interface CourseDetail {
   courseId: number;
