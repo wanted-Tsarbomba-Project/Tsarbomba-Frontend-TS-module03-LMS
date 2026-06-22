@@ -46,10 +46,16 @@ function Header({ isSimple }: HeaderProps) {
   };
 
   useEffect(() => {
-    setIsMounted(true);
-    syncHeaderStatus();
+    const timer = window.setTimeout(() => {
+      setIsMounted(true);
+      syncHeaderStatus();
+    }, 0);
+
     window.addEventListener("loginSuccess", syncHeaderStatus);
-    return () => window.removeEventListener("loginSuccess", syncHeaderStatus);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("loginSuccess", syncHeaderStatus);
+    };
   }, []);
 
   const handleLogoutConfirm = async () => {
