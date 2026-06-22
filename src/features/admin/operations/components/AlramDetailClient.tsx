@@ -17,7 +17,8 @@ import {
   updateOperationAlertMemo,
   updateOperationAlertStatus,
 } from "../api";
-import type { AlertStatus, OperationAlertDetail, TargetType } from "../types";
+import { alertStatusLabel, operationTargetTypeLabel } from "../constants";
+import type { AlertStatus, OperationAlertDetail } from "../types";
 
 const alramDetailClasses = {
   "wrapper": "box-border bg-bg-main p-6 text-body text-text-primary",
@@ -40,18 +41,6 @@ const alramDetailClasses = {
   "whiteRedButton": "border border-button-red-bg bg-bg-box text-text-red hover:not-disabled:bg-button-red-bg hover:not-disabled:text-text-white"
 } as const;
 
-
-const statusLabel: Record<AlertStatus, string> = {
-  OPEN: "미처리",
-  RESOLVED: "처리 완료",
-  IGNORED: "무시됨",
-};
-
-const targetTypeLabel: Record<TargetType, string> = {
-  PROBLEM: "문제",
-  USER: "회원",
-  COURSE: "강좌",
-};
 
 interface NoticeModalState {
   isOpen: boolean;
@@ -237,7 +226,7 @@ export default function AlramDetailClient() {
     <>
       <div className={alramDetailClasses.wrapper}>
         <div className={alramDetailClasses.topBar}>
-          <div className={alramDetailClasses.status}>상태: {statusLabel[status] ?? status}</div>
+          <div className={alramDetailClasses.status}>상태: {alertStatusLabel[status] ?? status}</div>
 
           <div className={alramDetailClasses.topActions}>
             <StatusButton
@@ -276,12 +265,12 @@ export default function AlramDetailClient() {
             <Info label="설명" value={rule.description} />
             <Info
               label="대상"
-              value={`${targetTypeLabel[target.targetType] ?? target.targetType} #${
+              value={`${operationTargetTypeLabel[target.targetType] ?? target.targetType} #${
                 target.targetId
               }`}
             />
             <Info label="대상명" value={target.title ?? target.nickname} />
-            <Info label="상태" value={statusLabel[status] ?? status} />
+            <Info label="상태" value={alertStatusLabel[status] ?? status} />
             <Info label="심각도" value={alertInfo.severity} />
             <Info label="감지 사유" value={alertInfo.reason} />
             <Info label="권장 조치" value={alertInfo.recommendedAction} />
@@ -366,7 +355,7 @@ export default function AlramDetailClient() {
         cancelDisabled={saving}
         confirmDisabled={saving}
         isOpen={statusModal.isOpen}
-        modalContent={`${statusLabel[statusModal.nextStatus ?? status]} 상태로 변경합니다.`}
+        modalContent={`${alertStatusLabel[statusModal.nextStatus ?? status]} 상태로 변경합니다.`}
         modalTitle="상태를 변경하시겠습니까?"
         onClose={() => setStatusModal({ isOpen: false, nextStatus: null })}
         onConfirm={() => void handleStatusConfirm()}

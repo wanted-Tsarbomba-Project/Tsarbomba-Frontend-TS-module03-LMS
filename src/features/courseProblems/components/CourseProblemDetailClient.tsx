@@ -31,8 +31,8 @@ import type {
 import ProblemChatPanel from "@/features/problems/components/ProblemChatPanel";
 import ProblemResultPanel from "@/features/problems/components/ProblemResultPanel";
 
-// 스타일은 문제풀이 화면과 동일 — Tailwind 클래스 객체를 그대로 재사용
-import { problemDetailClasses as styles } from "@/features/problems/components/UserProblemDetailClient";
+// 스타일은 문제풀이 화면과 동일하게 공유하되, 클라이언트 컴포넌트 의존 없이 스타일 파일만 참조함
+import { problemDetailClasses as styles } from "@/features/problems/problemDetailStyles";
 
 interface CourseProblemDetailClientProps {
   courseId: string;
