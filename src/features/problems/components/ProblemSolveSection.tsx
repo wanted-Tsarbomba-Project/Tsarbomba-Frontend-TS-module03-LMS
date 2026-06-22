@@ -61,28 +61,38 @@ function ProblemSolveSection({
         />
       </div>
 
-      <div className={problemDetailClasses.tabs}>
+      <div
+        aria-label="문제 풀이 결과 탭"
+        className={problemDetailClasses.tabs}
+        role="tablist"
+      >
         <button
+          aria-selected={activeTab === "result"}
           className={activeTab === "result" ? problemDetailClasses.activeTab : ""}
           onClick={() => onTabChange("result")}
+          role="tab"
           type="button"
         >
           실행결과
         </button>
         <button
+          aria-selected={activeTab === "hint"}
           className={activeTab === "hint" ? problemDetailClasses.activeTab : ""}
           disabled={!hintEnabled}
           onClick={() => onTabChange("hint")}
+          role="tab"
           type="button"
         >
           힌트
         </button>
         <button
+          aria-selected={activeTab === "solution"}
           className={
             activeTab === "solution" ? problemDetailClasses.activeTab : ""
           }
           disabled={!solutionEnabled}
           onClick={() => onTabChange("solution")}
+          role="tab"
           type="button"
         >
           해설보기

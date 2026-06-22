@@ -300,6 +300,10 @@ export default function UserProblemDetailClient({
     let isMounted = true;
 
     const loadProblemChatRoom = async () => {
+      if (!hasOpenedChatPanel) {
+        return;
+      }
+
       if (!problemSet.id || !currentProblem?.problemId) {
         resetChatState();
         return;
@@ -356,7 +360,13 @@ export default function UserProblemDetailClient({
     return () => {
       isMounted = false;
     };
-  }, [currentProblem?.problemId, problemSet.id, resetChatState, router]);
+  }, [
+    currentProblem?.problemId,
+    hasOpenedChatPanel,
+    problemSet.id,
+    resetChatState,
+    router,
+  ]);
 
   const canMoveProblem = (index: number) => problemStates[index] !== "LOCKED";
 
