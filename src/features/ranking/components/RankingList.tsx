@@ -49,7 +49,9 @@ const rankingColumns: ListColumn<RankingUser>[] = [
     key: "totalPoint",
     label: "누적 포인트",
     render: (item) => (
-      <span className={rankingClasses.point}>{formatPoint(item.totalPoint)}</span>
+      <span className={rankingClasses.point}>
+        {formatPoint(item.totalPoint)}
+      </span>
     ),
   },
 ];
@@ -63,7 +65,7 @@ export default function RankingList({ myRanking, rankings }: RankingListProps) {
       rowClassName={(item) =>
         isMyRankingItem(item, myRanking) ? MY_RANKING_ROW_CLASS : ""
       }
-      rowKey={(item) => item.rank}
+      rowKey={(item) => item.userId}
       scrollable={false}
     />
   );

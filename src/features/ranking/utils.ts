@@ -1,6 +1,10 @@
 import type { RankingUser } from "./types";
 
-export function formatRank(rank: number) {
+export function formatRank(rank?: number | null) {
+  if (rank == null) {
+    return "-";
+  }
+
   return String(rank).padStart(2, "0");
 }
 
