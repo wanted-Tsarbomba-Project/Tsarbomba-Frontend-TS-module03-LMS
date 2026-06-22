@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { List } from "@/components/common";
 import type { ListColumn } from "@/components/common";
 
@@ -13,6 +15,7 @@ import RankingBadgeImage from "./RankingBadgeImage";
 
 interface RankingListProps {
   myRanking: RankingUser | null;
+  pagination?: ReactNode;
   rankings: RankingUser[];
 }
 
@@ -56,12 +59,17 @@ const rankingColumns: ListColumn<RankingUser>[] = [
   },
 ];
 
-export default function RankingList({ myRanking, rankings }: RankingListProps) {
+export default function RankingList({
+  myRanking,
+  pagination = null,
+  rankings,
+}: RankingListProps) {
   return (
     <List
       columns={rankingColumns}
       data={rankings}
       emptyMessage="표시할 랭킹이 없습니다."
+      pagination={pagination}
       rowClassName={(item) =>
         isMyRankingItem(item, myRanking) ? MY_RANKING_ROW_CLASS : ""
       }
