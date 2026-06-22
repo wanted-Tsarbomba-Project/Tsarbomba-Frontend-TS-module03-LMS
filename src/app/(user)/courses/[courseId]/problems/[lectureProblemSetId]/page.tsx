@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
-import { getLectureProblemSet } from "@/features/courseProblems/actions";
-import CourseProblemDetailClient from "@/features/courseProblems/components/CourseProblemDetailClient";
+import { getLectureProblemSet } from "@/features/course/problems/actions";
+import CourseProblemDetailClient from "@/features/course/problems/components/CourseProblemDetailClient";
 import ErrorPageView from "@/components/common/ErrorPageView";
 import { ApiClientError } from "@/lib/errorHandling";
 

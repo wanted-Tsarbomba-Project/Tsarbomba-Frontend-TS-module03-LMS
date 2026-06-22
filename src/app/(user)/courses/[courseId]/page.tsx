@@ -2,18 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { getCourse, deleteCourse } from "@/features/course/actions";
+import { getCourseLectures } from "@/features/course/lectureActions";
 import {
-  getCourse,
-  getCourseLectures,
   getMyEnrollments,
-  deleteCourse,
   enrollCourse,
-  getCourseLearningProgress,
-  resolveThumbnailUrl,
-  type CourseDetail,
-  type LectureSummary,
-  type LearningProgressItem,
-} from "@/services/courseService";
+} from "@/features/course/enrollmentActions";
+import { getCourseLearningProgress } from "@/features/course/progressActions";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import type {
+  CourseDetail,
+  LectureSummary,
+  LearningProgressItem,
+} from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";

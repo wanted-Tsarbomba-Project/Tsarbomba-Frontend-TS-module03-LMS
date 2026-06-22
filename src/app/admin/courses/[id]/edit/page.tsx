@@ -4,19 +4,23 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   getCourse,
-  getCourseLectures,
-  getCourseProblemSets,
   getCourseCategories,
   uploadCourseThumbnail,
   updateCourse,
+} from "@/features/course/actions";
+import {
+  getCourseLectures,
   createLecture,
   updateLecture,
   deleteLecture,
+} from "@/features/course/lectureActions";
+import {
+  getCourseProblemSets,
   configureCourseProblemSets,
-  resolveThumbnailUrl,
-  isValidYoutubeUrl,
-  type ProblemSetConnection,
-} from "@/services/courseService";
+} from "@/features/course/problemSetActions";
+import { resolveThumbnailUrl } from "@/features/course/http";
+import { isValidYoutubeUrl } from "@/features/course/youtube";
+import type { ProblemSetConnection } from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
@@ -28,11 +32,11 @@ import type {
   VideoLecture,
   ProblemLecture,
   LectureItem,
-} from "@/features/courseForm/types";
+} from "@/features/course/form/types";
 import {
   VideoLectureCard,
   ProblemLectureCard,
-} from "@/features/courseForm/components/LectureCards";
+} from "@/features/course/form/components/LectureCards";
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 강좌 수정 페이지

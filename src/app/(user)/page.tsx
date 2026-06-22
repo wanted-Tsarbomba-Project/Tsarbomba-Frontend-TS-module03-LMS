@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { getUserCourses, Course } from "../../services/courseService";
+import { getUserCourses } from "@/features/course/actions";
+import type { Course } from "@/features/course/types";
 import CourseItem from "@/features/admin/operations/components/CourseItem";
 
 function StudentCourseListContent() {
