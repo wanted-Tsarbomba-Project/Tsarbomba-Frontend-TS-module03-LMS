@@ -2,15 +2,11 @@
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
-import {
-  OneButtonModal,
-  TwoButtonModal,
-  WarningModal,
-} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -37,8 +33,14 @@ import type {
   ProblemStatus,
   SubmissionResult,
 } from "../types";
-import ProblemChatPanel from "./ProblemChatPanel";
-import ProblemResultPanel from "./ProblemResultPanel";
+import ProblemDetailModals from "./ProblemDetailModals";
+import ProblemSolveSection from "./ProblemSolveSection";
+import ProblemStatementCard from "./ProblemStatementCard";
+
+const LazyProblemChatPanel = dynamic(() => import("./ProblemChatPanel"), {
+  loading: () => null,
+  ssr: false,
+});
 
 interface UserProblemDetailClientProps {
   problemSetId: string;
@@ -199,6 +201,7 @@ export default function UserProblemDetailClient({
   const [emptySubmitModalOpen, setEmptySubmitModalOpen] = useState(false);
   const [alertModal, setAlertModal] = useState({ open: false, title: "", content: "" });
   const [chatOpen, setChatOpen] = useState(false);
+  const [hasOpenedChatPanel, setHasOpenedChatPanel] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
   const [chatRoomTitle, setChatRoomTitle] = useState<string | null>(null);
   const [chatRoomTitleInput, setChatRoomTitleInput] = useState("");
@@ -226,6 +229,11 @@ export default function UserProblemDetailClient({
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
   const isCurrentProblemCorrect = problemStates[currentIndex] === "CORRECT";
+
+  const toggleProblemChat = useCallback(() => {
+    setHasOpenedChatPanel(true);
+    setChatOpen((prev) => !prev);
+  }, []);
 
   const resetChatState = useCallback(() => {
     setChatRoomId(null);
@@ -292,6 +300,10 @@ export default function UserProblemDetailClient({
     let isMounted = true;
 
     const loadProblemChatRoom = async () => {
+      if (!hasOpenedChatPanel) {
+        return;
+      }
+
       if (!problemSet.id || !currentProblem?.problemId) {
         resetChatState();
         return;
@@ -348,7 +360,13 @@ export default function UserProblemDetailClient({
     return () => {
       isMounted = false;
     };
-  }, [currentProblem?.problemId, problemSet.id, resetChatState, router]);
+  }, [
+    currentProblem?.problemId,
+    hasOpenedChatPanel,
+    problemSet.id,
+    resetChatState,
+    router,
+  ]);
 
   const canMoveProblem = (index: number) => problemStates[index] !== "LOCKED";
 
@@ -622,7 +640,7 @@ export default function UserProblemDetailClient({
           isRunning={isRunning}
           onBack={() => setWarningModalOpen(true)}
           onRun={handleRun}
-          onToggleProblemChat={() => setChatOpen((prev) => !prev)}
+          onToggleProblemChat={toggleProblemChat}
           variant="problem-detail"
         />
 
@@ -638,131 +656,68 @@ export default function UserProblemDetailClient({
           />
 
           <section className={problemDetailClasses.contentArea}>
-            <article className={problemDetailClasses.problemBox}>
-              <h2>문제 내용</h2>
-              <div className={problemDetailClasses.problemContent}>{currentProblem.content}</div>
-            </article>
+            <ProblemStatementCard content={currentProblem.content} />
 
-            <section className={problemDetailClasses.solveBox}>
-              <div className={problemDetailClasses.editorSection}>
-                <h2>문제풀이 영역</h2>
-                {showHintToast && (
-                  <div className={problemDetailClasses.hintToast}>힌트를 확인할 수 있습니다.</div>
-                )}
-                <textarea
-                  className={problemDetailClasses.codeEditor}
-                  onChange={(event) => handleCodeChange(event.target.value)}
-                  value={code}
-                />
-              </div>
-
-              <div className={problemDetailClasses.tabs}>
-                <button
-                  className={activeTab === "result" ? problemDetailClasses.activeTab : ""}
-                  onClick={() => setActiveTab("result")}
-                  type="button"
-                >
-                  실행결과
-                </button>
-                <button
-                  className={activeTab === "hint" ? problemDetailClasses.activeTab : ""}
-                  disabled={!hintEnabled[currentIndex]}
-                  onClick={() => setActiveTab("hint")}
-                  type="button"
-                >
-                  힌트
-                </button>
-                <button
-                  className={activeTab === "solution" ? problemDetailClasses.activeTab : ""}
-                  disabled={!solutionEnabled[currentIndex]}
-                  onClick={() => setActiveTab("solution")}
-                  type="button"
-                >
-                  해설보기
-                </button>
-              </div>
-
-              <ProblemResultPanel
-                activeTab={activeTab}
-                currentHints={currentHints}
-                currentProblemExplanation={currentProblem.explanation}
-                executionResult={executionResult}
-                submissionResult={submissionResult}
-              />
-
-              <div className={problemDetailClasses.submitWrap}>
-                <button
-                  className={problemDetailClasses.submitButton}
-                  disabled={isSubmitting || isCurrentProblemCorrect}
-                  onClick={handleSubmit}
-                  type="button"
-                >
-                  {isCurrentProblemCorrect
-                    ? "제출 완료"
-                    : isSubmitting
-                      ? "제출 중"
-                      : "제출하기"}
-                </button>
-              </div>
-            </section>
+            <ProblemSolveSection
+              activeTab={activeTab}
+              code={code}
+              currentHints={currentHints}
+              currentProblemExplanation={currentProblem.explanation}
+              executionResult={executionResult}
+              hintEnabled={hintEnabled[currentIndex]}
+              isCurrentProblemCorrect={isCurrentProblemCorrect}
+              isSubmitting={isSubmitting}
+              onCodeChange={handleCodeChange}
+              onSubmit={handleSubmit}
+              onTabChange={setActiveTab}
+              showHintToast={showHintToast}
+              solutionEnabled={solutionEnabled[currentIndex]}
+              submissionResult={submissionResult}
+            />
           </section>
 
-          <ProblemChatPanel
-            canEditChatRoomTitle={Boolean(chatRoomId)}
-            chatInput={chatInput}
-            chatMessages={chatMessages}
-            chatOpen={chatOpen}
-            chatRoomTitleEditing={chatRoomTitleEditing}
-            chatRoomTitleInput={chatRoomTitleInput}
-            chatRoomTitle={chatRoomTitle}
-            chatSending={chatSending || chatLoading}
-            onChatInputChange={setChatInput}
-            onChatRoomTitleCancel={cancelChatRoomTitleEdit}
-            onChatRoomTitleChange={setChatRoomTitleInput}
-            onChatRoomTitleEdit={startChatRoomTitleEdit}
-            onChatRoomTitleSubmit={requestChatRoomTitleUpdate}
-            onSendChat={sendChat}
-          />
+          {hasOpenedChatPanel && (
+            <LazyProblemChatPanel
+              canEditChatRoomTitle={Boolean(chatRoomId)}
+              chatInput={chatInput}
+              chatMessages={chatMessages}
+              chatOpen={chatOpen}
+              chatRoomTitleEditing={chatRoomTitleEditing}
+              chatRoomTitleInput={chatRoomTitleInput}
+              chatRoomTitle={chatRoomTitle}
+              chatSending={chatSending || chatLoading}
+              onChatInputChange={setChatInput}
+              onChatRoomTitleCancel={cancelChatRoomTitleEdit}
+              onChatRoomTitleChange={setChatRoomTitleInput}
+              onChatRoomTitleEdit={startChatRoomTitleEdit}
+              onChatRoomTitleSubmit={requestChatRoomTitleUpdate}
+              onSendChat={sendChat}
+            />
+          )}
         </div>
       </main>
 
-      <OneButtonModal
-        isOpen={successModalOpen}
-        modalContent="해당 문제의 해설을 확인할 수 있습니다."
-        modalTitle="정답입니다"
-        onClose={() => setSuccessModalOpen(false)}
-      />
-      <OneButtonModal
-        isOpen={emptySubmitModalOpen}
-        modalContent="실행하거나 제출할 코드를 입력해 주세요."
-        modalTitle="내용을 입력해 주세요"
-        onClose={() => setEmptySubmitModalOpen(false)}
-      />
-      <OneButtonModal
-        isOpen={alertModal.open}
-        modalContent={alertModal.content}
-        modalTitle={alertModal.title}
-        onClose={() => setAlertModal((prev) => ({ ...prev, open: false }))}
-      />
-      <TwoButtonModal
-        cancelDisabled={chatRoomTitleUpdating}
-        confirmDisabled={chatRoomTitleUpdating || !chatRoomTitleInput.trim()}
-        isOpen={chatRoomTitleConfirmOpen}
-        modalContent={`채팅방 이름을 "${chatRoomTitleInput.trim()}"(으)로 변경합니다.`}
-        modalTitle="채팅방 이름을 수정하시겠습니까?"
-        onClose={() => {
+      <ProblemDetailModals
+        alertModal={alertModal}
+        chatRoomTitleConfirmOpen={chatRoomTitleConfirmOpen}
+        chatRoomTitleInput={chatRoomTitleInput}
+        chatRoomTitleUpdating={chatRoomTitleUpdating}
+        emptySubmitModalOpen={emptySubmitModalOpen}
+        onAlertClose={() =>
+          setAlertModal((prev) => ({ ...prev, open: false }))
+        }
+        onBackCancel={() => setWarningModalOpen(false)}
+        onBackConfirm={() => router.push("/problems")}
+        onChatRoomTitleConfirm={handleChatRoomTitleUpdate}
+        onChatRoomTitleConfirmClose={() => {
           if (!chatRoomTitleUpdating) {
             setChatRoomTitleConfirmOpen(false);
           }
         }}
-        onConfirm={handleChatRoomTitleUpdate}
-      />
-      <WarningModal
-        isOpen={warningModalOpen}
-        modalContent="작성한 내용은 저장되지 않습니다."
-        modalTitle="정말 나가시겠습니까?"
-        onClose={() => setWarningModalOpen(false)}
-        onConfirm={() => router.push("/problems")}
+        onEmptySubmitClose={() => setEmptySubmitModalOpen(false)}
+        onSuccessClose={() => setSuccessModalOpen(false)}
+        successModalOpen={successModalOpen}
+        warningModalOpen={warningModalOpen}
       />
     </>
   );
