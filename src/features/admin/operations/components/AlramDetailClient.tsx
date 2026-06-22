@@ -16,7 +16,7 @@ import {
   getOperationAlertDetail,
   updateOperationAlertMemo,
   updateOperationAlertStatus,
-} from "../api";
+} from "../actions";
 import { alertStatusLabel, operationTargetTypeLabel } from "../constants";
 import type { AlertStatus, OperationAlertDetail } from "../types";
 

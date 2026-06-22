@@ -10,7 +10,7 @@ import {
   getAutomationRules,
   updateAutomationRuleEnabled,
   updateAutomationRules,
-} from "../api";
+} from "../actions";
 import { automationTargetTypeLabel } from "../constants";
 import { adminRuleClasses } from "../styles";
 import type { AutomationRule } from "../types";

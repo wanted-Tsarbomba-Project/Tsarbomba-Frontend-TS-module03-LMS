@@ -12,7 +12,7 @@ import {
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
-import { getOperationAlerts } from "../api";
+import { getOperationAlerts } from "../actions";
 import {
   ALERT_PAGE_SIZE,
   alertStatusLabel,
