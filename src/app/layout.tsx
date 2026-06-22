@@ -54,7 +54,7 @@ export default function RootLayout({
     if (pathname !== "/") return;
 
     if (userRole === "ADMIN") {
-      router.replace("/admin/users");
+      router.replace("/admin/rules");
     } else if (userRole === "OPERATOR") {
       router.replace("/admin/courses");
     }
