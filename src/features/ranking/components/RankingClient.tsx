@@ -1,10 +1,14 @@
 "use client";
 
 // CSR - 랭킹 전환: 최초 SSR 데이터 이후 주간/전체 버튼 전환에 따라 목록과 내 랭킹을 함께 다시 조회함
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { LoadingIndicator, OneButtonModal } from "@/components/common";
+import {
+  LoadingIndicator,
+  OneButtonModal,
+  Pagination,
+} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import { getMyPointRankingByMode, getPointRankingsByMode } from "../actions";
@@ -19,6 +23,8 @@ interface RankingClientProps {
   initialRankings: RankingUser[];
 }
 
+const RANKING_PAGE_SIZE = 20;
+
 export default function RankingClient({
   initialMyRanking,
   initialRankings,
@@ -29,8 +35,20 @@ export default function RankingClient({
   const [myRanking, setMyRanking] = useState<RankingUser | null>(
     initialMyRanking,
   );
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
+
+  const totalPages = Math.max(
+    Math.ceil(rankings.length / RANKING_PAGE_SIZE),
+    1,
+  );
+  const currentPage = Math.min(page, totalPages - 1);
+  const pagedRankings = useMemo(() => {
+    const start = currentPage * RANKING_PAGE_SIZE;
+
+    return rankings.slice(start, start + RANKING_PAGE_SIZE);
+  }, [currentPage, rankings]);
 
   const handleModeChange = async (nextMode: RankingMode) => {
     if (nextMode === mode || loading) {
@@ -47,6 +65,7 @@ export default function RankingClient({
 
       setRankings(nextRankings);
       setMyRanking(nextMyRanking);
+      setPage(0);
       setMode(nextMode);
     } catch (error) {
       handleClientError(error, {
@@ -82,7 +101,18 @@ export default function RankingClient({
         {loading ? (
           <LoadingIndicator message="랭킹을 불러오는 중입니다." />
         ) : (
-          <RankingList myRanking={myRanking} rankings={rankings} />
+          <RankingList
+            myRanking={myRanking}
+            pagination={
+              <Pagination
+                currentPage={currentPage}
+                disabled={loading}
+                onPageChange={setPage}
+                totalPages={totalPages}
+              />
+            }
+            rankings={pagedRankings}
+          />
         )}
       </div>
 
