@@ -24,16 +24,18 @@ async function getJson<T>(path: string, fallbackMessage: string): Promise<T> {
   if (!response.ok) throw new Error(fallbackMessage);
 
   const text = await response.text();
-  let parsed: { data?: unknown } | null = null;
-  if (text) {
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = null;
-    }
+  if (!text) {
+    return undefined as T;
+  }
+  let parsed: { data?: unknown };
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error(fallbackMessage);
   }
   return (parsed?.data ?? parsed) as T;
 }
+
 export async function getUserCoursesServer(): Promise<Course[]> {
   const data = await getJson<Course[]>(
     "/api/v1/courses",
