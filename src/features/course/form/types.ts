@@ -1,8 +1,5 @@
-/* 강좌 카테고리 (드롭다운) */
-export interface CourseCategory {
-  courseCategoryId: number;
-  name: string;
-}
+// 강좌 등록/수정 폼 전용 타입 (도메인 타입은 ../types 참조)
+export type { CourseCategory } from "../types";
 
 /* 문제 카테고리 (우측 패널 드롭다운) */
 export interface ProblemCategory {

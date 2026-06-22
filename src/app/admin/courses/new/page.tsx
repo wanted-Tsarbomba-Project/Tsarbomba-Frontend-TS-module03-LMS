@@ -6,12 +6,12 @@ import {
   getCourseCategories,
   uploadCourseThumbnail,
   createCourse,
-  createLecture,
-  configureCourseProblemSets,
   publishCourse,
-  isValidYoutubeUrl,
-  type ProblemSetConnection,
-} from "@/services/courseService";
+} from "@/features/course/actions";
+import { createLecture } from "@/features/course/lectureActions";
+import { configureCourseProblemSets } from "@/features/course/problemSetActions";
+import { isValidYoutubeUrl } from "@/features/course/youtube";
+import type { ProblemSetConnection } from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 // 폼 공용 타입 / 카드 컴포넌트 (등록·수정 공유)
@@ -22,11 +22,11 @@ import type {
   VideoLecture,
   ProblemLecture,
   LectureItem,
-} from "@/features/courseForm/types";
+} from "@/features/course/form/types";
 import {
   VideoLectureCard,
   ProblemLectureCard,
-} from "@/features/courseForm/components/LectureCards";
+} from "@/features/course/form/components/LectureCards";
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 강좌 등록 페이지
