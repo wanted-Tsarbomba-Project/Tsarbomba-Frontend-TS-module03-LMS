@@ -11,7 +11,7 @@ import {
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
-import { getAdminUsers } from "../api";
+import { getAdminUsers } from "../actions";
 import { adminUserListClasses } from "../styles";
 import type { AdminUserSummary } from "../types";
 
