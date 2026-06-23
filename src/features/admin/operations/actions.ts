@@ -125,8 +125,6 @@ export async function getAdminUsers(
   );
 }
 
-<<<<<<< Updated upstream
-=======
 export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
   const firstPage = await getAdminUsers(0, size, signal);
   const totalPages = firstPage.data.totalPages ?? 1;
@@ -167,9 +165,10 @@ export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
   ];
 }
 
->>>>>>> Stashed changes
 export async function getAdminUserDetail(userId: string) {
-  return requestAdminOperation<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
+  return requestAdminOperation<AdminUserDetail>(
+    `/api/v1/admin/users/${userId}`,
+  );
 }
 
 export async function getUserCourseProgress(userId: string) {
