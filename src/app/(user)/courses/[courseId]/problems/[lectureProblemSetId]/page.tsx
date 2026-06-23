@@ -4,6 +4,7 @@ import { getLectureProblemSet } from "@/features/course/problems/actions";
 import CourseProblemDetailClient from "@/features/course/problems/components/CourseProblemDetailClient";
 import ErrorPageView from "@/components/common/ErrorPageView";
 import { ApiClientError } from "@/lib/errorHandling";
+import type { ProblemSetDetail } from "@/features/problems/types";
 
 interface CourseProblemPageProps {
   params: Promise<{
@@ -18,19 +19,12 @@ export default async function CourseProblemPage({
   const { courseId, lectureProblemSetId } = await params;
   const cookieHeader = (await cookies()).toString();
 
+  let problemSet: ProblemSetDetail;
   try {
-    const problemSet = await getLectureProblemSet(lectureProblemSetId, {
+    problemSet = await getLectureProblemSet(lectureProblemSetId, {
       cache: "no-store",
       ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
-
-    return (
-      <CourseProblemDetailClient
-        courseId={courseId}
-        lectureProblemSetId={lectureProblemSetId}
-        initialProblemSet={problemSet}
-      />
-    );
   } catch (error) {
     const status = error instanceof ApiClientError ? error.status : undefined;
     const message =
@@ -45,4 +39,12 @@ export default async function CourseProblemPage({
       />
     );
   }
+
+  return (
+    <CourseProblemDetailClient
+      courseId={courseId}
+      lectureProblemSetId={lectureProblemSetId}
+      initialProblemSet={problemSet}
+    />
+  );
 }
