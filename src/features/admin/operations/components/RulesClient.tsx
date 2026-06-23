@@ -40,7 +40,7 @@ export default function RulesClient() {
     try {
       setLoading(true);
       const result = await getAutomationRules();
-      setRules(result.data);
+      setRules(result.data ?? []);
     } catch (error) {
       console.error("규칙 조회 실패:", error);
       handleClientError(error, {
