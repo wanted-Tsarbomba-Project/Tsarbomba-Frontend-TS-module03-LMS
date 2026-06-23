@@ -11,7 +11,7 @@ import { getCourseLearningProgress } from "@/features/course/progressActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   CourseDetail,
-  LearningProgressItem,
+  StudentLearningProgress,
   LectureSummary,
 } from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
@@ -30,18 +30,35 @@ const TEACHER_ROLES = ["INSTRUCTOR", "OPERATOR", "ADMIN"];
 const outlineBtn =
   "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
 
-const progressColumns: ListColumn<LearningProgressItem>[] = [
-  { key: "userName", label: "이름" },
-  { key: "email", label: "이메일" },
+// "이동하기" 는 학생 답안 view-only 화면 — 백엔드 API 확정 전까지 비활성 stub.
+const progressColumns: ListColumn<StudentLearningProgress>[] = [
+  { key: "index", label: "No." },
+  { key: "studentName", label: "이름" },
   {
-    key: "completed",
-    label: "완료 강의",
-    render: (item) => `${item.completedLectures} / ${item.totalLectures}`,
+    key: "lecture",
+    label: "강의 수강률",
+    render: (item) =>
+      `${item.completedLectureCount}/${item.totalLectureCount} ${item.lectureProgressRate}%`,
   },
   {
-    key: "progressRate",
-    label: "진행률",
-    render: (item) => `${item.progressRate ?? 0}%`,
+    key: "problem",
+    label: "문제 풀이 현황",
+    render: (item) =>
+      `${item.completedProblemCount}/${item.totalProblemCount} 개`,
+  },
+  {
+    key: "action",
+    label: "문제 풀이",
+    render: () => (
+      <button
+        type="button"
+        disabled
+        title="준비 중인 기능입니다"
+        className="px-3 py-1 text-xs font-medium text-blue-900 border border-blue-900 rounded-md opacity-60 cursor-not-allowed"
+      >
+        이동하기
+      </button>
+    ),
   },
 ];
 
@@ -52,21 +69,22 @@ export default function CourseDetailClient({
 }: CourseDetailClientProps) {
   const router = useRouter();
 
-  // 역할
-  const [userRole, setUserRole] = useState<string>("");
+  // 역할 — localStorage 기반이라 클라에서만 결정. lazy initializer 로 마운트 한 번에 확정.
+  const [userRole] = useState<string>(() =>
+    typeof window === "undefined"
+      ? ""
+      : (localStorage.getItem("userRole") ?? ""),
+  );
   const [isEnrolled, setIsEnrolled] = useState(false);
   const isTeacher = TEACHER_ROLES.includes(userRole);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const role = localStorage.getItem("userRole") ?? "";
-    setUserRole(role);
 
     // 학생 + 로그인 상태에서만 수강 여부 조회.
-    const teacher = TEACHER_ROLES.includes(role);
     const loggedIn =
       !!localStorage.getItem("token") || !!localStorage.getItem("userNickname");
-    if (teacher || !loggedIn) return;
+    if (isTeacher || !loggedIn) return;
 
     getMyEnrollments()
       .then((enrollments) =>
@@ -77,13 +95,15 @@ export default function CourseDetailClient({
       .catch(() => {
         /* ignore */
       });
-  }, [courseId]);
+  }, [courseId, isTeacher]);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [showProgress, setShowProgress] = useState(false);
-  const [progressData, setProgressData] = useState<LearningProgressItem[]>([]);
+  const [progressData, setProgressData] = useState<StudentLearningProgress[]>(
+    [],
+  );
   const [progressLoading, setProgressLoading] = useState(false);
 
   const [showEnrollConfirm, setShowEnrollConfirm] = useState(false);
