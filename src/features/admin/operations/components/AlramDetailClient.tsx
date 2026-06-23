@@ -80,9 +80,16 @@ export default function AlramDetailClient() {
       try {
         setLoading(true);
         const result = await getOperationAlertDetail(id);
-        setDetail(result.data);
-        setAdminMemo(result.data.alert.adminMemo ?? "");
-        setStatus(result.data.alert.status);
+        const detail = result.data;
+
+        if (!detail) {
+          setDetail(null);
+          return;
+        }
+
+        setDetail(detail);
+        setAdminMemo(detail.alert.adminMemo ?? "");
+        setStatus(detail.alert.status);
       } catch (error) {
         console.error("알람 상세 조회 실패:", error);
         handleClientError(error, {

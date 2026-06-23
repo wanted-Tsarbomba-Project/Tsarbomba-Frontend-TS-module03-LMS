@@ -5,7 +5,7 @@ export type AlertStatus = "OPEN" | "RESOLVED" | "IGNORED";
 export interface ApiResponse<T> {
   status?: number;
   message?: string;
-  data: T;
+  data?: T;
 }
 
 export interface PageResponse<T> {
