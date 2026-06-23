@@ -7,18 +7,16 @@ import {
   List,
   LoadingIndicator,
   OneButtonModal,
-  Searchbar,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
-import { getAdminUsers, getAllAdminUsers } from "../actions";
+import { getAdminUsers } from "../actions";
 import { adminUserListClasses } from "../styles";
 import type { AdminUserSummary } from "../types";
 
 const userColumns: ListColumn<AdminUserSummary>[] = [
   { key: "index", label: "No." },
-  { key: "name", label: "이름" },
   { key: "nickname", label: "닉네임" },
   { key: "email", label: "이메일" },
   {
@@ -33,21 +31,9 @@ const userColumns: ListColumn<AdminUserSummary>[] = [
   },
 ];
 
-function matchesUserName(user: AdminUserSummary, keyword: string) {
-  const normalizedKeyword = keyword.trim().toLowerCase();
-
-  if (!normalizedKeyword) {
-    return true;
-  }
-
-  return (user.name ?? "").toLowerCase().includes(normalizedKeyword);
-}
-
 export default function UsersClient() {
   const router = useRouter();
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
-  const [searchInput, setSearchInput] = useState("");
-  const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [noticeModal, setNoticeModal] = useState({
     isOpen: false,
@@ -108,28 +94,12 @@ export default function UsersClient() {
     };
 
     void fetchUsers();
-
-    return () => {
-      controller.abort();
-    };
-  }, [keyword, router]);
+  }, [router]);
 
   return (
     <>
       <div className={adminUserListClasses.container}>
-        <div className={adminUserListClasses.header}>
-          <h1 className={adminUserListClasses.title}>회원 관리</h1>
-
-          <div className={adminUserListClasses.searchWrap}>
-            <Searchbar
-              className="max-w-[260px]"
-              onChange={setSearchInput}
-              onSearch={setKeyword}
-              placeholder="회원 이름 검색"
-              value={searchInput}
-            />
-          </div>
-        </div>
+        <h1 className={adminUserListClasses.title}>회원 관리</h1>
 
         {loading ? (
           <LoadingIndicator message="회원 목록을 불러오는 중입니다." />
@@ -137,11 +107,7 @@ export default function UsersClient() {
           <List
             columns={userColumns}
             data={users}
-            emptyMessage={
-              keyword.trim()
-                ? "검색 조건에 맞는 회원이 없습니다."
-                : "조회된 회원이 없습니다."
-            }
+            emptyMessage="조회된 회원이 없습니다."
             onRowClick={(user) => router.push(`/admin/users/${user.userId}`)}
             rowKey={(user) => user.userId}
           />
