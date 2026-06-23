@@ -13,7 +13,9 @@ import type {
 } from "./types";
 
 export async function getAutomationRules() {
-  return requestAdminOperation<AutomationRule[]>("/api/v1/admin/automation-rules");
+  return requestAdminOperation<AutomationRule[]>(
+    "/api/v1/admin/automation-rules",
+  );
 }
 
 export async function updateAutomationRules(rules: AutomationRule[]) {
@@ -118,8 +120,30 @@ export async function getAdminUsers(page = 0, size = 20) {
   );
 }
 
+export async function getAllAdminUsers(size = 20) {
+  const firstPage = await getAdminUsers(0, size);
+  const totalPages = firstPage.data.totalPages ?? 1;
+
+  if (totalPages <= 1) {
+    return firstPage.data.content;
+  }
+
+  const restPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      getAdminUsers(index + 1, size),
+    ),
+  );
+
+  return [
+    ...firstPage.data.content,
+    ...restPages.flatMap((result) => result.data.content),
+  ];
+}
+
 export async function getAdminUserDetail(userId: string) {
-  return requestAdminOperation<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
+  return requestAdminOperation<AdminUserDetail>(
+    `/api/v1/admin/users/${userId}`,
+  );
 }
 
 export async function getUserCourseProgress(userId: string) {
