@@ -13,9 +13,7 @@ import type {
 } from "./types";
 
 export async function getAutomationRules() {
-  return requestAdminOperation<AutomationRule[]>(
-    "/api/v1/admin/automation-rules",
-  );
+  return requestAdminOperation<AutomationRule[]>("/api/v1/admin/automation-rules");
 }
 
 export async function updateAutomationRules(rules: AutomationRule[]) {
@@ -109,7 +107,13 @@ export async function deleteOperationAlert(operationAlertId: string) {
   );
 }
 
-export async function getAdminUsers(page = 0, size = 20) {
+const USER_SEARCH_FETCH_CONCURRENCY = 8;
+
+export async function getAdminUsers(
+  page = 0,
+  size = 20,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
@@ -117,22 +121,43 @@ export async function getAdminUsers(page = 0, size = 20) {
 
   return requestAdminOperation<PageResponse<AdminUserSummary>>(
     `/api/v1/users?${params.toString()}`,
+    { signal },
   );
 }
 
-export async function getAllAdminUsers(size = 20) {
-  const firstPage = await getAdminUsers(0, size);
+export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
+  const firstPage = await getAdminUsers(0, size, signal);
   const totalPages = firstPage.data.totalPages ?? 1;
 
   if (totalPages <= 1) {
     return firstPage.data.content;
   }
 
-  const restPages = await Promise.all(
-    Array.from({ length: totalPages - 1 }, (_, index) =>
-      getAdminUsers(index + 1, size),
-    ),
+  const pageIndexes = Array.from(
+    { length: totalPages - 1 },
+    (_, index) => index + 1,
   );
+  const restPages: Array<Awaited<ReturnType<typeof getAdminUsers>>> = [];
+
+  for (
+    let index = 0;
+    index < pageIndexes.length;
+    index += USER_SEARCH_FETCH_CONCURRENCY
+  ) {
+    if (signal?.aborted) {
+      break;
+    }
+
+    const pageChunk = pageIndexes.slice(
+      index,
+      index + USER_SEARCH_FETCH_CONCURRENCY,
+    );
+    const chunkResults = await Promise.all(
+      pageChunk.map((page) => getAdminUsers(page, size, signal)),
+    );
+
+    restPages.push(...chunkResults);
+  }
 
   return [
     ...firstPage.data.content,
@@ -141,9 +166,7 @@ export async function getAllAdminUsers(size = 20) {
 }
 
 export async function getAdminUserDetail(userId: string) {
-  return requestAdminOperation<AdminUserDetail>(
-    `/api/v1/admin/users/${userId}`,
-  );
+  return requestAdminOperation<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
 }
 
 export async function getUserCourseProgress(userId: string) {
