@@ -2,7 +2,7 @@
 
 // 강좌(강의) 문제풀이 — 기존 문제풀이 UI를 그대로 재사용하되,
 // 데이터는 lecture-problem-sets 계열 URL(강좌 전용 actions)로 처리한다.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
@@ -12,6 +12,8 @@ import { handleClientError } from "@/lib/errorHandling";
 
 // 강좌 전용: 입장/제출
 import { submitLectureProblem } from "../actions";
+import { getCourseLectures } from "@/features/course/lectureActions";
+import { getCourseProblemSets } from "@/features/course/problemSetActions";
 // 공통 재사용: 실행/힌트/챗봇
 import {
   createProblemChatMessage,
@@ -43,6 +45,28 @@ interface CourseProblemDetailClientProps {
 const updateArrayItem = <T,>(items: T[], index: number, value: T) =>
   items.map((item, itemIndex) => (itemIndex === index ? value : item));
 
+// 문제세트별 작성 중 답안 임시 저장 (localStorage). 정답 처리되면 클리어.
+const draftKey = (lpsId: string) => `lps-draft-${lpsId}`;
+
+const loadDrafts = (lpsId: string): Record<number, string> => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(draftKey(lpsId));
+    return raw ? (JSON.parse(raw) as Record<number, string>) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveDrafts = (lpsId: string, drafts: Record<number, string>) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(draftKey(lpsId), JSON.stringify(drafts));
+  } catch {
+    /* quota 초과 등 무시 */
+  }
+};
+
 function getInitialProblemIndex(problemSet: ProblemSetDetail) {
   return Math.max(
     problemSet.problems.findIndex((problem) =>
@@ -54,8 +78,22 @@ function getInitialProblemIndex(problemSet: ProblemSetDetail) {
   );
 }
 
-function getInitialProblemState(problemSet: ProblemSetDetail) {
+function getInitialProblemState(
+  problemSet: ProblemSetDetail,
+  lpsId: string,
+) {
   const initialIndex = getInitialProblemIndex(problemSet);
+  const drafts = loadDrafts(lpsId);
+
+  // 저장된 작성 중 답안이 있으면 startCode 대신 그것을 사용 (정답 처리되면 클리어됨).
+  const codeFor = (problem: {
+    problemId?: number;
+    startCode?: string | null;
+  }) => {
+    const draft =
+      problem.problemId != null ? drafts[problem.problemId] : undefined;
+    return draft ?? problem.startCode ?? "";
+  };
 
   return {
     currentIndex: initialIndex,
@@ -69,8 +107,8 @@ function getInitialProblemState(problemSet: ProblemSetDetail) {
       (problem) => problem.status === "CORRECT",
     ),
     hints: problemSet.problems.map(() => [] as ProblemHint[]),
-    userCodes: problemSet.problems.map((problem) => problem.startCode ?? ""),
-    code: problemSet.problems[initialIndex]?.startCode ?? "",
+    userCodes: problemSet.problems.map((problem) => codeFor(problem)),
+    code: codeFor(problemSet.problems[initialIndex] ?? {}),
   };
 }
 
@@ -81,8 +119,8 @@ export default function CourseProblemDetailClient({
 }: CourseProblemDetailClientProps) {
   const router = useRouter();
   const initialState = useMemo(
-    () => getInitialProblemState(initialProblemSet),
-    [initialProblemSet],
+    () => getInitialProblemState(initialProblemSet, lectureProblemSetId),
+    [initialProblemSet, lectureProblemSetId],
   );
 
   const [problemSet] = useState<ProblemSetDetail>(initialProblemSet);
@@ -110,6 +148,9 @@ export default function CourseProblemDetailClient({
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [emptySubmitModalOpen, setEmptySubmitModalOpen] = useState(false);
+  // 마지막 문제까지 모두 정답 시 강의 완료 + 강좌 페이지 이동 안내.
+  const [lectureCompleteModalOpen, setLectureCompleteModalOpen] =
+    useState(false);
   const [alertModal, setAlertModal] = useState({
     open: false,
     title: "",
@@ -120,6 +161,41 @@ export default function CourseProblemDetailClient({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+
+  // 이 문제 풀이가 속한 강의 + 다음 강의 정보 — 나가기/완료 시 정확한 lecture 페이지로 이동.
+  const [currentLectureId, setCurrentLectureId] = useState<number | null>(null);
+  const [nextLectureId, setNextLectureId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadNavTargets = async () => {
+      try {
+        const [links, lectures] = await Promise.all([
+          getCourseProblemSets(courseId),
+          getCourseLectures(courseId),
+        ]);
+        const link = links.find(
+          (l) => String(l.lectureProblemSetId) === String(lectureProblemSetId),
+        );
+        if (!link) return;
+        setCurrentLectureId(link.lectureId);
+        const idx = lectures.findIndex((l) => l.lectureId === link.lectureId);
+        if (idx >= 0 && idx < lectures.length - 1) {
+          setNextLectureId(lectures[idx + 1].lectureId);
+        }
+      } catch {
+        /* 실패해도 fallback 라우팅 동작 */
+      }
+    };
+    void loadNavTargets();
+  }, [courseId, lectureProblemSetId]);
+
+  // 나가기/완료 모달의 라우팅 — 알 수 있으면 lecture 페이지, 아니면 강좌 페이지로 fallback.
+  const exitToLecturePath = currentLectureId
+    ? `/courses/${courseId}/lectures/${currentLectureId}`
+    : `/courses/${courseId}`;
+  const nextLecturePath = nextLectureId
+    ? `/courses/${courseId}/lectures/${nextLectureId}`
+    : `/courses/${courseId}`;
 
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
@@ -161,6 +237,13 @@ export default function CourseProblemDetailClient({
   const handleCodeChange = (nextCode: string) => {
     setCode(nextCode);
     setUserCodes((prev) => updateArrayItem(prev, currentIndex, nextCode));
+    // 작성 중 답안 localStorage 에 저장 — 페이지 이탈 후 재진입 시 복원.
+    const problemId = currentProblem?.problemId;
+    if (problemId != null) {
+      const drafts = loadDrafts(lectureProblemSetId);
+      drafts[problemId] = nextCode;
+      saveDrafts(lectureProblemSetId, drafts);
+    }
   };
 
   const fetchHints = async (problemId: number, index: number) => {
@@ -229,20 +312,27 @@ export default function CourseProblemDetailClient({
       setActiveTab("result");
 
       if (result.isCorrect) {
-        setProblemStates((prev) =>
-          prev.map((state, index) => {
-            const problemId = problemSet?.problems[index]?.problemId;
-            if (index === currentIndex) return "CORRECT";
-            if (
-              result.nextProblemId &&
-              problemId === result.nextProblemId &&
-              state === "LOCKED"
-            ) {
-              return "UNSOLVED";
-            }
-            return state;
-          }),
-        );
+        // 정답 처리된 문제의 draft 는 더 이상 보관할 필요 없음.
+        const solvedProblemId = currentProblem.problemId;
+        if (solvedProblemId != null) {
+          const drafts = loadDrafts(lectureProblemSetId);
+          delete drafts[solvedProblemId];
+          saveDrafts(lectureProblemSetId, drafts);
+        }
+
+        const updatedStates = problemStates.map((state, index) => {
+          const problemId = problemSet?.problems[index]?.problemId;
+          if (index === currentIndex) return "CORRECT" as ProblemStatus;
+          if (
+            result.nextProblemId &&
+            problemId === result.nextProblemId &&
+            state === "LOCKED"
+          ) {
+            return "UNSOLVED" as ProblemStatus;
+          }
+          return state;
+        });
+        setProblemStates(updatedStates);
         setHintEnabled((prev) => updateArrayItem(prev, currentIndex, true));
         setSolutionEnabled((prev) => updateArrayItem(prev, currentIndex, true));
 
@@ -250,7 +340,13 @@ export default function CourseProblemDetailClient({
           await fetchHints(currentProblem.problemId, currentIndex);
         }
 
-        setSuccessModalOpen(true);
+        // 모든 문제 정답이면 강의 완료 모달로, 아니면 일반 정답 모달.
+        const allCorrect = updatedStates.every((s) => s === "CORRECT");
+        if (allCorrect) {
+          setLectureCompleteModalOpen(true);
+        } else {
+          setSuccessModalOpen(true);
+        }
       } else {
         setProblemStates((prev) =>
           updateArrayItem(prev, currentIndex, "WRONG"),
@@ -443,6 +539,15 @@ export default function CourseProblemDetailClient({
         onClose={() => setSuccessModalOpen(false)}
       />
       <OneButtonModal
+        isOpen={lectureCompleteModalOpen}
+        modalContent="모든 문제를 풀었습니다! 다음 강의로 이동합니다."
+        modalTitle="🎉 강의 완료"
+        onClose={() => {
+          setLectureCompleteModalOpen(false);
+          router.push(nextLecturePath);
+        }}
+      />
+      <OneButtonModal
         isOpen={emptySubmitModalOpen}
         modalContent="실행하거나 제출할 코드를 입력해 주세요."
         modalTitle="내용을 입력해 주세요"
@@ -459,7 +564,7 @@ export default function CourseProblemDetailClient({
         modalContent="작성한 내용은 저장되지 않습니다."
         modalTitle="정말 나가시겠습니까?"
         onClose={() => setWarningModalOpen(false)}
-        onConfirm={() => router.push(`/courses/${courseId}`)}
+        onConfirm={() => router.push(exitToLecturePath)}
       />
     </>
   );

@@ -1,24 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   getLecture,
   getCourseLectures,
+  getLectureProgress,
 } from "@/features/course/lectureActions";
 import { getCourseProblemSets } from "@/features/course/problemSetActions";
+import { getLectureProblemProgress } from "@/features/course/problems/actions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   LectureSummary,
   CourseProblemSetLink,
 } from "@/features/course/types";
+import YoutubeProgressPlayer from "@/features/course/components/YoutubeProgressPlayer";
+import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 import ErrorPageView from "@/components/common/ErrorPageView";
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 강의 상세 (영상 시청) 화면
-// ────────────────────────────────────────────────────────────────────────────────
+// 문제 풀이 페이지의 안내 화면용 (영상 강의는 YoutubeProgressPlayer 가 자체 처리).
 const getYoutubeEmbedUrl = (url?: string | null): string | null => {
   if (!url) return null;
   try {
@@ -52,8 +54,80 @@ export default function LectureDetailPage() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [problemNavTarget, setProblemNavTarget] =
     useState<CourseProblemSetLink | null>(null);
+  // 강의별 완료 여부 — 다음 강의 잠금 해제 판단용 (영상 90% / 문제 제출 완료 기준).
+  const [completedByLecture, setCompletedByLecture] = useState<
+    Map<number, boolean>
+  >(new Map());
+  const [lockedNavTarget, setLockedNavTarget] = useState<LectureSummary | null>(
+    null,
+  );
+  // 전 강의 완료 축하 모달 — 강좌별로 한 번만 노출 (localStorage 기록).
+  // 마지막이 문제 강의여서 다른 페이지에서 완료된 경우에도 다시 lecture 진입 시 잡힘.
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const completionShownKey = `course-${courseId}-completion-shown`;
+  // "다음 강의로 이동" 모달 — 현재 강의가 false→true 로 막 완료된 순간 한 번만.
+  const [showNextLectureModal, setShowNextLectureModal] = useState(false);
+  const currentCompletedRef = useRef(false);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
+  // 강의 목록 + 각 강의의 completed 병렬 조회 — 마운트 + 진도 저장 후 재호출 모두 사용.
+  const loadAllProgress = async (
+    lectureList: LectureSummary[],
+    links: CourseProblemSetLink[],
+  ) => {
+    const linkMap = new Map<number, CourseProblemSetLink>();
+    links.forEach((l) => linkMap.set(l.lectureId, l));
+    const entries = await Promise.all(
+      lectureList.map(async (l) => {
+        const link = linkMap.get(l.lectureId);
+        try {
+          if (link) {
+            const lpsId = link.lectureProblemSetId ?? link.courseProblemSetId;
+            const p = await getLectureProblemProgress(String(lpsId));
+            const totalCount = p?.totalCount ?? 0;
+            const solvedCount = p?.solvedCount ?? 0;
+            return [
+              l.lectureId,
+              totalCount > 0 && solvedCount >= totalCount,
+            ] as const;
+          }
+          const p = await getLectureProgress(l.lectureId);
+          return [l.lectureId, !!p?.completed] as const;
+        } catch {
+          return [l.lectureId, false] as const;
+        }
+      }),
+    );
+    setCompletedByLecture(new Map(entries));
+
+    const allCompleted =
+      lectureList.length > 0 && entries.every(([, done]) => done);
+
+    // 현재 강의가 막 완료된 시점 감지 — false → true 전환에만 다음 강의 모달.
+    const currentEntry = entries.find(
+      ([id]) => String(id) === String(lectureId),
+    );
+    const currentCompleted = currentEntry?.[1] ?? false;
+    const justCompleted = !currentCompletedRef.current && currentCompleted;
+    currentCompletedRef.current = currentCompleted;
+
+    // 전체 완료 축하 모달이 우선, 그렇지 않고 현재 강의 막 완료 + 다음 강의 있으면 이동 모달.
+    if (allCompleted && typeof window !== "undefined") {
+      const alreadyShown = localStorage.getItem(completionShownKey) === "1";
+      if (!alreadyShown) {
+        setShowCompletionModal(true);
+        localStorage.setItem(completionShownKey, "1");
+      }
+    } else if (justCompleted) {
+      const lastIdx = lectureList.length - 1;
+      const curIdx = lectureList.findIndex(
+        (l) => String(l.lectureId) === String(lectureId),
+      );
+      if (curIdx >= 0 && curIdx < lastIdx) {
+        setShowNextLectureModal(true);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!courseId || !lectureId) return;
 
@@ -68,6 +142,7 @@ export default function LectureDetailPage() {
         setLecture(lectureData);
         setLectures(lectureList);
         setProblemLinks(links);
+        await loadAllProgress(lectureList, links);
       } catch {
         /* ignore */
       } finally {
@@ -90,6 +165,22 @@ export default function LectureDetailPage() {
   const linkByLecture = new Map<number, CourseProblemSetLink>();
   problemLinks.forEach((link) => linkByLecture.set(link.lectureId, link));
 
+  // 진도 저장 후 전체 강의 progress 재조회 — 영상 완료 + 다음 문제 강의 잠금 해제 즉시 반영.
+  const refreshAllProgress = () => {
+    void loadAllProgress(lectures, problemLinks);
+  };
+
+  // 잠금 해제 규칙: 첫 강의 항상 열림, 이후 강의는 직전 강의 완료 시에만 열림.
+  const unlockedIds = new Set<number>();
+  if (lectures.length > 0) unlockedIds.add(lectures[0].lectureId);
+  for (let i = 1; i < lectures.length; i++) {
+    if (completedByLecture.get(lectures[i - 1].lectureId)) {
+      unlockedIds.add(lectures[i].lectureId);
+    }
+  }
+  const isLocked = (l: LectureSummary) => !unlockedIds.has(l.lectureId);
+  const nextLocked = nextLecture ? isLocked(nextLecture) : true;
+
   const goToLecture = (id: number) => {
     router.push(`/courses/${courseId}/lectures/${id}`);
   };
@@ -99,8 +190,12 @@ export default function LectureDetailPage() {
     router.push(`/courses/${courseId}/problems/${lpsId}`);
   };
 
-  // 목록 클릭: 문제면 이동 확인 모달, 영상이면 바로 해당 강의로 이동
+  // 목록 클릭: 잠금이면 안내 모달, 문제면 이동 확인, 영상이면 바로 이동.
   const handleListItemClick = (item: LectureSummary) => {
+    if (isLocked(item)) {
+      setLockedNavTarget(item);
+      return;
+    }
     const link = linkByLecture.get(item.lectureId);
     if (link) {
       setProblemNavTarget(link);
@@ -109,10 +204,8 @@ export default function LectureDetailPage() {
     }
   };
 
-  // 현재 보고 있는 강의가 문제 강의인지
   const currentLink = linkByLecture.get(Number(lectureId));
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   if (loading) {
     return <LoadingIndicator message="강의를 불러오는 중입니다." />;
   }
@@ -129,9 +222,37 @@ export default function LectureDetailPage() {
       <div className="flex gap-4 items-start">
         {/* ── 메인 영역 (제목 + 영상 + 이전/다음) ──────────────────────────── */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-semibold text-gray-800 mb-3">
-            {lecture.lectureOrder}주차: {lecture.title}
-          </h1>
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => router.push(`/courses/${courseId}`)}
+              aria-label="강좌 페이지로 돌아가기"
+              title="강좌 페이지로 돌아가기"
+              className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-500 hover:text-blue-900 hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M10 4L6 8l4 4" />
+              </svg>
+            </button>
+            <h1 className="text-lg font-semibold text-gray-800 truncate">
+              {lecture.lectureOrder}주차: {lecture.title}
+            </h1>
+          </div>
+
+          <p className="mb-3 text-xs text-blue-900">
+            {currentLink
+              ? "문제를 모두 풀이해야 다음 강의가 열립니다."
+              : "강의 영상의 90% 이상을 시청해야 다음 강의가 열립니다. 완료 전에는 재생바 이동이 제한됩니다."}
+          </p>
 
           {/* 문제 강의면 안내 화면, 영상 강의면 영상 */}
           {currentLink ? (
@@ -173,13 +294,11 @@ export default function LectureDetailPage() {
           ) : (
             <div className="w-full aspect-video bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
               {embedUrl ? (
-                <iframe
-                  src={embedUrl}
+                <YoutubeProgressPlayer
+                  lectureId={lectureId}
+                  videoUrl={lecture.videoUrl}
                   title={lecture.title}
-                  className="w-full h-full"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
+                  onProgressSaved={refreshAllProgress}
                 />
               ) : videoSrc ? (
                 <video src={videoSrc} controls className="w-full h-full" />
@@ -251,8 +370,13 @@ export default function LectureDetailPage() {
 
             <button
               type="button"
-              disabled={!nextLecture}
+              disabled={!nextLecture || nextLocked}
               onClick={() => nextLecture && goToLecture(nextLecture.lectureId)}
+              title={
+                nextLecture && nextLocked
+                  ? "현재 강의를 완료하면 다음 강의가 열립니다."
+                  : undefined
+              }
               className="flex items-center gap-1 text-base font-medium text-gray-800 hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               다음
@@ -278,7 +402,7 @@ export default function LectureDetailPage() {
             <button
               type="button"
               onClick={() => setPanelOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 hover:bg-gray-100 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 hover:bg-gray-100 transition-colors whitespace-nowrap cursor-pointer"
             >
               <svg
                 width="16"
@@ -310,7 +434,7 @@ export default function LectureDetailPage() {
                   type="button"
                   onClick={() => setPanelOpen(false)}
                   aria-label="목록 접기"
-                  className="text-gray-500 hover:text-gray-800 transition-colors"
+                  className="text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
                 >
                   <svg
                     width="18"
@@ -332,18 +456,45 @@ export default function LectureDetailPage() {
                   const isCurrent =
                     String(item.lectureId) === String(lectureId);
                   const isProblem = linkByLecture.has(item.lectureId);
+                  const locked = isLocked(item) && !isCurrent;
                   return (
                     <li key={item.lectureId}>
                       <button
                         type="button"
                         onClick={() => handleListItemClick(item)}
                         className={[
-                          "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2",
+                          "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 cursor-pointer",
                           isCurrent
                             ? "bg-blue-900 text-white"
-                            : "text-gray-800 hover:bg-gray-100",
+                            : locked
+                              ? "text-gray-400 hover:bg-gray-50"
+                              : "text-gray-800 hover:bg-gray-100",
                         ].join(" ")}
                       >
+                        {locked && (
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            className="shrink-0"
+                          >
+                            <rect
+                              x="3"
+                              y="6"
+                              width="8"
+                              height="6"
+                              rx="1"
+                              fill="none"
+                            />
+                            <path
+                              d="M5 6V4a2 2 0 014 0v2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        )}
                         <span className="truncate flex-1">
                           {item.lectureOrder}. {item.title}
                         </span>
@@ -379,6 +530,43 @@ export default function LectureDetailPage() {
         }}
         modalTitle="문제 풀이로 이동"
         modalContent="문제 풀이 화면으로 이동하시겠습니까?"
+      />
+
+      {/* 잠긴 강의 클릭 안내 모달 */}
+      <OneButtonModal
+        isOpen={!!lockedNavTarget}
+        onClose={() => setLockedNavTarget(null)}
+        modalTitle="잠긴 강의입니다"
+        modalContent="이전 강의를 먼저 완료해주세요."
+      />
+
+      {/* 전 강의 완료 축하 모달 */}
+      <OneButtonModal
+        isOpen={showCompletionModal}
+        onClose={() => {
+          setShowCompletionModal(false);
+          router.push(`/courses/${courseId}`);
+        }}
+        modalTitle="🎉 강좌 수강 완료"
+        modalContent="모든 강의를 끝까지 들으셨습니다! 추천 문제를 풀어보세요."
+      />
+
+      {/* 강의 완료 → 다음 강의로 이동 확인 모달 */}
+      <TwoButtonModal
+        isOpen={showNextLectureModal}
+        onClose={() => setShowNextLectureModal(false)}
+        onConfirm={() => {
+          setShowNextLectureModal(false);
+          if (!nextLecture) return;
+          const link = linkByLecture.get(nextLecture.lectureId);
+          if (link) {
+            goToProblem(link);
+          } else {
+            goToLecture(nextLecture.lectureId);
+          }
+        }}
+        modalTitle="강의 완료"
+        modalContent="다음 강의로 이동하시겠습니까?"
       />
     </div>
   );

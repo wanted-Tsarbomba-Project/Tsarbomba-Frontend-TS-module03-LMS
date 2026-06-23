@@ -73,14 +73,15 @@ export interface Enrollment {
   enrolledAt?: string | null;
 }
 
-/* 수강생 학습 현황 (강사용) */
-export interface LearningProgressItem {
+/* 수강생 학습 현황 (강사·OPERATOR 용) — 강의 수강률 + 문제 풀이 진도 */
+export interface StudentLearningProgress {
   userId: number;
-  userName: string;
-  email?: string;
-  completedLectures: number;
-  totalLectures: number;
-  progressRate: number;
+  studentName: string;
+  completedLectureCount: number;
+  totalLectureCount: number;
+  lectureProgressRate: number;
+  completedProblemCount: number;
+  totalProblemCount: number;
 }
 
 /* 강좌 - 문제세트 연결 요청 (configure용) */

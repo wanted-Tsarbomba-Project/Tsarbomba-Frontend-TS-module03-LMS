@@ -7,8 +7,8 @@ import { getCourseLearningProgress } from "@/features/course/progressActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   CourseDetail,
-  LearningProgressItem,
   LectureSummary,
+  StudentLearningProgress,
 } from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
@@ -24,18 +24,34 @@ interface OperatorCourseDetailClientProps {
 const outlineBtn =
   "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg cursor-pointer hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
 
-const progressColumns: ListColumn<LearningProgressItem>[] = [
-  { key: "userName", label: "이름" },
-  { key: "email", label: "이메일" },
+const progressColumns: ListColumn<StudentLearningProgress>[] = [
+  { key: "index", label: "No." },
+  { key: "studentName", label: "이름" },
   {
-    key: "completed",
-    label: "완료 강의",
-    render: (item) => `${item.completedLectures} / ${item.totalLectures}`,
+    key: "lecture",
+    label: "강의 수강률",
+    render: (item) =>
+      `${item.completedLectureCount}/${item.totalLectureCount} ${item.lectureProgressRate}%`,
   },
   {
-    key: "progressRate",
-    label: "진행률",
-    render: (item) => `${item.progressRate ?? 0}%`,
+    key: "problem",
+    label: "문제 풀이 현황",
+    render: (item) =>
+      `${item.completedProblemCount}/${item.totalProblemCount} 개`,
+  },
+  {
+    key: "action",
+    label: "문제 풀이",
+    render: () => (
+      <button
+        type="button"
+        disabled
+        title="준비 중인 기능입니다"
+        className="px-3 py-1 text-xs font-medium text-blue-900 border border-blue-900 rounded-md opacity-60 cursor-not-allowed"
+      >
+        이동하기
+      </button>
+    ),
   },
 ];
 
@@ -51,7 +67,9 @@ export default function OperatorCourseDetailClient({
 
   // 학습률 — 요청 시 로드 (선조회 불필요).
   const [showProgress, setShowProgress] = useState(false);
-  const [progressData, setProgressData] = useState<LearningProgressItem[]>([]);
+  const [progressData, setProgressData] = useState<StudentLearningProgress[]>(
+    [],
+  );
   const [progressLoading, setProgressLoading] = useState(false);
 
   const [resultModal, setResultModal] = useState<{
@@ -202,7 +220,9 @@ export default function OperatorCourseDetailClient({
                   onClick={() => handleLectureClick(lecture.lectureId)}
                   className={[
                     "w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer hover:bg-gray-100 transition-colors",
-                    index < lectures.length - 1 ? "border-b border-gray-200" : "",
+                    index < lectures.length - 1
+                      ? "border-b border-gray-200"
+                      : "",
                   ].join(" ")}
                 >
                   <span className="text-base text-gray-800">
