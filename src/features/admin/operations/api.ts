@@ -44,7 +44,7 @@ export async function requestAdminOperation<T>(
   }
 
   if (!text) {
-    return { data: undefined as T };
+    return { data: undefined };
   }
 
   try {

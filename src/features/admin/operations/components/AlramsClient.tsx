@@ -56,8 +56,8 @@ export default function AlramsClient() {
           ALERT_PAGE_SIZE,
         );
 
-        setAlerts(result.data.content);
-        setTotalPages(result.data.totalPages ?? 1);
+        setAlerts(result.data?.content ?? []);
+        setTotalPages(result.data?.totalPages ?? 1);
       } catch (error) {
         console.error("알람 목록 조회 실패:", error);
         handleClientError(error, {

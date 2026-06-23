@@ -97,7 +97,7 @@ export default function UserDetailClient() {
       try {
         setUserLoading(true);
         const result = await getAdminUserDetail(userId);
-        setUser(result.data);
+        setUser(result.data ?? null);
       } catch (error) {
         console.error("회원 상세 조회 실패:", error);
         handleClientError(error, {
@@ -135,7 +135,7 @@ export default function UserDetailClient() {
         }
 
         const result = await getUserProblemList(userId);
-        setProblemRows(result.data.submissions ?? []);
+        setProblemRows(result.data?.submissions ?? []);
       } catch (error) {
         console.error("회원 상세 목록 조회 실패:", error);
         handleClientError(error, {

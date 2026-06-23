@@ -129,6 +129,8 @@ export default function UsersClient() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
+        setSearchUsers([]);
+        setTotalPages(1);
         const allUsers = await getAllAdminUsers(
           USER_PAGE_SIZE,
           controller.signal,
@@ -151,6 +153,8 @@ export default function UsersClient() {
           return;
         }
 
+        setSearchUsers([]);
+        setTotalPages(1);
         console.error("회원 목록 조회 실패:", error);
         handleClientError(error, {
           router,
