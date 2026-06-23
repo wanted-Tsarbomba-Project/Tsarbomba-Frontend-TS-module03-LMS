@@ -127,10 +127,10 @@ export async function getAdminUsers(
 
 export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
   const firstPage = await getAdminUsers(0, size, signal);
-  const totalPages = firstPage.data.totalPages ?? 1;
+  const totalPages = firstPage.data?.totalPages ?? 1;
 
   if (totalPages <= 1) {
-    return firstPage.data.content;
+    return firstPage.data?.content ?? [];
   }
 
   const pageIndexes = Array.from(
@@ -160,13 +160,15 @@ export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
   }
 
   return [
-    ...firstPage.data.content,
-    ...restPages.flatMap((result) => result.data.content),
+    ...(firstPage.data?.content ?? []),
+    ...restPages.flatMap((result) => result.data?.content ?? []),
   ];
 }
 
 export async function getAdminUserDetail(userId: string) {
-  return requestAdminOperation<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
+  return requestAdminOperation<AdminUserDetail>(
+    `/api/v1/admin/users/${userId}`,
+  );
 }
 
 export async function getUserCourseProgress(userId: string) {
