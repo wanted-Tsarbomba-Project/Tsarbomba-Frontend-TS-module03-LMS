@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 interface CategoryNavProps {
@@ -22,7 +23,16 @@ const CATEGORIES = [
   "빅데이터",
 ];
 
-export default function CategoryNav({
+// Next.js 정적 prerender 시 useSearchParams 를 만나면 Suspense 경계 필요.
+export default function CategoryNav(props: CategoryNavProps) {
+  return (
+    <Suspense fallback={null}>
+      <CategoryNavInner {...props} />
+    </Suspense>
+  );
+}
+
+function CategoryNavInner({
   variant = "category",
   onBack,
   onRun,
