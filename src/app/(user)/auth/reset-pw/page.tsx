@@ -1,8 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import OneButtonModal from "../../../../components/common/OneButtonModal";
+import {
+  requestPasswordReset,
+  verifyPasswordResetCode,
+  resetPassword,
+} from "@/features/auth/actions";
+
+const toUserMessage = (err: unknown, fallback: string): string => {
+  const msg = err instanceof Error ? err.message : "";
+  const technical = /JDBC|Hikari|Connection|Exception|SQL|timeout|timed out/i;
+  if (msg && !msg.includes("\n") && msg.length <= 60 && !technical.test(msg)) {
+    return msg;
+  }
+  return fallback;
+};
 
 export default function ResetPwPage() {
   const router = useRouter();
@@ -15,34 +29,79 @@ export default function ResetPwPage() {
   const [isSent, setIsSent] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [infoMsg, setInfoMsg] = useState("");
+
+  const [timer, setTimer] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const [emailErr, setEmailErr] = useState("");
   const [codeErr, setCodeErr] = useState("");
   const [passwordErr, setPasswordErr] = useState("");
   const [confirmErr, setConfirmErr] = useState("");
 
-  const handleSendEmail = () => {
+  useEffect(() => {
+    if (timer <= 0 || isVerified) return;
+    const id = setTimeout(() => setTimer((t) => (t <= 1 ? 0 : t - 1)), 1000);
+    return () => clearTimeout(id);
+  }, [timer, isVerified]);
+
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = String(sec % 60).padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  // 1) 재설정 코드 이메일 발송 — POST /password/forgot
+  const handleSendEmail = async () => {
     if (!email) {
       setEmailErr("이메일을 입력하세요.");
       return;
     }
-    alert("인증번호가 발송되었습니다. (테스트용 번호: 아무거나)");
-    setIsSent(true);
-    setEmailErr("");
+    if (loading) return;
+    setLoading(true);
+    try {
+      await requestPasswordReset(email);
+      setInfoMsg("인증번호가 발송되었습니다.");
+      setIsSent(true);
+      setTimer(600);
+      setEmailErr("");
+    } catch (err: unknown) {
+      setEmailErr(
+        toUserMessage(
+          err,
+          "재설정 코드 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyCode = (e: React.FormEvent) => {
+  // 2) 코드 검증 — POST /password/verify-code
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code) {
       setCodeErr("인증번호를 입력하세요.");
       return;
     }
-    alert("인증 완료되었습니다. 새 비밀번호를 입력해 주세요.");
-    setIsVerified(true);
-    setCodeErr("");
+    if (loading) return;
+    setLoading(true);
+    try {
+      await verifyPasswordResetCode(email, code);
+      setInfoMsg("인증이 완료되었습니다. 새 비밀번호를 입력해 주세요.");
+      setIsVerified(true);
+      setCodeErr("");
+    } catch (err: unknown) {
+      setCodeErr(
+        toUserMessage(err, "인증번호가 일치하지 않거나 만료되었습니다."),
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResetSubmit = (e: React.FormEvent) => {
+  // 3) 비밀번호 변경 — PUT /password/reset
+  const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordErr("");
     setConfirmErr("");
@@ -56,19 +115,28 @@ export default function ResetPwPage() {
       setConfirmErr("비밀번호가 일치하지 않습니다.");
       isValid = false;
     }
-
-    if (isValid) {
+    if (!isValid) return;
+    if (loading) return;
+    setLoading(true);
+    try {
+      await resetPassword(email, code, password);
       setModalOpen(true);
+    } catch (err: unknown) {
+      setPasswordErr(
+        toUserMessage(
+          err,
+          "비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] flex flex-col items-center justify-start bg-white px-4 pb-16">
-      <div className="h-16 w-full shrink-0" />
-      <div className="h-12 w-full shrink-0" />
-
-      <div className="w-[400px] px-10 py-8 bg-white border border-[#e8e8e8] rounded-lg text-center box-border shadow-sm">
-        <h1 className="text-2xl font-bold text-[#1f2937] mb-[30px]">
+    <div className="w-full flex flex-col items-center justify-start bg-background px-4 pb-16">
+      <div className="w-100 max-w-full px-10 py-8 bg-bg-box border border-border-light rounded-base text-center box-border shadow-sm">
+        <h1 className="text-title-lg font-bold text-text-primary mb-6">
           비밀번호 재설정
         </h1>
 
@@ -76,6 +144,7 @@ export default function ResetPwPage() {
           <form
             onSubmit={handleVerifyCode}
             className="space-y-4"
+            noValidate
             onKeyDown={(e) => {
               if (
                 e.key === "Enter" &&
@@ -85,42 +154,40 @@ export default function ResetPwPage() {
               }
             }}
           >
-            <div className="text-left">
-              <label className="block text-base font-bold text-[#1f2937] mb-2.5">
-                이메일
-              </label>
+            <div className="text-left flex flex-col">
+              <label className="auth-label">이메일</label>
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
-                  className="flex-1 h-11 px-4 border border-[#e8e8e8] rounded-lg text-base outline-none box-border placeholder-[#d1d5db] focus:border-[#1a237e]"
+                  className="auth-input flex-1 min-w-0"
                   placeholder="이메일을 입력하세요"
                   value={email}
+                  disabled={isSent}
                   onChange={(e) => {
                     setEmail(e.target.value);
                     if (e.target.value) setEmailErr("");
                   }}
                 />
-                <button
-                  type="button"
-                  className="h-11 px-3.5 text-sm bg-[#1a237e] text-white border-none rounded-lg cursor-pointer whitespace-nowrap flex items-center justify-center hover:bg-[#111751] transition-colors"
-                  onClick={handleSendEmail}
-                >
-                  인증번호 전송
-                </button>
+                {!isSent && (
+                  <button
+                    type="button"
+                    className="shrink-0 h-11 px-3.5 text-xs bg-button-blue-bg text-text-white border-none rounded-base cursor-pointer whitespace-nowrap flex items-center justify-center hover:bg-button-blue-hover-bg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={handleSendEmail}
+                    disabled={loading}
+                  >
+                    인증번호 전송
+                  </button>
+                )}
               </div>
-              {emailErr && (
-                <p className="text-xs text-[#fb2c36] mt-1.5 pl-1">{emailErr}</p>
-              )}
+              {emailErr && <p className="auth-error">{emailErr}</p>}
             </div>
 
-            <div className="text-left">
-              <label className="block text-base font-bold text-[#1f2937] mb-2.5">
-                인증번호 입력
-              </label>
+            <div className="text-left flex flex-col">
+              <label className="auth-label">인증번호 입력</label>
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
-                  className="flex-1 h-11 px-4 border border-[#e8e8e8] rounded-lg text-base outline-none box-border placeholder-[#d1d5db] focus:border-[#1a237e]"
+                  className="auth-input flex-1 min-w-0"
                   placeholder="인증번호를 입력하세요."
                   value={code}
                   onChange={(e) => {
@@ -131,30 +198,21 @@ export default function ResetPwPage() {
                 {isSent && (
                   <button
                     type="button"
-                    className="h-11 px-3.5 text-sm bg-[#f3f4f6] text-[#1f2937] border border-[#e8e8e8] rounded-lg cursor-pointer whitespace-nowrap flex items-center justify-center hover:bg-[#e8e8e8] transition-colors"
+                    className="shrink-0 h-11 px-3.5 text-xs bg-bg-navbar text-text-primary border border-border-light rounded-base whitespace-nowrap flex items-center justify-center hover:bg-bg-gray-box-hover transition-colors disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                     onClick={handleSendEmail}
+                    disabled={timer > 0 || loading}
                   >
-                    재발송
+                    {timer > 0 ? formatTimer(timer) : "재발송"}
                   </button>
                 )}
               </div>
-              {codeErr && (
-                <p className="text-xs text-[#fb2c36] mt-1.5 pl-1">{codeErr}</p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end pt-1 text-xs text-[#9ca3af] select-none">
-              <span
-                className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/auth/find-id")}
-              >
-                아이디 찾기
-              </span>
+              {codeErr && <p className="auth-error">{codeErr}</p>}
             </div>
 
             <button
               type="submit"
-              className="w-full h-11 text-base border-none rounded-lg bg-[#1a237e] text-white font-medium flex items-center justify-center cursor-pointer mt-[25px] hover:bg-[#111751] transition-colors"
+              disabled={loading}
+              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-6 hover:bg-button-blue-hover-bg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               확인
             </button>
@@ -163,6 +221,7 @@ export default function ResetPwPage() {
           <form
             onSubmit={handleResetSubmit}
             className="space-y-4"
+            noValidate
             onKeyDown={(e) => {
               if (
                 e.key === "Enter" &&
@@ -172,13 +231,11 @@ export default function ResetPwPage() {
               }
             }}
           >
-            <div className="text-left">
-              <label className="block text-base font-bold text-[#1f2937] mb-2.5">
-                새 비밀번호 입력
-              </label>
+            <div className="text-left flex flex-col">
+              <label className="auth-label">새 비밀번호 입력</label>
               <input
                 type="password"
-                className="w-full h-11 px-4 border border-[#e8e8e8] rounded-lg text-base outline-none box-border placeholder-[#d1d5db] focus:border-[#1a237e]"
+                className="auth-input w-full"
                 placeholder="새 비밀번호를 입력하세요"
                 value={password}
                 onChange={(e) => {
@@ -186,20 +243,14 @@ export default function ResetPwPage() {
                   if (e.target.value) setPasswordErr("");
                 }}
               />
-              {passwordErr && (
-                <p className="text-xs text-[#fb2c36] mt-1.5 pl-1">
-                  {passwordErr}
-                </p>
-              )}
+              {passwordErr && <p className="auth-error">{passwordErr}</p>}
             </div>
 
-            <div className="text-left">
-              <label className="block text-base font-bold text-[#1f2937] mb-2.5">
-                비밀번호 확인
-              </label>
+            <div className="text-left flex flex-col">
+              <label className="auth-label">비밀번호 확인</label>
               <input
                 type="password"
-                className="w-full h-11 px-4 border border-[#e8e8e8] rounded-lg text-base outline-none box-border placeholder-[#d1d5db] focus:border-[#1a237e]"
+                className="auth-input w-full"
                 placeholder="비밀번호를 한 번 더 입력해주세요"
                 value={confirm}
                 onChange={(e) => {
@@ -207,16 +258,13 @@ export default function ResetPwPage() {
                   if (e.target.value) setConfirmErr("");
                 }}
               />
-              {confirmErr && (
-                <p className="text-xs text-[#fb2c36] mt-1.5 pl-1">
-                  {confirmErr}
-                </p>
-              )}
+              {confirmErr && <p className="auth-error">{confirmErr}</p>}
             </div>
 
             <button
               type="submit"
-              className="w-full h-11 text-base border-none rounded-lg bg-[#1a237e] text-white font-medium flex items-center justify-center cursor-pointer mt-[35px] hover:bg-[#111751] transition-colors"
+              disabled={loading}
+              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-8 hover:bg-button-blue-hover-bg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               확인
             </button>
@@ -232,6 +280,13 @@ export default function ResetPwPage() {
         }}
         modalTitle="비밀번호 변경 완료"
         modalContent="새로운 비밀번호로 변경되었습니다. 다시 로그인해 주세요."
+      />
+
+      <OneButtonModal
+        isOpen={!!infoMsg}
+        onClose={() => setInfoMsg("")}
+        modalTitle="알림"
+        modalContent={infoMsg}
       />
     </div>
   );

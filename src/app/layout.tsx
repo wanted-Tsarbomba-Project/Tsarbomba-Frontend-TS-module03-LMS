@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useSyncExternalStore } from "react";
+import React, {
+  Suspense,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
@@ -49,7 +54,7 @@ export default function RootLayout({
     if (pathname !== "/") return;
 
     if (userRole === "ADMIN") {
-      router.replace("/admin/users");
+      router.replace("/admin/rules");
     } else if (userRole === "OPERATOR") {
       router.replace("/admin/courses");
     }
@@ -63,14 +68,14 @@ export default function RootLayout({
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth");
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isMypagePath =
-    pathname.startsWith("/user/introduce") ||
-    pathname.startsWith("/user/profile");
+  const isMypagePath = pathname.startsWith("/user/profile");
   const isProblemPath =
     pathname.startsWith("/problems") ||
     pathname.startsWith("/user/problems") ||
-    pathname.startsWith("/user/problem");
-  const isChatPath = pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
+    pathname.startsWith("/user/problem") ||
+    /^\/courses\/[^/]+\/problems\//.test(pathname);
+  const isChatPath =
+    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   const showAdminAuthModal = isMount && isAdminPath && !canAccessAdmin;
 
@@ -85,7 +90,7 @@ export default function RootLayout({
         <body className="bg-white min-h-screen m-0 p-0 antialiased flex flex-col">
           <div className="flex flex-col min-h-screen w-full bg-white">
             <Header isSimple={true} />
-            <div className="flex flex-1 justify-center items-center w-full max-w-[1200px] mx-auto px-5 py-10 box-border">
+            <div className="flex flex-1 justify-center items-center w-full max-w-300 mx-auto px-5 py-10 box-border">
               {children}
             </div>
           </div>
@@ -104,21 +109,26 @@ export default function RootLayout({
           <Header />
 
           {!isAdminPath && !isMypagePath && !isProblemPath && !isChatPath && (
-            <CategoryNav />
+            <Suspense fallback={null}>
+              <CategoryNav />
+            </Suspense>
           )}
 
           {isFlexBodySection ? (
-            <div className="flex flex-1 w-full max-w-[1200px] mx-auto relative box-border gap-5 max-[1024px]:px-5">
-              {(isMypagePath || isChatPath || (isAdminPath && canAccessAdmin)) && (
-                <Sidebar isOpen={isOpen} />
-              )}
+            <div className="flex flex-1 w-full max-w-300 mx-auto relative box-border gap-5 max-[1024px]:px-5">
+              {(isMypagePath ||
+                isChatPath ||
+                (isAdminPath && canAccessAdmin)) && <Sidebar isOpen={isOpen} />}
 
-              {isOpen && (isMypagePath || isChatPath || (isAdminPath && canAccessAdmin)) && (
-                <div
-                  className="fixed inset-0 bg-[#000000]/40 z-[998] lg:hidden"
-                  onClick={() => setIsOpen(false)}
-                />
-              )}
+              {isOpen &&
+                (isMypagePath ||
+                  isChatPath ||
+                  (isAdminPath && canAccessAdmin)) && (
+                  <div
+                    className="fixed inset-0 bg-[#000000]/40 z-998 lg:hidden"
+                    onClick={() => setIsOpen(false)}
+                  />
+                )}
 
               <main className="flex-1 min-w-0 py-10">
                 {isAdminPath ? (canAccessAdmin ? children : null) : children}
@@ -126,7 +136,7 @@ export default function RootLayout({
             </div>
           ) : (
             <main
-              className={`flex-1 w-full max-w-[1200px] mx-auto box-border ${
+              className={`flex-1 w-full max-w-300 mx-auto box-border ${
                 isProblemPath ? "py-0" : "px-5 py-10"
               }`}
             >

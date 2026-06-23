@@ -37,15 +37,37 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-placeholder: var(--color-text-placeholder);
+  --color-text-white: var(--color-text-white);
+  --color-text-blue: var(--color-text-blue);
+  --color-text-red: var(--color-text-red);
+  --color-bg-header: var(--color-bg-header);
+  --color-bg-sidebar: var(--color-bg-sidebar);
+  --color-bg-main: var(--color-bg-main);
+  --color-bg-navbar: var(--color-bg-navbar);
+  --color-bg-box: var(--color-bg-box);
+  --color-bg-box-hover: var(--color-bg-box-hover);
+  --color-bg-gray-box: var(--color-bg-gray-box);
+  --color-bg-gray-box-hover: var(--color-bg-gray-box-hover);
+  --color-border-light: var(--color-border-light);
+  --color-button-blue-bg: var(--color-button-blue-bg);
+  --color-button-blue-hover-bg: var(--color-button-blue-hover-bg);
+  --color-button-red-bg: var(--color-button-red-bg);
+  --color-button-red-hover-bg: var(--color-button-red-hover-bg);
+  --text-title-lg: var(--font-size-title-lg);
+  --text-title-md: var(--font-size-title-md);
+  --text-body: var(--font-size-body);
+  --text-description: var(--font-size-description);
+  --radius-base: var(--radius-base);
   --font-sans: "Pretendard", sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* 세로 스크롤바 유무로 가운데 정렬 레이아웃이 좌우로 흔들리는 것 방지 */
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -59,4 +81,22 @@ textarea,
 select {
   color: var(--color-text-primary);
   font-family: inherit;
+}
+
+/* ── Auth 폼 공통 클래스 ── */
+@layer components {
+  /* 입력 라벨 */
+  .auth-label {
+    @apply block text-base font-bold text-text-primary mb-2.5;
+  }
+
+  /* 입력칸 */
+  .auth-input {
+    @apply h-11 px-4 border border-border-light rounded-base text-base text-text-primary outline-none box-border placeholder:text-text-placeholder focus:border-text-blue disabled:bg-bg-gray-box;
+  }
+
+  /* 필드 에러 문구 */
+  .auth-error {
+    @apply text-xs text-text-red mt-1.5 pl-1;
+  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -9,7 +9,11 @@ import Logo from "../../../public/assets/img/logo-Icon.png";
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
-import { logoutService } from "@/services/authService";
+import { logoutService } from "@/features/auth/actions";
+import {
+  buildCourseSearchHref,
+  COURSE_SEARCH_PARAM,
+} from "@/features/course/search";
 
 interface HeaderProps {
   isSimple?: boolean;
@@ -28,6 +32,7 @@ function getHeaderStatus() {
 function Header({ isSimple }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -46,10 +51,16 @@ function Header({ isSimple }: HeaderProps) {
   };
 
   useEffect(() => {
-    setIsMounted(true);
-    syncHeaderStatus();
+    const timer = window.setTimeout(() => {
+      setIsMounted(true);
+      syncHeaderStatus();
+    }, 0);
+
     window.addEventListener("loginSuccess", syncHeaderStatus);
-    return () => window.removeEventListener("loginSuccess", syncHeaderStatus);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("loginSuccess", syncHeaderStatus);
+    };
   }, []);
 
   const handleLogoutConfirm = async () => {
@@ -74,7 +85,6 @@ function Header({ isSimple }: HeaderProps) {
       setIsLoggedIn(false);
       setIsLogoutModalOpen(false);
 
-      // 4. 강제 새로고침으로 홈 이동
       window.location.href = "/";
     }
   };
@@ -86,9 +96,15 @@ function Header({ isSimple }: HeaderProps) {
   const logoTargetHref = !isManagementRole
     ? "/"
     : userRole === "ADMIN"
-      ? "/admin/users"
+      ? "/admin/rules"
       : "/admin/courses";
   const isAdminPath = pathname.startsWith("/admin");
+  const courseKeyword =
+    pathname === "/" ? (searchParams.get(COURSE_SEARCH_PARAM) ?? "") : "";
+
+  const handleCourseSearch = (keyword: string) => {
+    router.replace(buildCourseSearchHref(searchParams, keyword));
+  };
 
   if (isSimple) {
     return (
@@ -133,7 +149,12 @@ function Header({ isSimple }: HeaderProps) {
 
         {(!isManagementRole || !isAdminPath) && (
           <div className="flex-1 max-w-md mx-8 hidden sm:block">
-            <Searchbar />
+            <Searchbar
+              defaultValue={courseKeyword}
+              key={courseKeyword}
+              onSearch={handleCourseSearch}
+              placeholder="강좌 제목 검색"
+            />
           </div>
         )}
 
@@ -150,7 +171,7 @@ function Header({ isSimple }: HeaderProps) {
               </span>
               <span
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/user/myclassroom")}
+                onClick={() => router.push("/myclassroom")}
               >
                 내 강의실
               </span>
@@ -159,6 +180,12 @@ function Header({ isSimple }: HeaderProps) {
                 onClick={() => router.push("/problems")}
               >
                 문제풀이
+              </span>
+              <span
+                className="cursor-pointer hover:text-[#1a237e] transition-colors"
+                onClick={() => router.push("/ranking")}
+              >
+                랭킹
               </span>
             </nav>
           )}
@@ -219,7 +246,7 @@ function Header({ isSimple }: HeaderProps) {
                     <div
                       className="flex items-center justify-center w-full px-2 py-2.5 text-sm text-[#1f2937] text-center hover:bg-[#f3f4f6] hover:text-[#1a237e] cursor-pointer whitespace-nowrap"
                       onClick={() => {
-                        router.push("/user/introduce");
+                        router.push("/user/profile");
                         setIsDropdownOpen(false);
                       }}
                     >

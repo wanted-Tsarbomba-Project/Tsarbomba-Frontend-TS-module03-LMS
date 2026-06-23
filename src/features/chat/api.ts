@@ -1,7 +1,5 @@
 import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 
-import type { ChatMessage, ChatResponse, ChatRoom } from "./types";
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_BASE_URL) {
@@ -12,7 +10,7 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-async function requestJson<T>(
+export async function requestChatJson<T>(
   path: string,
   fallbackMessage: string,
   init: RequestInit = {},
@@ -52,59 +50,17 @@ async function requestJson<T>(
     return { data: undefined as T };
   }
 
-  return JSON.parse(text) as ApiResponse<T>;
-}
-
-export async function getChatRooms(signal?: AbortSignal) {
-  const result = await requestJson<ChatRoom[]>(
-    "/api/v1/chat/list",
-    "채팅방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    {
-      method: "GET",
-      signal,
-    },
-  );
-
-  return result.data ?? [];
-}
-
-export async function getChatMessages(roomId: string, signal?: AbortSignal) {
-  const result = await requestJson<ChatMessage[]>(
-    `/api/v1/chat/${roomId}/messages`,
-    "채팅 내용을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    {
-      method: "GET",
-      signal,
-    },
-  );
-
-  return result.data ?? [];
-}
-
-export async function createGeneralChatMessage(userMessage: string) {
-  const result = await requestJson<ChatResponse>(
-    "/api/v1/chat/messages",
-    "AI 답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    {
-      method: "POST",
-      body: JSON.stringify({ userMessage }),
-    },
-  );
-
-  return result.data;
-}
-
-export async function sendChatMessage(roomId: string, userMessage: string) {
-  const result = await requestJson<ChatResponse>(
-    `/api/v1/chat/${roomId}/messages`,
-    "메시지를 전송하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    {
-      method: "POST",
-      body: JSON.stringify({ userMessage }),
-    },
-  );
-
-  return result.data;
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    throw new ApiClientError(
+      {
+        message: fallbackMessage,
+        path,
+      },
+      fallbackMessage,
+    );
+  }
 }
 
 function createApiError(

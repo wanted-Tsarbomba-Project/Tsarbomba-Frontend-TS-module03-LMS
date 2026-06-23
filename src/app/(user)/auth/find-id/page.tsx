@@ -24,19 +24,17 @@ export default function FindIdPage() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] flex flex-col items-center justify-start bg-white px-4 pb-16">
-      <div className="h-16 w-full shrink-0" />
-      <div className="h-12 w-full shrink-0" />
-
-      <div className="w-[400px] px-10 py-8 bg-white border border-[#e8e8e8] rounded-lg text-center box-border shadow-sm">
+    <div className="w-full flex flex-col items-center justify-start bg-background px-4 pb-16">
+      <div className="w-100 max-w-full px-10 py-8 bg-bg-box border border-border-light rounded-base text-center box-border shadow-sm">
         {!resultEmail ? (
           <>
-            <h1 className="text-2xl font-bold text-[#1f2937] mb-[30px]">
+            <h1 className="text-title-lg font-bold text-text-primary mb-6">
               아이디 찾기
             </h1>
             <form
               onSubmit={handleFindIdSubmit}
               className="space-y-4"
+              noValidate
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
@@ -46,13 +44,11 @@ export default function FindIdPage() {
                 }
               }}
             >
-              <div className="text-left">
-                <label className="block text-base font-bold text-[#1f2937] mb-2.5">
-                  이름*
-                </label>
+              <div className="text-left flex flex-col">
+                <label className="auth-label">이름*</label>
                 <input
                   type="text"
-                  className="w-full h-11 px-4 border border-[#e8e8e8] rounded-lg text-base outline-none box-border placeholder-[#d1d5db] focus:border-[#1a237e]"
+                  className="auth-input w-full"
                   placeholder="이름을 입력하세요"
                   value={name}
                   onChange={(e) => {
@@ -61,13 +57,12 @@ export default function FindIdPage() {
                   }}
                 />
               </div>
-              <div className="text-left">
-                <label className="block text-base font-bold text-[#1f2937] mb-2.5">
-                  전화번호*
-                </label>
+
+              <div className="text-left flex flex-col">
+                <label className="auth-label">전화번호*</label>
                 <input
                   type="text"
-                  className="w-full h-11 px-4 border border-[#e8e8e8] rounded-lg text-base outline-none box-border placeholder-[#d1d5db] focus:border-[#1a237e]"
+                  className="auth-input w-full"
                   placeholder="010-0000-0000"
                   value={phone}
                   onChange={(e) => {
@@ -77,23 +72,20 @@ export default function FindIdPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end pt-1 text-xs text-[#9ca3af] select-none">
+              <div className="flex items-center justify-end pt-1 text-xs text-text-secondary select-none">
                 <span
-                  className="cursor-pointer hover:text-[#1a237e] transition-colors"
+                  className="cursor-pointer hover:text-text-blue transition-colors"
                   onClick={() => router.push("/auth/reset-pw")}
                 >
                   비밀번호 찾기
                 </span>
               </div>
 
-              {errorMsg && (
-                <p className="text-xs text-[#fb2c36] mt-1.5 pl-1 text-left">
-                  {errorMsg}
-                </p>
-              )}
+              {errorMsg && <p className="auth-error text-left">{errorMsg}</p>}
+
               <button
                 type="submit"
-                className="w-full h-11 text-base border-none rounded-lg bg-[#1a237e] text-white font-medium flex items-center justify-center cursor-pointer mt-[25px] hover:bg-[#111751] transition-colors"
+                className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-6 hover:bg-button-blue-hover-bg transition-colors"
               >
                 확인
               </button>
@@ -101,15 +93,15 @@ export default function FindIdPage() {
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-[#1f2937] mb-[30px]">
+            <h1 className="text-title-lg font-bold text-text-primary mb-6">
               아이디 찾기 결과
             </h1>
-            <div className="text-lg font-bold text-[#1a237e] my-12 text-center select-all">
+            <div className="text-title-md font-bold text-text-blue my-12 text-center select-all">
               {resultEmail}
             </div>
             <button
               type="button"
-              className="w-full h-11 text-base border-none rounded-lg bg-[#1a237e] text-white font-medium flex items-center justify-center cursor-pointer hover:bg-[#111751] transition-colors"
+              className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer hover:bg-button-blue-hover-bg transition-colors"
               onClick={() => router.push("/auth/login")}
             >
               돌아가기

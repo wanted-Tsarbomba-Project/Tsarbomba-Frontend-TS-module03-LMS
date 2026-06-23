@@ -17,7 +17,7 @@ import {
   getUserCourseProgress,
   getUserProblemList,
   toggleUserLock,
-} from "../api";
+} from "../actions";
 import type {
   AdminUserDetail,
   UserCourseRow,
@@ -25,7 +25,22 @@ import type {
   UserProblemSubmission,
 } from "../types";
 
-import styles from "@/app/admin/users/[id]/page.module.css";
+const userDetailClasses = {
+  "container": "box-border min-h-screen p-6 text-text-primary",
+  "pageHeader": "mb-7 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
+  "pageTitle": "m-0 text-[30px] font-bold",
+  "headerButtonGroup": "flex gap-2.5 max-md:flex-wrap",
+  "grayButton": "cursor-pointer rounded-[10px] border-0 bg-[#e5e5e5] px-[18px] py-3 text-[15px] font-semibold transition duration-200 hover:not-disabled:bg-[#d9d9d9] disabled:cursor-not-allowed disabled:opacity-60",
+  "infoSection": "mb-10",
+  "row": "flex gap-5 max-md:flex-col max-md:items-stretch",
+  "inputGroup": "mb-6 flex flex-1 flex-col [&>label]:mb-2.5 [&>label]:text-[15px] [&>label]:font-semibold [&>label]:text-[#666666]",
+  "readonlyBox": "flex min-h-[52px] items-center rounded-[10px] border border-[#dedede] bg-bg-box px-4 text-[15px]",
+  "tabGroup": "mt-5 mb-2.5 flex gap-2.5",
+  "tabButton": "h-9 w-[100px] cursor-pointer rounded-base border border-button-blue-bg bg-bg-box text-body font-medium text-text-primary",
+  "active": "border-0 bg-button-blue-bg text-text-white",
+  "listSection": "overflow-hidden rounded-xl border border-[#e5e5e5] bg-bg-box"
+} as const;
+
 
 interface NoticeModalState {
   isOpen: boolean;
@@ -179,7 +194,7 @@ export default function UserDetailClient() {
 
   if (userLoading || !user) {
     return (
-      <div className={styles.container}>
+      <div className={userDetailClasses.container}>
         <LoadingIndicator message="회원 정보를 불러오는 중입니다." />
       </div>
     );
@@ -189,13 +204,13 @@ export default function UserDetailClient() {
 
   return (
     <>
-      <div className={styles.container}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>회원 상세조회</h1>
+      <div className={userDetailClasses.container}>
+        <div className={userDetailClasses.pageHeader}>
+          <h1 className={userDetailClasses.pageTitle}>회원 상세조회</h1>
 
-          <div className={styles.headerButtonGroup}>
+          <div className={userDetailClasses.headerButtonGroup}>
             <button
-              className={styles.grayButton}
+              className={userDetailClasses.grayButton}
               disabled={saving}
               onClick={() => setLockModalOpen(true)}
               type="button"
@@ -204,7 +219,7 @@ export default function UserDetailClient() {
             </button>
 
             <button
-              className={styles.grayButton}
+              className={userDetailClasses.grayButton}
               onClick={() => router.push("/admin/users")}
               type="button"
             >
@@ -213,13 +228,13 @@ export default function UserDetailClient() {
           </div>
         </div>
 
-        <section className={styles.infoSection}>
-          <div className={styles.row}>
+        <section className={userDetailClasses.infoSection}>
+          <div className={userDetailClasses.row}>
             <ReadonlyField label="이름" value={user.name} />
             <ReadonlyField label="닉네임" value={user.nickname ?? "-"} />
           </div>
 
-          <div className={styles.row}>
+          <div className={userDetailClasses.row}>
             <ReadonlyField label="이메일" value={user.email} />
             <ReadonlyField label="전화번호" value={user.phone} />
           </div>
@@ -231,10 +246,10 @@ export default function UserDetailClient() {
           />
         </section>
 
-        <div className={styles.tabGroup}>
+        <div className={userDetailClasses.tabGroup}>
           <button
-            className={`${styles.tabButton} ${
-              tab === "COURSE" ? styles.active : ""
+            className={`${userDetailClasses.tabButton} ${
+              tab === "COURSE" ? userDetailClasses.active : ""
             }`}
             onClick={() => setTab("COURSE")}
             type="button"
@@ -243,8 +258,8 @@ export default function UserDetailClient() {
           </button>
 
           <button
-            className={`${styles.tabButton} ${
-              tab === "PROBLEM" ? styles.active : ""
+            className={`${userDetailClasses.tabButton} ${
+              tab === "PROBLEM" ? userDetailClasses.active : ""
             }`}
             onClick={() => setTab("PROBLEM")}
             type="button"
@@ -253,7 +268,7 @@ export default function UserDetailClient() {
           </button>
         </div>
 
-        <div className={styles.listSection}>
+        <div className={userDetailClasses.listSection}>
           {listLoading ? (
             <LoadingIndicator message="목록을 불러오는 중입니다." />
           ) : tab === "COURSE" ? (
@@ -306,9 +321,9 @@ function ReadonlyField({
   value?: string | number | null;
 }) {
   return (
-    <div className={styles.inputGroup}>
+    <div className={userDetailClasses.inputGroup}>
       <label>{label}</label>
-      <div className={styles.readonlyBox}>{value ?? ""}</div>
+      <div className={userDetailClasses.readonlyBox}>{value ?? ""}</div>
     </div>
   );
 }

@@ -6,12 +6,16 @@ import type {
   ProblemDatasetFile,
   ProblemCategoryId,
   ProblemCategory,
+  ChatMessage,
   ChatResponse,
+  ChatRoomTitleUpdate,
   ExecutionResult,
   ProblemHint,
   ProblemInfo,
+  ProblemChatRoom,
   ProblemSetDetail,
   ProblemSetDetailProblem,
+  ProblemSetResult,
   ProblemSetSummary,
   ProblemStatus,
   RawProblemDetail,
@@ -43,9 +47,15 @@ export const INITIAL_SUB_PROBLEM: SubProblem = {
   questionTitle: "",
   context: "",
   point: 1,
-  answer: "",
   hint: "",
   solution: "",
+  testCases: [
+    {
+      testCode: "",
+      isHidden: false,
+      timeoutMs: 3,
+    },
+  ],
 };
 
 interface ApiResponse<T> {
@@ -78,10 +88,14 @@ export function createProblemRequestBody(
       title: problem.questionTitle,
       content: problem.context,
       point: Number(problem.point),
-      startCode: null,
-      answer: problem.answer,
+      startCode: problem.startCode ?? null,
       hint: problem.hint,
       explanation: problem.solution,
+      testCases: problem.testCases.map((testCase) => ({
+        testCode: testCase.testCode,
+        isHidden: testCase.isHidden,
+        timeoutMs: Number(testCase.timeoutMs) * 1000,
+      })),
     })),
   };
 }
@@ -155,10 +169,14 @@ export function createProblemUpdateRequestBody(
       content: problem.context,
       point: Number(problem.point),
       startCode: problem.startCode ?? null,
-      answer: problem.answer,
       hintId: problem.hintId,
       hint: problem.hint,
       explanation: problem.solution,
+      testCases: problem.testCases.map((testCase) => ({
+        testCode: testCase.testCode,
+        isHidden: testCase.isHidden,
+        timeoutMs: Number(testCase.timeoutMs) * 1000,
+      })),
     })),
   };
 }
@@ -279,6 +297,19 @@ export async function getProblemSetDetail(
   return normalizeProblemSetDetail(result);
 }
 
+export async function getProblemSetResult(
+  problemSetId: string,
+  init: NextRequestInit = {},
+) {
+  const result = await requestJson<ProblemSetResult>(
+    `/api/v1/problem-sets/${problemSetId}/result`,
+    "문제 풀이 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    init,
+  );
+
+  return result.data ?? null;
+}
+
 export async function getProblemHints(problemId: number) {
   const result = await requestJson<ProblemHint[]>(
     `/api/v1/problems/${problemId}/hints`,
@@ -339,6 +370,35 @@ export async function createProblemChatMessage(
   return result.data;
 }
 
+export async function getProblemChatRooms(init: NextRequestInit = {}) {
+  const result = await requestJson<ProblemChatRoom[]>(
+    "/api/v1/chat/list",
+    "채팅방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "GET",
+      ...init,
+    },
+  );
+
+  return result.data ?? [];
+}
+
+export async function getProblemChatMessages(
+  roomId: number,
+  init: NextRequestInit = {},
+) {
+  const result = await requestJson<ChatMessage[]>(
+    `/api/v1/chat/${roomId}/messages`,
+    "채팅 내용을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "GET",
+      ...init,
+    },
+  );
+
+  return result.data ?? [];
+}
+
 export async function sendProblemChatMessage(
   roomId: number,
   userMessage: string,
@@ -349,6 +409,19 @@ export async function sendProblemChatMessage(
     {
       method: "POST",
       body: JSON.stringify({ userMessage }),
+    },
+  );
+
+  return result.data;
+}
+
+export async function updateProblemChatRoomTitle(roomId: number, title: string) {
+  const result = await requestJson<ChatRoomTitleUpdate>(
+    `/api/v1/chat/${roomId}`,
+    "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
     },
   );
 
@@ -421,11 +494,29 @@ function normalizeProblemDetail(
           context: problem.content ?? "",
           point: problem.point ?? 1,
           startCode: problem.startCode ?? null,
-          answer: problem.answer ?? "",
           hint: problem.hint ?? "",
           solution: problem.explanation ?? "",
+          testCases: problem.testCases?.length
+            ? problem.testCases.map((testCase) => ({
+                testCode: testCase.testCode ?? "",
+                isHidden: testCase.isHidden ?? false,
+                timeoutMs: Math.max(
+                  1,
+                  Math.ceil((testCase.timeoutMs ?? 3000) / 1000),
+                ),
+              }))
+            : INITIAL_SUB_PROBLEM.testCases.map((testCase) => ({
+                ...testCase,
+              })),
         }))
-      : [{ ...INITIAL_SUB_PROBLEM }],
+      : [
+          {
+            ...INITIAL_SUB_PROBLEM,
+            testCases: INITIAL_SUB_PROBLEM.testCases.map((testCase) => ({
+              ...testCase,
+            })),
+          },
+        ],
     file: data?.dataFileName
       ? { name: data.dataFileName, isExisting: true }
       : null,
@@ -504,6 +595,7 @@ async function updateProblemWithFormData(
   requestBody: UpdateProblemRequest,
   file: File | null,
 ) {
+  const path = `/api/v1/problems/${problemSetId}/with-dataset`;
   const formData = new FormData();
 
   formData.append(
@@ -518,7 +610,7 @@ async function updateProblemWithFormData(
   }
 
   return requestJson<unknown>(
-    `/api/v1/problems/${problemSetId}`,
+    path,
     "문제를 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     {
       method: "PUT",

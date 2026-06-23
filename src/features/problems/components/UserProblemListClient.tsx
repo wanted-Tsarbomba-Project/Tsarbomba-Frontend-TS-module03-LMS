@@ -13,7 +13,11 @@ import {
 import { DIFFICULTY_MAP } from "../actions";
 import type { ProblemSetSummary } from "../types";
 
-import styles from "./UserProblemListClient.module.css";
+const userProblemListClasses = {
+  "container": "min-h-screen bg-bg-main py-[30px] max-md:py-6",
+  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary"
+} as const;
+
 
 interface UserProblemListClientProps {
   initialProblemSets: ProblemSetSummary[];
@@ -82,8 +86,8 @@ export default function UserProblemListClient({
   );
 
   return (
-    <main className={styles.container}>
-      <h2 className={styles.pageTitle}>문제풀이</h2>
+    <main className={userProblemListClasses.container}>
+      <h2 className={userProblemListClasses.pageTitle}>문제풀이</h2>
 
       <List
         columns={columns}

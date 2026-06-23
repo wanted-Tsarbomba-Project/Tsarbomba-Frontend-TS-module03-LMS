@@ -15,6 +15,12 @@ export interface ProblemInfo {
   description: string;
 }
 
+export interface ProblemTestCase {
+  testCode: string;
+  isHidden: boolean;
+  timeoutMs: number;
+}
+
 export interface SubProblem {
   problemId?: number;
   hintId?: number;
@@ -22,9 +28,9 @@ export interface SubProblem {
   context: string;
   point: number;
   startCode?: string | null;
-  answer: string;
   hint: string;
   solution: string;
+  testCases: ProblemTestCase[];
 }
 
 export interface ExistingDatasetFile {
@@ -44,10 +50,10 @@ export interface CreateProblemRequest {
     title: string;
     content: string;
     point: number;
-    startCode: null;
-    answer: string;
+    startCode: string | null;
     hint: string;
     explanation: string;
+    testCases: ProblemTestCase[];
   }>;
 }
 
@@ -64,10 +70,10 @@ export interface UpdateProblemRequest {
     content: string;
     point: number;
     startCode: string | null;
-    answer: string;
     hintId?: number;
     hint: string;
     explanation: string;
+    testCases: ProblemTestCase[];
   }>;
 }
 
@@ -95,9 +101,9 @@ export interface RawProblemDetail {
     content?: string;
     point?: number;
     startCode?: string | null;
-    answer?: string;
     hint?: string;
     explanation?: string;
+    testCases?: ProblemTestCase[];
   }>;
 }
 
@@ -133,6 +139,27 @@ export interface ProblemSetDetail {
   problems: ProblemSetDetailProblem[];
 }
 
+export interface ProblemSetResultSubmission {
+  problemId: number;
+  problemNumber?: number;
+  title?: string;
+  content?: string;
+  submittedAnswer: string;
+  isCorrect: boolean;
+  submittedAt?: string;
+  explanation?: string;
+}
+
+export interface ProblemSetResult {
+  problemSetId: number;
+  title?: string;
+  isCompleted: boolean;
+  accuracyRate: number;
+  totalCompletedUserCount: number;
+  correctCompletedUserCount: number;
+  submissions: ProblemSetResultSubmission[];
+}
+
 export interface ProblemHint {
   hintId: number;
   hintContent: string;
@@ -156,6 +183,7 @@ export interface SubmissionResult {
   errorMessage?: string;
   explanation?: string;
   nextProblemId?: number;
+  submittedAt?: string;
 }
 
 export interface ChatMessage {
@@ -167,4 +195,26 @@ export interface ChatMessage {
 export interface ChatResponse {
   answer: string;
   roomId?: number;
+}
+
+export interface ChatRoomTitleUpdate {
+  roomId: number;
+  title: string;
+  updatedAt: string;
+}
+
+export interface ProblemChatRoom {
+  roomId: number;
+  title: string;
+  updatedAt: string;
+  problemSetId?: number | string | null;
+  problemId?: number | string | null;
+  problemSet?: {
+    id?: number | string | null;
+    problemSetId?: number | string | null;
+  } | null;
+  problem?: {
+    id?: number | string | null;
+    problemId?: number | string | null;
+  } | null;
 }

@@ -7,26 +7,19 @@ import {
   List,
   LoadingIndicator,
   OneButtonModal,
+  Pagination,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
-import { getOperationAlerts } from "../api";
+import { getOperationAlerts } from "../actions";
+import {
+  ALERT_PAGE_SIZE,
+  alertStatusLabel,
+  alertTargetTabs,
+} from "../constants";
+import { adminAlramListClasses } from "../styles";
 import type { AlertStatus, OperationAlertSummary, TargetType } from "../types";
-
-import styles from "@/app/admin/alrams/page.module.css";
-
-const statusLabel: Record<AlertStatus, string> = {
-  OPEN: "미처리",
-  RESOLVED: "처리 완료",
-  IGNORED: "무시됨",
-};
-
-const targetTabs: Array<{ label: string; value: TargetType }> = [
-  { label: "문제", value: "PROBLEM" },
-  { label: "회원", value: "USER" },
-  { label: "강좌", value: "COURSE" },
-];
 
 const alertColumns: ListColumn<OperationAlertSummary>[] = [
   { key: "index", label: "No." },
@@ -34,7 +27,7 @@ const alertColumns: ListColumn<OperationAlertSummary>[] = [
   {
     key: "status",
     label: "처리상태",
-    render: (alert) => statusLabel[alert.status] ?? alert.status,
+    render: (alert) => alertStatusLabel[alert.status] ?? alert.status,
   },
 ];
 
@@ -42,6 +35,8 @@ export default function AlramsClient() {
   const router = useRouter();
   const [type, setType] = useState<TargetType>("PROBLEM");
   const [status, setStatus] = useState<AlertStatus | "">("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [alerts, setAlerts] = useState<OperationAlertSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [noticeModal, setNoticeModal] = useState({
@@ -54,13 +49,20 @@ export default function AlramsClient() {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        const result = await getOperationAlerts(type, status);
+        const result = await getOperationAlerts(
+          type,
+          status,
+          page,
+          ALERT_PAGE_SIZE,
+        );
+
         setAlerts(result.data.content);
+        setTotalPages(result.data.totalPages ?? 1);
       } catch (error) {
         console.error("알람 목록 조회 실패:", error);
         handleClientError(error, {
           router,
-          fallbackTitle: "알람을 불러오지 못했습니다",
+          fallbackTitle: "알람을 불러오지 못했습니다.",
           fallbackMessage: "잠시 후 다시 시도해 주세요.",
           showModal: (title, content) =>
             setNoticeModal({
@@ -75,20 +77,26 @@ export default function AlramsClient() {
     };
 
     void fetchAlerts();
-  }, [router, type, status]);
+  }, [page, router, type, status]);
 
   const handleStatusChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setPage(0);
     setStatus(event.target.value as AlertStatus | "");
+  };
+
+  const handleTargetTypeChange = (nextType: TargetType) => {
+    setPage(0);
+    setType(nextType);
   };
 
   return (
     <>
-      <div className={styles.container}>
-        <div className={styles.header}>
+      <div className={adminAlramListClasses.container}>
+        <div className={adminAlramListClasses.header}>
           <h1>알람 관리</h1>
 
           <select
-            className={styles.statusSelect}
+            className={adminAlramListClasses.statusSelect}
             onChange={handleStatusChange}
             value={status}
           >
@@ -99,14 +107,14 @@ export default function AlramsClient() {
           </select>
         </div>
 
-        <div className={styles.typeButtonGroup}>
-          {targetTabs.map((tab) => (
+        <div className={adminAlramListClasses.typeButtonGroup}>
+          {alertTargetTabs.map((tab) => (
             <button
-              className={`${styles.typeButton} ${
-                type === tab.value ? styles.active : ""
+              className={`${adminAlramListClasses.typeButton} ${
+                type === tab.value ? adminAlramListClasses.active : ""
               }`}
               key={tab.value}
-              onClick={() => setType(tab.value)}
+              onClick={() => handleTargetTypeChange(tab.value)}
               type="button"
             >
               {tab.label}
@@ -115,7 +123,7 @@ export default function AlramsClient() {
         </div>
 
         {loading ? (
-          <LoadingIndicator message="알림 목록을 불러오는 중입니다." />
+          <LoadingIndicator message="알람 목록을 불러오는 중입니다." />
         ) : (
           <List
             columns={alertColumns}
@@ -123,6 +131,14 @@ export default function AlramsClient() {
             emptyMessage="조회된 알람이 없습니다."
             onRowClick={(alert) =>
               router.push(`/admin/alrams/${alert.operationAlertId}`)
+            }
+            pagination={
+              <Pagination
+                currentPage={page}
+                disabled={loading}
+                onPageChange={setPage}
+                totalPages={totalPages}
+              />
             }
             rowKey={(alert) => alert.operationAlertId}
           />
@@ -133,7 +149,9 @@ export default function AlramsClient() {
         isOpen={noticeModal.isOpen}
         modalContent={noticeModal.content}
         modalTitle={noticeModal.title}
-        onClose={() => setNoticeModal({ isOpen: false, title: "", content: "" })}
+        onClose={() =>
+          setNoticeModal({ isOpen: false, title: "", content: "" })
+        }
       />
     </>
   );

@@ -3,6 +3,8 @@ import {
   getProblem,
   getProblemCategories,
 } from "@/features/problems/actions";
+import { cookies } from "next/headers";
+
 import ProblemEditClient from "@/features/problems/components/ProblemEditClient";
 
 interface EditProblemPageProps {
@@ -13,8 +15,15 @@ interface EditProblemPageProps {
 
 export default async function EditProblemPage({ params }: EditProblemPageProps) {
   const { id } = await params;
-  const categories = await getProblemCategories(3600);
-  const detail = await getProblem(id, categories, { cache: "no-store" });
+  const cookieHeader = (await cookies()).toString();
+  const authInit = {
+    ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
+  };
+  const categories = await getProblemCategories(3600, authInit);
+  const detail = await getProblem(id, categories, {
+    ...authInit,
+    cache: "no-store",
+  });
 
   return (
     <ProblemEditClient

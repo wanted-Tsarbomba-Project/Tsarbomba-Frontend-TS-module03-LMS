@@ -1,42 +1,51 @@
 "use client";
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
-import {
-  OneButtonModal,
-  WarningModal,
-} from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
   createProblemChatMessage,
+  getProblemChatMessages,
+  getProblemChatRooms,
   getProblemHints,
   getProblemSetDetail,
+  getProblemSetResult,
   runProblem,
   sendProblemChatMessage,
   submitProblem,
+  updateProblemChatRoomTitle,
 } from "../actions";
+import { problemDetailClasses } from "../problemDetailStyles";
 import type {
   ChatMessage,
   ExecutionResult,
   ProblemHint,
   ProblemResultTab,
   ProblemSetDetail,
+  ProblemSetResult,
+  ProblemChatRoom,
   ProblemStatus,
   SubmissionResult,
 } from "../types";
-import ProblemChatPanel from "./ProblemChatPanel";
-import ProblemResultPanel from "./ProblemResultPanel";
+import ProblemDetailModals from "./ProblemDetailModals";
+import ProblemSolveSection from "./ProblemSolveSection";
+import ProblemStatementCard from "./ProblemStatementCard";
 
-import styles from "./UserProblemDetailClient.module.css";
+const LazyProblemChatPanel = dynamic(() => import("./ProblemChatPanel"), {
+  loading: () => null,
+  ssr: false,
+});
 
 interface UserProblemDetailClientProps {
   problemSetId: string;
   initialProblemSet: ProblemSetDetail;
+  initialProblemSetResult: ProblemSetResult | null;
   initialUserId: string;
 }
 
@@ -54,36 +63,111 @@ function getInitialProblemIndex(problemSet: ProblemSetDetail) {
   );
 }
 
-function getInitialProblemState(problemSet: ProblemSetDetail) {
+function getCorrectSubmissionMap(problemSetResult: ProblemSetResult | null) {
+  return new Map(
+    (problemSetResult?.submissions ?? [])
+      .filter((submission) => submission.isCorrect)
+      .map((submission) => [submission.problemId, submission]),
+  );
+}
+
+function getInitialProblemState(
+  problemSet: ProblemSetDetail,
+  problemSetResult: ProblemSetResult | null,
+) {
   const initialIndex = getInitialProblemIndex(problemSet);
+  const correctSubmissionMap = getCorrectSubmissionMap(problemSetResult);
+  const submissionResults = problemSet.problems.map((problem) => {
+    const submission = correctSubmissionMap.get(problem.problemId);
+
+    if (!submission) {
+      return null;
+    }
+
+    return {
+      isCorrect: submission.isCorrect,
+      explanation: submission.explanation ?? problem.explanation,
+      submittedAt: submission.submittedAt,
+    } satisfies SubmissionResult;
+  });
 
   return {
     currentIndex: initialIndex,
-    problemStates: problemSet.problems.map(
-      (problem) => problem.status ?? "UNSOLVED",
+    problemStates: problemSet.problems.map((problem) =>
+      correctSubmissionMap.has(problem.problemId)
+        ? "CORRECT"
+        : (problem.status ?? "UNSOLVED"),
     ),
     hintEnabled: problemSet.problems.map(
-      (problem) => problem.status === "WRONG" || problem.status === "CORRECT",
+      (problem) =>
+        correctSubmissionMap.has(problem.problemId) ||
+        problem.status === "WRONG" ||
+        problem.status === "CORRECT",
     ),
     solutionEnabled: problemSet.problems.map(
-      (problem) => problem.status === "CORRECT",
+      (problem) =>
+        correctSubmissionMap.has(problem.problemId) ||
+        problem.status === "CORRECT",
     ),
     hints: problemSet.problems.map(() => [] as ProblemHint[]),
-    userCodes: problemSet.problems.map((problem) => problem.startCode ?? ""),
-    code: problemSet.problems[initialIndex]?.startCode ?? "",
+    userCodes: problemSet.problems.map(
+      (problem) =>
+        correctSubmissionMap.get(problem.problemId)?.submittedAnswer ??
+        problem.startCode ??
+        "",
+    ),
+    submissionResults,
+    code:
+      correctSubmissionMap.get(problemSet.problems[initialIndex]?.problemId)
+        ?.submittedAnswer ??
+      problemSet.problems[initialIndex]?.startCode ??
+      "",
   };
+}
+
+function normalizeId(value?: number | string | null) {
+  return value == null ? "" : String(value);
+}
+
+function getRoomProblemSetId(room: ProblemChatRoom) {
+  return (
+    room.problemSetId ??
+    room.problemSet?.problemSetId ??
+    room.problemSet?.id ??
+    null
+  );
+}
+
+function getRoomProblemId(room: ProblemChatRoom) {
+  return room.problemId ?? room.problem?.problemId ?? room.problem?.id ?? null;
+}
+
+function findProblemChatRoom(
+  rooms: ProblemChatRoom[],
+  problemSetId: number,
+  problemId: number,
+) {
+  const targetProblemSetId = normalizeId(problemSetId);
+  const targetProblemId = normalizeId(problemId);
+
+  return rooms.find(
+    (room) =>
+      normalizeId(getRoomProblemSetId(room)) === targetProblemSetId &&
+      normalizeId(getRoomProblemId(room)) === targetProblemId,
+  );
 }
 
 export default function UserProblemDetailClient({
   problemSetId,
   initialProblemSet,
+  initialProblemSetResult,
   initialUserId,
 }: UserProblemDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialState = useMemo(
-    () => getInitialProblemState(initialProblemSet),
-    [initialProblemSet],
+    () => getInitialProblemState(initialProblemSet, initialProblemSetResult),
+    [initialProblemSet, initialProblemSetResult],
   );
 
   const [problemSet, setProblemSet] = useState<ProblemSetDetail>(initialProblemSet);
@@ -102,7 +186,13 @@ export default function UserProblemDetailClient({
   const [hints, setHints] = useState<ProblemHint[][]>(initialState.hints);
   const [activeTab, setActiveTab] = useState<ProblemResultTab>("result");
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
-  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [submissionResults, setSubmissionResults] = useState<
+    Array<SubmissionResult | null>
+  >(initialState.submissionResults);
+  const [submissionResult, setSubmissionResult] =
+    useState<SubmissionResult | null>(
+      initialState.submissionResults[initialState.currentIndex],
+    );
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHintToast, setShowHintToast] = useState(false);
@@ -111,10 +201,22 @@ export default function UserProblemDetailClient({
   const [emptySubmitModalOpen, setEmptySubmitModalOpen] = useState(false);
   const [alertModal, setAlertModal] = useState({ open: false, title: "", content: "" });
   const [chatOpen, setChatOpen] = useState(false);
+  const [hasOpenedChatPanel, setHasOpenedChatPanel] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
+  const [chatRoomTitle, setChatRoomTitle] = useState<string | null>(null);
+  const [chatRoomTitleInput, setChatRoomTitleInput] = useState("");
+  const [chatRoomTitleEditing, setChatRoomTitleEditing] = useState(false);
+  const [chatRoomTitleConfirmOpen, setChatRoomTitleConfirmOpen] = useState(false);
+  const [chatRoomTitleUpdating, setChatRoomTitleUpdating] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+  const activeChatRoomIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeChatRoomIdRef.current = chatRoomId;
+  }, [chatRoomId]);
 
   const userId = useMemo(() => {
     if (typeof window === "undefined") {
@@ -126,6 +228,23 @@ export default function UserProblemDetailClient({
 
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
+  const isCurrentProblemCorrect = problemStates[currentIndex] === "CORRECT";
+
+  const toggleProblemChat = useCallback(() => {
+    setHasOpenedChatPanel(true);
+    setChatOpen((prev) => !prev);
+  }, []);
+
+  const resetChatState = useCallback(() => {
+    setChatRoomId(null);
+    setChatRoomTitle(null);
+    setChatRoomTitleInput("");
+    setChatRoomTitleEditing(false);
+    setChatRoomTitleConfirmOpen(false);
+    setChatMessages([]);
+    setChatInput("");
+    setChatSending(false);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -136,8 +255,11 @@ export default function UserProblemDetailClient({
           return;
         }
 
-        const data = await getProblemSetDetail(problemSetId, userId);
-        const nextState = getInitialProblemState(data);
+        const [data, result] = await Promise.all([
+          getProblemSetDetail(problemSetId, userId),
+          getProblemSetResult(problemSetId).catch(() => null),
+        ]);
+        const nextState = getInitialProblemState(data, result);
 
         if (!isMounted) {
           return;
@@ -150,6 +272,8 @@ export default function UserProblemDetailClient({
         setSolutionEnabled(nextState.solutionEnabled);
         setHints(nextState.hints);
         setUserCodes(nextState.userCodes);
+        setSubmissionResults(nextState.submissionResults);
+        setSubmissionResult(nextState.submissionResults[nextState.currentIndex]);
         setCode(nextState.code);
       } catch (error) {
         if (!isMounted) {
@@ -172,6 +296,78 @@ export default function UserProblemDetailClient({
     };
   }, [initialUserId, problemSetId, router, userId]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProblemChatRoom = async () => {
+      if (!hasOpenedChatPanel) {
+        return;
+      }
+
+      if (!problemSet.id || !currentProblem?.problemId) {
+        resetChatState();
+        return;
+      }
+
+      resetChatState();
+      setChatLoading(true);
+
+      try {
+        const rooms = await getProblemChatRooms();
+        const room = findProblemChatRoom(
+          rooms,
+          problemSet.id,
+          currentProblem.problemId,
+        );
+
+        if (!isMounted || !room) {
+          return;
+        }
+
+        setChatRoomId(room.roomId);
+        setChatRoomTitle(room.title || null);
+        setChatRoomTitleInput(room.title || "");
+
+        const messages = await getProblemChatMessages(room.roomId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setChatMessages(messages);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        handleClientError(error, {
+          router,
+          fallbackTitle: "채팅방 조회 실패",
+          fallbackMessage:
+            "문제 전용 채팅방을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          showModal: (title, content) =>
+            setAlertModal({ open: true, title, content }),
+        });
+      } finally {
+        if (isMounted) {
+          setChatLoading(false);
+        }
+      }
+    };
+
+    loadProblemChatRoom();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    currentProblem?.problemId,
+    hasOpenedChatPanel,
+    problemSet.id,
+    resetChatState,
+    router,
+  ]);
+
   const canMoveProblem = (index: number) => problemStates[index] !== "LOCKED";
 
   const getProblemButtonClass = (state: ProblemStatus | undefined, isCurrent: boolean) => {
@@ -190,13 +386,6 @@ export default function UserProblemDetailClient({
     return "border border-[#e8e8e8] text-[#1f2937] bg-white hover:bg-[#f3f4f6]";
   };
 
-  const resetChat = () => {
-    setChatRoomId(null);
-    setChatMessages([]);
-    setChatInput("");
-    setChatSending(false);
-  };
-
   const moveProblem = (index: number) => {
     if (!canMoveProblem(index)) {
       return;
@@ -209,8 +398,8 @@ export default function UserProblemDetailClient({
     setCode(nextCodes[index] ?? "");
     setActiveTab("result");
     setExecutionResult(null);
-    setSubmissionResult(null);
-    resetChat();
+    setSubmissionResult(submissionResults[index] ?? null);
+    resetChatState();
   };
 
   const handleCodeChange = (nextCode: string) => {
@@ -264,7 +453,7 @@ export default function UserProblemDetailClient({
   };
 
   const handleSubmit = async () => {
-    if (!currentProblem?.problemId || isSubmitting) {
+    if (!currentProblem?.problemId || isSubmitting || isCurrentProblemCorrect) {
       return;
     }
 
@@ -280,6 +469,7 @@ export default function UserProblemDetailClient({
 
       setExecutionResult(null);
       setSubmissionResult(result);
+      setSubmissionResults((prev) => updateArrayItem(prev, currentIndex, result));
       setActiveTab("result");
 
       if (result.isCorrect) {
@@ -333,8 +523,78 @@ export default function UserProblemDetailClient({
     }
   };
 
+  const startChatRoomTitleEdit = () => {
+    setChatRoomTitleInput(chatRoomTitle ?? "");
+    setChatRoomTitleEditing(true);
+  };
+
+  const cancelChatRoomTitleEdit = () => {
+    setChatRoomTitleInput(chatRoomTitle ?? "");
+    setChatRoomTitleEditing(false);
+    setChatRoomTitleConfirmOpen(false);
+  };
+
+  const requestChatRoomTitleUpdate = () => {
+    const nextTitle = chatRoomTitleInput.trim();
+
+    if (!nextTitle || nextTitle === (chatRoomTitle ?? "")) {
+      cancelChatRoomTitleEdit();
+      return;
+    }
+
+    setChatRoomTitleConfirmOpen(true);
+  };
+
+  const handleChatRoomTitleUpdate = async () => {
+    if (!chatRoomId || chatRoomTitleUpdating) {
+      return;
+    }
+
+    const targetRoomId = chatRoomId;
+    const nextTitle = chatRoomTitleInput.trim();
+
+    if (!nextTitle) {
+      return;
+    }
+
+    setChatRoomTitleUpdating(true);
+
+    try {
+      const updatedRoom = await updateProblemChatRoomTitle(targetRoomId, nextTitle);
+
+      if (activeChatRoomIdRef.current !== targetRoomId) {
+        return;
+      }
+
+      const updatedTitle = updatedRoom?.title ?? nextTitle;
+
+      setChatRoomTitle(updatedTitle);
+      setChatRoomTitleInput(updatedTitle);
+      setChatRoomTitleEditing(false);
+      setChatRoomTitleConfirmOpen(false);
+      window.dispatchEvent(new Event("chatRoomUpdated"));
+    } catch (error) {
+      setChatRoomTitleConfirmOpen(false);
+      handleClientError(error, {
+        router,
+        fallbackTitle: "채팅방 이름 수정 실패",
+        fallbackMessage:
+          "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+      });
+    } finally {
+      setChatRoomTitleUpdating(false);
+    }
+  };
+
   const sendChat = async () => {
-    if (!chatInput.trim() || chatSending || !problemSet.id || !currentProblem?.problemId) {
+    if (
+      !chatInput.trim() ||
+      chatSending ||
+      chatLoading ||
+      !problemSet.id ||
+      !currentProblem?.problemId
+    ) {
       return;
     }
 
@@ -374,17 +634,17 @@ export default function UserProblemDetailClient({
 
   return (
     <>
-      <main className={styles.container}>
+      <main className={problemDetailClasses.container}>
         <CategoryNav
           isProblemChatOpen={chatOpen}
           isRunning={isRunning}
           onBack={() => setWarningModalOpen(true)}
           onRun={handleRun}
-          onToggleProblemChat={() => setChatOpen((prev) => !prev)}
+          onToggleProblemChat={toggleProblemChat}
           variant="problem-detail"
         />
 
-        <div className={styles.mainArea}>
+        <div className={problemDetailClasses.mainArea}>
           <Sidebar
             canMoveProblem={canMoveProblem}
             currentIndex={currentIndex}
@@ -395,108 +655,69 @@ export default function UserProblemDetailClient({
             variant="problem-detail"
           />
 
-          <section className={styles.contentArea}>
-            <article className={styles.problemBox}>
-              <h2>문제 내용</h2>
-              <div className={styles.problemContent}>{currentProblem.content}</div>
-            </article>
+          <section className={problemDetailClasses.contentArea}>
+            <ProblemStatementCard content={currentProblem.content} />
 
-            <section className={styles.solveBox}>
-              <div className={styles.editorSection}>
-                <h2>문제풀이 영역</h2>
-                {showHintToast && (
-                  <div className={styles.hintToast}>힌트를 확인할 수 있습니다.</div>
-                )}
-                <textarea
-                  className={styles.codeEditor}
-                  onChange={(event) => handleCodeChange(event.target.value)}
-                  value={code}
-                />
-              </div>
-
-              <div className={styles.tabs}>
-                <button
-                  className={activeTab === "result" ? styles.activeTab : ""}
-                  onClick={() => setActiveTab("result")}
-                  type="button"
-                >
-                  실행결과
-                </button>
-                <button
-                  className={activeTab === "hint" ? styles.activeTab : ""}
-                  disabled={!hintEnabled[currentIndex]}
-                  onClick={() => setActiveTab("hint")}
-                  type="button"
-                >
-                  힌트
-                </button>
-                <button
-                  className={activeTab === "solution" ? styles.activeTab : ""}
-                  disabled={!solutionEnabled[currentIndex]}
-                  onClick={() => setActiveTab("solution")}
-                  type="button"
-                >
-                  해설보기
-                </button>
-              </div>
-
-              <ProblemResultPanel
-                activeTab={activeTab}
-                currentHints={currentHints}
-                currentProblemExplanation={currentProblem.explanation}
-                executionResult={executionResult}
-                submissionResult={submissionResult}
-              />
-
-              <div className={styles.submitWrap}>
-                <button
-                  className={styles.submitButton}
-                  disabled={isSubmitting}
-                  onClick={handleSubmit}
-                  type="button"
-                >
-                  {isSubmitting ? "제출 중" : "제출하기"}
-                </button>
-              </div>
-            </section>
+            <ProblemSolveSection
+              activeTab={activeTab}
+              code={code}
+              currentHints={currentHints}
+              currentProblemExplanation={currentProblem.explanation}
+              executionResult={executionResult}
+              hintEnabled={hintEnabled[currentIndex]}
+              isCurrentProblemCorrect={isCurrentProblemCorrect}
+              isSubmitting={isSubmitting}
+              onCodeChange={handleCodeChange}
+              onSubmit={handleSubmit}
+              onTabChange={setActiveTab}
+              showHintToast={showHintToast}
+              solutionEnabled={solutionEnabled[currentIndex]}
+              submissionResult={submissionResult}
+            />
           </section>
 
-          <ProblemChatPanel
-            chatInput={chatInput}
-            chatMessages={chatMessages}
-            chatOpen={chatOpen}
-            chatSending={chatSending}
-            onChatInputChange={setChatInput}
-            onResetChat={resetChat}
-            onSendChat={sendChat}
-          />
+          {hasOpenedChatPanel && (
+            <LazyProblemChatPanel
+              canEditChatRoomTitle={Boolean(chatRoomId)}
+              chatInput={chatInput}
+              chatMessages={chatMessages}
+              chatOpen={chatOpen}
+              chatRoomTitleEditing={chatRoomTitleEditing}
+              chatRoomTitleInput={chatRoomTitleInput}
+              chatRoomTitle={chatRoomTitle}
+              chatSending={chatSending || chatLoading}
+              onChatInputChange={setChatInput}
+              onChatRoomTitleCancel={cancelChatRoomTitleEdit}
+              onChatRoomTitleChange={setChatRoomTitleInput}
+              onChatRoomTitleEdit={startChatRoomTitleEdit}
+              onChatRoomTitleSubmit={requestChatRoomTitleUpdate}
+              onSendChat={sendChat}
+            />
+          )}
         </div>
       </main>
 
-      <OneButtonModal
-        isOpen={successModalOpen}
-        modalContent="해당 문제의 해설을 확인할 수 있습니다."
-        modalTitle="정답입니다"
-        onClose={() => setSuccessModalOpen(false)}
-      />
-      <OneButtonModal
-        isOpen={emptySubmitModalOpen}
-        modalContent="실행하거나 제출할 코드를 입력해 주세요."
-        modalTitle="내용을 입력해 주세요"
-        onClose={() => setEmptySubmitModalOpen(false)}
-      />
-      <OneButtonModal
-        isOpen={alertModal.open}
-        modalContent={alertModal.content}
-        modalTitle={alertModal.title}
-        onClose={() => setAlertModal((prev) => ({ ...prev, open: false }))}
-      />
-      <WarningModal
-        isOpen={warningModalOpen}
-        modalContent="작성한 내용은 저장되지 않습니다."
-        modalTitle="정말 나가시겠습니까?"
-        onClose={() => setWarningModalOpen(false)}
-        onConfirm={() => router.push("/problems")}
+      <ProblemDetailModals
+        alertModal={alertModal}
+        chatRoomTitleConfirmOpen={chatRoomTitleConfirmOpen}
+        chatRoomTitleInput={chatRoomTitleInput}
+        chatRoomTitleUpdating={chatRoomTitleUpdating}
+        emptySubmitModalOpen={emptySubmitModalOpen}
+        onAlertClose={() =>
+          setAlertModal((prev) => ({ ...prev, open: false }))
+        }
+        onBackCancel={() => setWarningModalOpen(false)}
+        onBackConfirm={() => router.push("/problems")}
+        onChatRoomTitleConfirm={handleChatRoomTitleUpdate}
+        onChatRoomTitleConfirmClose={() => {
+          if (!chatRoomTitleUpdating) {
+            setChatRoomTitleConfirmOpen(false);
+          }
+        }}
+        onEmptySubmitClose={() => setEmptySubmitModalOpen(false)}
+        onSuccessClose={() => setSuccessModalOpen(false)}
+        successModalOpen={successModalOpen}
+        warningModalOpen={warningModalOpen}
       />
     </>
   );

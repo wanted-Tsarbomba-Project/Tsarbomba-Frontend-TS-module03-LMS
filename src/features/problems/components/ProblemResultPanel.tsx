@@ -7,8 +7,7 @@ import type {
   ProblemResultTab,
   SubmissionResult,
 } from "../types";
-
-import styles from "./UserProblemDetailClient.module.css";
+import { problemDetailClasses } from "../problemDetailStyles";
 
 interface ProblemResultPanelProps {
   activeTab: ProblemResultTab;
@@ -27,7 +26,7 @@ export default function ProblemResultPanel({
 }: ProblemResultPanelProps) {
   if (activeTab === "hint") {
     return (
-      <div className={styles.bottomPanel}>
+      <div className={problemDetailClasses.bottomPanel}>
         {currentHints.length
           ? currentHints.map((hint) => (
               <p key={hint.hintId}>{hint.hintContent}</p>
@@ -39,7 +38,7 @@ export default function ProblemResultPanel({
 
   if (activeTab === "solution") {
     return (
-      <div className={styles.bottomPanel}>
+      <div className={problemDetailClasses.bottomPanel}>
         {submissionResult?.explanation ??
           currentProblemExplanation ??
           "해설이 없습니다."}
@@ -48,29 +47,49 @@ export default function ProblemResultPanel({
   }
 
   return (
-    <div className={styles.bottomPanel}>
+    <div className={problemDetailClasses.bottomPanel}>
       {submissionResult ? (
-        <>
-          <p>채점 결과: {submissionResult.isCorrect ? "정답" : "오답"}</p>
-          <p>
-            통과 테스트: {submissionResult.passedTestCount ?? 0}/
-            {submissionResult.totalTestCount ?? 0}
-          </p>
-          {submissionResult.executionStatus && (
-            <p>실행 상태: {submissionResult.executionStatus}</p>
-          )}
-          {submissionResult.errorMessage && (
-            <pre className={styles.executionError}>
-              {submissionResult.errorMessage}
-            </pre>
-          )}
-        </>
+        <SubmissionResultView submissionResult={submissionResult} />
       ) : executionResult ? (
         <ExecutionResultView executionResult={executionResult} />
       ) : (
         ""
       )}
     </div>
+  );
+}
+
+function SubmissionResultView({
+  submissionResult,
+}: {
+  submissionResult: SubmissionResult;
+}) {
+  const hasTestCount =
+    typeof submissionResult.passedTestCount === "number" ||
+    typeof submissionResult.totalTestCount === "number";
+
+  return (
+    <>
+      <p>채점 결과: {submissionResult.isCorrect ? "정답" : "오답"}</p>
+      {hasTestCount && (
+        <p>
+          통과 테스트: {submissionResult.passedTestCount ?? 0}/
+          {submissionResult.totalTestCount ?? 0}
+        </p>
+      )}
+      {submissionResult.submittedAt && (
+        <p>제출 시간: {submissionResult.submittedAt}</p>
+      )}
+      {submissionResult.executionStatus && (
+        <p>실행 상태: {submissionResult.executionStatus}</p>
+      )}
+      {submissionResult.explanation && <p>{submissionResult.explanation}</p>}
+      {submissionResult.errorMessage && (
+        <pre className={problemDetailClasses.executionError}>
+          {submissionResult.errorMessage}
+        </pre>
+      )}
+    </>
   );
 }
 
@@ -91,10 +110,14 @@ function ExecutionResultView({
       {executionResult.executionStatus && (
         <p>실행 상태: {executionResult.executionStatus}</p>
       )}
-      {output && <pre className={styles.executionOutput}>{output}</pre>}
-      {error && <pre className={styles.executionError}>{error}</pre>}
+      {output && (
+        <pre className={problemDetailClasses.executionOutput}>{output}</pre>
+      )}
+      {error && (
+        <pre className={problemDetailClasses.executionError}>{error}</pre>
+      )}
       {!executionResult.executionStatus && !output && !error && (
-        <pre className={styles.executionOutput}>
+        <pre className={problemDetailClasses.executionOutput}>
           {JSON.stringify(executionResult, null, 2)}
         </pre>
       )}

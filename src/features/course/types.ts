@@ -1,0 +1,103 @@
+/* 강좌 목록 아이템 */
+export interface Course {
+  courseId: number;
+  instructorId: number;
+  courseCategoryId: number | null;
+  courseCategoryName: string | null;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  status: "ACTIVE" | "DRAFT" | "DELETED";
+}
+
+export type CourseStatusFilter = "all" | "open" | "hidden";
+
+/* 강좌 상세 */
+export interface CourseDetail {
+  courseId: number;
+  instructorId?: number;
+  instructorName?: string | null;
+  courseCategoryId: number | null;
+  courseCategoryName: string | null;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  status: string;
+}
+
+/* 강좌 카테고리 (드롭다운) */
+export interface CourseCategory {
+  courseCategoryId: number;
+  name: string;
+}
+
+/* 강좌 생성·수정 요청 바디 */
+export interface CourseUpsertBody {
+  title: string;
+  courseCategoryId: number;
+  description: string;
+  thumbnailUrl: string;
+}
+
+/* 강의 요약 (목록 / 상세 공용) */
+export interface LectureSummary {
+  lectureId: number;
+  courseId?: number;
+  title: string;
+  description: string;
+  lectureOrder: number;
+  lectureType?: string;
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
+}
+
+/* 강의 생성·수정 요청 바디 */
+export interface LectureUpsertBody {
+  title: string;
+  description: string | null;
+  videoUrl?: string | null;
+  lectureOrder: number;
+  lectureType?: string;
+}
+
+/* 내 수강 강좌 (enrollment 기준) */
+export interface Enrollment {
+  enrollmentId?: number;
+  courseId?: number;
+  courseTitle?: string | null;
+  courseDescription?: string | null;
+  courseThumbnailUrl?: string | null;
+  courseCategoryName?: string | null;
+  instructorName?: string | null;
+  status?: string | null;
+  enrolledAt?: string | null;
+}
+
+/* 수강생 학습 현황 (강사용) */
+export interface LearningProgressItem {
+  userId: number;
+  userName: string;
+  email?: string;
+  completedLectures: number;
+  totalLectures: number;
+  progressRate: number;
+}
+
+/* 강좌 - 문제세트 연결 요청 (configure용) */
+export interface ProblemSetConnection {
+  problemSetId: number;
+  lectureId: number | null;
+  role: string;
+  displayOrder: number;
+}
+
+/* 강좌에 연결된 문제세트 (조회 응답) */
+export interface CourseProblemSetLink {
+  courseProblemSetId: number;
+  lectureProblemSetId?: number;
+  courseId: number;
+  lectureId: number;
+  problemSetId: number;
+  role: string;
+  displayOrder: number;
+}
