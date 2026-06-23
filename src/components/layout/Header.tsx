@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +19,16 @@ interface HeaderProps {
   isSimple?: boolean;
 }
 
+// Next.js 정적 prerender 시 useSearchParams 를 만나면 Suspense 경계를 요구함.
+// 외부에서 호출하는 Header 가 매번 Suspense 로 감싸지 않아도 되도록 내부에서 처리.
+export default function Header(props: HeaderProps) {
+  return (
+    <Suspense fallback={null}>
+      <HeaderInner {...props} />
+    </Suspense>
+  );
+}
+
 function getHeaderStatus() {
   if (typeof window === "undefined")
     return { isLoggedIn: false, nickname: "닉네임", userRole: "" };
@@ -29,7 +39,7 @@ function getHeaderStatus() {
   };
 }
 
-function Header({ isSimple }: HeaderProps) {
+function HeaderInner({ isSimple }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -280,5 +290,3 @@ function Header({ isSimple }: HeaderProps) {
     </header>
   );
 }
-
-export default Header;
