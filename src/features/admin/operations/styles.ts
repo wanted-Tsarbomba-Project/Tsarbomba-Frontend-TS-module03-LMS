@@ -1,6 +1,8 @@
 export const adminUserListClasses = {
   container: "box-border p-6 text-text-primary",
-  title: "mt-0 mb-5 text-2xl font-bold",
+  header: "mb-5 flex items-center justify-between gap-4",
+  searchWrap: "flex flex-wrap items-center justify-end gap-3",
+  title: "m-0 text-2xl font-bold",
 } as const;
 
 export const adminAlramListClasses = {

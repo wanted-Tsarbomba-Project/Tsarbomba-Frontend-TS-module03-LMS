@@ -114,6 +114,7 @@ export default function OperatorCourseListClient({
             className="max-w-[260px]"
             onChange={setSearchInput}
             onSearch={setKeyword}
+            placeholder="강좌 제목 검색"
             value={searchInput}
           />
 
