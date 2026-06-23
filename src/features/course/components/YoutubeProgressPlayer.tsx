@@ -6,41 +6,37 @@ import {
   recordLectureProgress,
 } from "@/features/course/lectureActions";
 
+// YT IFrame API 전역 타입 — namespace 대신 interface 로 선언 (no-namespace 룰 준수).
+interface YTPlayer {
+  getCurrentTime(): number;
+  getDuration(): number;
+  seekTo(seconds: number, allowSeekAhead?: boolean): void;
+  destroy(): void;
+}
+
+interface YTPlayerOptions {
+  videoId: string;
+  width?: string;
+  height?: string;
+  playerVars?: Record<string, number | string>;
+  events?: {
+    onReady?: (event: { target: YTPlayer }) => void;
+    onStateChange?: (event: { data: number }) => void;
+  };
+}
+
+interface YTGlobal {
+  Player: new (
+    element: string | HTMLElement,
+    options: YTPlayerOptions,
+  ) => YTPlayer;
+  PlayerState: { ENDED: 0; PLAYING: 1; PAUSED: 2 };
+}
+
 declare global {
   interface Window {
-    YT?: typeof YT;
+    YT?: YTGlobal;
     onYouTubeIframeAPIReady?: () => void;
-  }
-
-  namespace YT {
-    class Player {
-      constructor(elementId: string, options: PlayerOptions);
-      getCurrentTime(): number;
-      getDuration(): number;
-      seekTo(seconds: number, allowSeekAhead?: boolean): void;
-      destroy(): void;
-    }
-
-    interface PlayerOptions {
-      videoId: string;
-      width?: string;
-      height?: string;
-      playerVars?: Record<string, number | string>;
-      events?: {
-        onReady?: (event: { target: Player }) => void;
-        onStateChange?: (event: OnStateChangeEvent) => void;
-      };
-    }
-
-    interface OnStateChangeEvent {
-      data: number;
-    }
-
-    enum PlayerState {
-      ENDED = 0,
-      PLAYING = 1,
-      PAUSED = 2,
-    }
   }
 }
 
@@ -98,11 +94,10 @@ export default function YoutubeProgressPlayer({
   title,
   onProgressSaved,
 }: YoutubeProgressPlayerProps) {
-  const containerIdRef = useRef(
-    `youtube-player-${lectureId}-${Math.random().toString(36).slice(2)}`,
-  );
+  // 컨테이너 ref — YT.Player 가 HTMLElement 도 받으므로 랜덤 ID 생성 불필요 (purity 룰 준수).
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const playerRef = useRef<YT.Player | null>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
   const watchedDeltaRef = useRef(0);
   const playingRef = useRef(false);
   const lastTickAtRef = useRef<number | null>(null);
@@ -110,8 +105,12 @@ export default function YoutubeProgressPlayer({
   const existingWatchedSecRef = useRef(0);
   const completedRef = useRef(false);
   const lastSafePosRef = useRef(0);
+
+  // 콜백 ref 갱신은 effect 안에서 — render 도중 ref.current 변형 금지 룰 준수.
   const onProgressSavedRef = useRef(onProgressSaved);
-  onProgressSavedRef.current = onProgressSaved;
+  useEffect(() => {
+    onProgressSavedRef.current = onProgressSaved;
+  }, [onProgressSaved]);
 
   useEffect(() => {
     const videoId = getYoutubeVideoId(videoUrl);
@@ -208,12 +207,14 @@ export default function YoutubeProgressPlayer({
         const watched = p?.watchedSec ?? 0;
         initialLastPosition = Math.min(last, watched);
         lastSafePosRef.current = initialLastPosition;
-      } catch {}
+      } catch {
+        /* 진도 row 없는 첫 시청 — 0 으로 시작 */
+      }
 
       await loadYoutubeApi();
-      if (!mounted || !window.YT?.Player) return;
+      if (!mounted || !window.YT?.Player || !containerRef.current) return;
 
-      playerRef.current = new window.YT.Player(containerIdRef.current, {
+      playerRef.current = new window.YT.Player(containerRef.current, {
         videoId,
         width: "100%",
         height: "100%",
@@ -260,7 +261,5 @@ export default function YoutubeProgressPlayer({
     };
   }, [lectureId, videoUrl]);
 
-  return (
-    <div id={containerIdRef.current} title={title} className="w-full h-full" />
-  );
+  return <div ref={containerRef} title={title} className="w-full h-full" />;
 }
