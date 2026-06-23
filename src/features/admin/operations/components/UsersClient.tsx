@@ -42,12 +42,42 @@ export default function UsersClient() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchUsers = async () => {
       try {
         setLoading(true);
+<<<<<<< Updated upstream
         const result = await getAdminUsers();
+=======
+        const normalizedKeyword = keyword.trim();
+
+        if (normalizedKeyword) {
+          const allUsers = await getAllAdminUsers(20, controller.signal);
+
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          setUsers(
+            allUsers.filter((user) => matchesUserName(user, normalizedKeyword)),
+          );
+          return;
+        }
+
+        const result = await getAdminUsers(0, 20, controller.signal);
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+>>>>>>> Stashed changes
         setUsers(result.data.content);
       } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
         console.error("회원 목록 조회 실패:", error);
         handleClientError(error, {
           router,
@@ -61,12 +91,22 @@ export default function UsersClient() {
             }),
         });
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     void fetchUsers();
+<<<<<<< Updated upstream
   }, [router]);
+=======
+
+    return () => {
+      controller.abort();
+    };
+  }, [keyword, router]);
+>>>>>>> Stashed changes
 
   return (
     <>

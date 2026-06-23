@@ -107,7 +107,13 @@ export async function deleteOperationAlert(operationAlertId: string) {
   );
 }
 
-export async function getAdminUsers(page = 0, size = 20) {
+const USER_SEARCH_FETCH_CONCURRENCY = 8;
+
+export async function getAdminUsers(
+  page = 0,
+  size = 20,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
@@ -115,9 +121,53 @@ export async function getAdminUsers(page = 0, size = 20) {
 
   return requestAdminOperation<PageResponse<AdminUserSummary>>(
     `/api/v1/users?${params.toString()}`,
+    { signal },
   );
 }
 
+<<<<<<< Updated upstream
+=======
+export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
+  const firstPage = await getAdminUsers(0, size, signal);
+  const totalPages = firstPage.data.totalPages ?? 1;
+
+  if (totalPages <= 1) {
+    return firstPage.data.content;
+  }
+
+  const pageIndexes = Array.from(
+    { length: totalPages - 1 },
+    (_, index) => index + 1,
+  );
+  const restPages: Array<Awaited<ReturnType<typeof getAdminUsers>>> = [];
+
+  for (
+    let index = 0;
+    index < pageIndexes.length;
+    index += USER_SEARCH_FETCH_CONCURRENCY
+  ) {
+    if (signal?.aborted) {
+      break;
+    }
+
+    const pageChunk = pageIndexes.slice(
+      index,
+      index + USER_SEARCH_FETCH_CONCURRENCY,
+    );
+    const chunkResults = await Promise.all(
+      pageChunk.map((page) => getAdminUsers(page, size, signal)),
+    );
+
+    restPages.push(...chunkResults);
+  }
+
+  return [
+    ...firstPage.data.content,
+    ...restPages.flatMap((result) => result.data.content),
+  ];
+}
+
+>>>>>>> Stashed changes
 export async function getAdminUserDetail(userId: string) {
   return requestAdminOperation<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
 }
