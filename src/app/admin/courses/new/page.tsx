@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createCourse,
@@ -35,16 +35,17 @@ export default function CourseNewPage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState("");
   const [title, setTitle] = useState("");
-  const [courseCategoryId, setCourseCategoryId] = useState("");
   const [description, setDescription] = useState("");
 
   const { categories: courseCategories, defaultId: defaultCategoryId } =
     useCourseCategories({ selectFirstAsDefault: true });
-  useEffect(() => {
-    if (defaultCategoryId && !courseCategoryId) {
-      setCourseCategoryId(defaultCategoryId);
-    }
-  }, [defaultCategoryId, courseCategoryId]);
+
+  // userPicked 가 있으면 우선, 없으면 비동기 default 로 fallback (effect setState 회피).
+  const [userPickedCategoryId, setUserPickedCategoryId] = useState<
+    string | null
+  >(null);
+  const courseCategoryId = userPickedCategoryId ?? defaultCategoryId;
+  const setCourseCategoryId = setUserPickedCategoryId;
 
   const problemCategories = useProblemCategories();
   const [selectedProblemCategoryId, setSelectedProblemCategoryId] =
