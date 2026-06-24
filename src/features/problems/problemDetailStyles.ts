@@ -50,4 +50,25 @@ export const problemDetailClasses = {
   errorMessage: "text-text-red",
   chatInputWrap:
     "flex items-end gap-2 border-t border-border-light p-3.5 [&_textarea]:box-border [&_textarea]:max-h-36 [&_textarea]:min-h-11 [&_textarea]:flex-1 [&_textarea]:resize-none [&_textarea]:overflow-y-hidden [&_textarea]:rounded-base [&_textarea]:border [&_textarea]:border-border-light [&_textarea]:p-2.5 [&_textarea]:leading-normal [&_textarea]:text-text-primary [&_textarea]:outline-none [&_button]:h-11 [&_button]:min-w-[72px] [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-button-blue-bg [&_button]:bg-button-blue-bg [&_button]:text-text-white [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-60",
+  recommendationOverlay:
+    "fixed inset-0 z-[900] flex h-dvh w-dvw items-center justify-center bg-black/25 px-4 py-5",
+  recommendationModal:
+    "w-[min(560px,100%)] rounded-base border border-border-light bg-bg-box p-5 shadow-[0_16px_42px_rgba(15,23,42,0.18)]",
+  recommendationHeader:
+    "mb-4 flex items-start justify-between gap-4 [&_p]:m-0 [&_p]:text-description [&_p]:font-semibold [&_p]:text-text-blue [&_h2]:m-0 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary",
+  recommendationCloseButton:
+    "flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-base border border-border-light bg-bg-box text-2xl leading-none text-text-secondary hover:bg-bg-hover-gray",
+  recommendationCard:
+    "flex w-full cursor-pointer flex-col items-start gap-2 rounded-base border border-border-light bg-bg-box p-4 text-left transition hover:bg-bg-navbar [&_strong]:text-title-md [&_strong]:text-text-primary [&_span]:text-description [&_span]:text-text-secondary",
+  recommendationRank:
+    "rounded-full bg-button-blue-bg px-2.5 py-1 text-[12px]! font-semibold text-text-white!",
+  recommendationMeta:
+    "mt-1 flex flex-wrap gap-2 [&_span]:rounded-full [&_span]:border [&_span]:border-border-light [&_span]:bg-bg-box [&_span]:px-2.5 [&_span]:py-1 [&_span]:text-[12px] [&_span]:text-text-primary",
+  recommendationDots: "mt-4 flex justify-center gap-2",
+  recommendationDot:
+    "h-2.5 w-2.5 cursor-pointer rounded-full border-0 bg-border-light p-0",
+  recommendationDotActive:
+    "h-2.5 w-6 cursor-pointer rounded-full border-0 bg-button-blue-bg p-0",
+  recommendationActions:
+    "mt-4 flex justify-end [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-3 [&_button]:py-2 [&_button]:text-description [&_button]:font-semibold [&_button]:text-text-secondary [&_button:hover:not(:disabled)]:bg-bg-navbar [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-60",
 } as const;
