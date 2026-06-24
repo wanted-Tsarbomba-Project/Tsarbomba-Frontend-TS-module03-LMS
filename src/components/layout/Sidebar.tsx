@@ -160,7 +160,7 @@ export default function Sidebar({
           </>
         )}
 
-        {userRole === "ADMIN" && (
+        {(userRole === "MASTER" || userRole === "ADMIN") && (
           <>
             {/* <li>
               <Link
@@ -200,6 +200,20 @@ export default function Sidebar({
                 회원 관리
               </Link>
             </li>
+            {userRole === "MASTER" && (
+              <li>
+                <Link
+                  className={
+                    pathname === "/admin/master"
+                      ? itemActiveClass
+                      : itemBaseClass
+                  }
+                  href="/admin/master"
+                >
+                  관리자 관리
+                </Link>
+              </li>
+            )}
           </>
         )}
       </ul>

@@ -102,12 +102,14 @@ function HeaderInner({ isSimple }: HeaderProps) {
   const isManagementRole =
     isMounted &&
     isLoggedIn &&
-    (userRole === "ADMIN" || userRole === "OPERATOR");
+    (userRole === "MASTER" || userRole === "ADMIN" || userRole === "OPERATOR");
   const logoTargetHref = !isManagementRole
     ? "/"
-    : userRole === "ADMIN"
-      ? "/admin/rules"
-      : "/admin/courses";
+    : userRole === "MASTER"
+      ? "/admin/master"
+      : userRole === "ADMIN"
+        ? "/admin/rules"
+        : "/admin/courses";
   const isAdminPath = pathname.startsWith("/admin");
   const courseKeyword =
     pathname === "/" ? (searchParams.get(COURSE_SEARCH_PARAM) ?? "") : "";
