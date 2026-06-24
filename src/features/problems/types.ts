@@ -165,6 +165,29 @@ export interface ProblemDatasetDownloadUrl {
   downloadUrl: string;
 }
 
+export interface ProblemSetRecommendation {
+  recommendationId: number;
+  problemSetId: number;
+  rankNo: number;
+  title: string;
+  description?: string | null;
+  difficulty?: string | null;
+  accuracyRate?: number | null;
+  categoryId?: number | null;
+  categoryName?: string | null;
+}
+
+export interface ProblemSetRecommendationResponse {
+  hidden: boolean;
+  hiddenUntil?: string | null;
+  problemSets: ProblemSetRecommendation[];
+}
+
+export interface ProblemSetRecommendationHideResponse {
+  hidden: boolean;
+  hiddenUntil?: string | null;
+}
+
 export interface ProblemHint {
   hintId: number;
   hintContent: string;

@@ -1,7 +1,7 @@
 "use client";
 
 // CSR - 회원 문제 목록 테이블: 서버에서 받은 목록 props를 그대로 렌더링하고 행 클릭 라우팅만 클라이언트에서 처리함
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -9,9 +9,15 @@ import {
   OneButtonModal,
   type ListColumn,
 } from "@/components/common";
+import { handleClientError } from "@/lib/errorHandling";
 
-import { DIFFICULTY_MAP } from "../actions";
-import type { ProblemSetSummary } from "../types";
+import {
+  DIFFICULTY_MAP,
+  getMyProblemSetRecommendations,
+  hideProblemSetRecommendationsToday,
+} from "../actions";
+import type { ProblemSetRecommendation, ProblemSetSummary } from "../types";
+import ProblemRecommendationModal from "./ProblemRecommendationModal";
 
 const userProblemListClasses = {
   "container": "min-h-screen bg-bg-main py-[30px] max-md:py-6",
@@ -47,6 +53,77 @@ export default function UserProblemListClient({
   const router = useRouter();
 
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
+  const [recommendations, setRecommendations] = useState<
+    ProblemSetRecommendation[]
+  >([]);
+  const [recommendationOpen, setRecommendationOpen] = useState(false);
+  const [recommendationHidingToday, setRecommendationHidingToday] =
+    useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecommendations = async () => {
+      try {
+        const result = await getMyProblemSetRecommendations();
+        const nextRecommendations = result?.hidden
+          ? []
+          : [...(result?.problemSets ?? [])]
+              .sort((prev, next) => prev.rankNo - next.rankNo)
+              .slice(0, 3);
+
+        if (!isMounted || nextRecommendations.length === 0) {
+          return;
+        }
+
+        setRecommendations(nextRecommendations);
+        setRecommendationOpen(true);
+      } catch (error) {
+        console.error("추천 문제 조회 실패:", error);
+      }
+    };
+
+    void loadRecommendations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!recommendationOpen) {
+      return;
+    }
+
+    const preventScroll = (event: Event) => {
+      event.preventDefault();
+    };
+    const preventScrollKey = (event: KeyboardEvent) => {
+      if (
+        [
+          "ArrowUp",
+          "ArrowDown",
+          "PageUp",
+          "PageDown",
+          "Home",
+          "End",
+          " ",
+        ].includes(event.key)
+      ) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("wheel", preventScroll, { passive: false });
+    window.addEventListener("touchmove", preventScroll, { passive: false });
+    window.addEventListener("keydown", preventScrollKey);
+
+    return () => {
+      window.removeEventListener("wheel", preventScroll);
+      window.removeEventListener("touchmove", preventScroll);
+      window.removeEventListener("keydown", preventScrollKey);
+    };
+  }, [recommendationOpen]);
 
   const columns = useMemo<ListColumn<ProblemSetSummary>[]>(
     () => [
@@ -85,6 +162,35 @@ export default function UserProblemListClient({
     [],
   );
 
+  const handleRecommendationSelect = (targetProblemSetId: number) => {
+    setRecommendationOpen(false);
+    router.push(`/problems/${targetProblemSetId}`);
+  };
+
+  const handleHideRecommendationsToday = async () => {
+    if (recommendationHidingToday) {
+      return;
+    }
+
+    setRecommendationHidingToday(true);
+
+    try {
+      await hideProblemSetRecommendationsToday();
+      setRecommendationOpen(false);
+      setRecommendations([]);
+    } catch (error) {
+      handleClientError(error, {
+        router,
+        fallbackTitle: "추천 숨김 실패",
+        fallbackMessage:
+          "추천 문제를 오늘 하루 숨기지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => setModal({ open: true, title, content }),
+      });
+    } finally {
+      setRecommendationHidingToday(false);
+    }
+  };
+
   return (
     <main className={userProblemListClasses.container}>
       <h2 className={userProblemListClasses.pageTitle}>문제풀이</h2>
@@ -103,6 +209,16 @@ export default function UserProblemListClient({
         modalTitle={modal.title}
         onClose={() => setModal((prev) => ({ ...prev, open: false }))}
       />
+
+      {recommendationOpen && recommendations.length > 0 && (
+        <ProblemRecommendationModal
+          isHidingToday={recommendationHidingToday}
+          onClose={() => setRecommendationOpen(false)}
+          onHideToday={handleHideRecommendationsToday}
+          onSelect={handleRecommendationSelect}
+          recommendations={recommendations}
+        />
+      )}
     </main>
   );
 }

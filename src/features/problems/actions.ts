@@ -15,6 +15,8 @@ import type {
   ProblemChatRoom,
   ProblemDatasetDownloadUrl,
   ProblemSetDetail,
+  ProblemSetRecommendationHideResponse,
+  ProblemSetRecommendationResponse,
   ProblemSetDetailProblem,
   ProblemSetResult,
   ProblemSetSummary,
@@ -317,6 +319,27 @@ export async function getProblemDatasetDownloadUrl(problemSetId: string) {
       problemSetId,
     )}/dataset/download-url`,
     "데이터셋 다운로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "POST",
+    },
+  );
+
+  return result.data ?? null;
+}
+
+export async function getMyProblemSetRecommendations() {
+  const result = await requestJson<ProblemSetRecommendationResponse>(
+    "/api/v1/recommendations/problem-sets/me",
+    "추천 문제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  );
+
+  return result.data ?? null;
+}
+
+export async function hideProblemSetRecommendationsToday() {
+  const result = await requestJson<ProblemSetRecommendationHideResponse>(
+    "/api/v1/recommendations/problem-sets/hide-today",
+    "추천 문제를 숨기지 못했습니다. 잠시 후 다시 시도해 주세요.",
     {
       method: "POST",
     },
