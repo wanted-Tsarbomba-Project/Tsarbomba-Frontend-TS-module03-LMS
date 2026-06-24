@@ -177,7 +177,11 @@ export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
   ];
 }
 
-export async function getAdminAccounts(page = 0, size = 20) {
+export async function getAdminAccounts(
+  page = 0,
+  size = 20,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
@@ -185,6 +189,7 @@ export async function getAdminAccounts(page = 0, size = 20) {
 
   return requestAdminOperation<AdminAccountPageResponse>(
     `/api/v1/admin/accounts?${params.toString()}`,
+    { signal },
   );
 }
 

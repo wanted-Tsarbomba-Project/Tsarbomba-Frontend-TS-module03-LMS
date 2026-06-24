@@ -57,14 +57,24 @@ export default function MasterAccountsClient() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchAccounts = async () => {
       try {
         setLoading(true);
-        const result = await getAdminAccounts(page, ADMIN_ACCOUNT_PAGE_SIZE);
+        const result = await getAdminAccounts(
+          page,
+          ADMIN_ACCOUNT_PAGE_SIZE,
+          controller.signal,
+        );
 
         setAccounts(result.data?.items ?? []);
         setTotalPages(result.data?.totalPages ?? 1);
       } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
         console.error("관리자 계정 목록 조회 실패:", error);
         handleClientError(error, {
           router,
@@ -78,11 +88,15 @@ export default function MasterAccountsClient() {
             }),
         });
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     void fetchAccounts();
+
+    return () => controller.abort();
   }, [page, router]);
 
   const openPermissionConfirm = (
