@@ -1,6 +1,10 @@
 import { requestAdminOperation } from "./api";
 import type {
   AlertStatus,
+  AdminAccountPageResponse,
+  AdminPermissionApiType,
+  AdminPermissionType,
+  AdminPermissionUpdateResponse,
   AdminUserDetail,
   AdminUserSummary,
   AutomationRule,
@@ -109,6 +113,14 @@ export async function deleteOperationAlert(operationAlertId: string) {
 
 const USER_SEARCH_FETCH_CONCURRENCY = 8;
 
+const adminPermissionApiTypes: Record<
+  AdminPermissionType,
+  AdminPermissionApiType
+> = {
+  userManagement: "USER_MANAGEMENT",
+  ruleManagement: "RULE_MANAGEMENT",
+};
+
 export async function getAdminUsers(
   page = 0,
   size = 20,
@@ -163,6 +175,34 @@ export async function getAllAdminUsers(size = 20, signal?: AbortSignal) {
     ...(firstPage.data?.content ?? []),
     ...restPages.flatMap((result) => result.data?.content ?? []),
   ];
+}
+
+export async function getAdminAccounts(page = 0, size = 20) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+
+  return requestAdminOperation<AdminAccountPageResponse>(
+    `/api/v1/admin/accounts?${params.toString()}`,
+  );
+}
+
+export async function updateAdminAccountPermission(
+  adminUserId: number,
+  permissionType: AdminPermissionType,
+  granted: boolean,
+) {
+  return requestAdminOperation<AdminPermissionUpdateResponse>(
+    `/api/v1/admin/accounts/${adminUserId}/permissions`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        permissionType: adminPermissionApiTypes[permissionType],
+        granted,
+      }),
+    },
+  );
 }
 
 export async function getAdminUserDetail(userId: string) {

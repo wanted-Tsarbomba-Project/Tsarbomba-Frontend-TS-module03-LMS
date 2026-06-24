@@ -109,6 +109,37 @@ export interface AdminUserDetail {
   updatedAt?: string | null;
 }
 
+export type AdminPermissionType = "userManagement" | "ruleManagement";
+export type AdminPermissionApiType = "USER_MANAGEMENT" | "RULE_MANAGEMENT";
+
+export interface AdminAccountSummary {
+  userId: number;
+  email?: string | null;
+  name?: string | null;
+  nickname?: string | null;
+  role?: string | null;
+  locked?: boolean;
+  permissionStates?: Partial<Record<AdminPermissionType, boolean>>;
+  createdAt?: string | null;
+}
+
+export interface AdminAccountPageResponse {
+  items: AdminAccountSummary[];
+  totalPages?: number;
+  totalElements?: number;
+  number?: number;
+  size?: number;
+}
+
+export interface AdminPermissionUpdateRequest {
+  permissionType: AdminPermissionApiType;
+  granted: boolean;
+}
+
+export interface AdminPermissionUpdateResponse extends AdminAccountSummary {
+  updatedPermission?: AdminPermissionUpdateRequest;
+}
+
 export interface UserCourseProgressResponse {
   enrollmentId?: number;
   studentId?: number;
