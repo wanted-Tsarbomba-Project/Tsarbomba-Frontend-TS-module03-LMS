@@ -160,6 +160,11 @@ export interface ProblemSetResult {
   submissions: ProblemSetResultSubmission[];
 }
 
+export interface ProblemDatasetDownloadUrl {
+  fileName: string;
+  downloadUrl: string;
+}
+
 export interface ProblemHint {
   hintId: number;
   hintContent: string;

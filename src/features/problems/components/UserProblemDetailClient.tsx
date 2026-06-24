@@ -2,6 +2,10 @@
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -11,6 +15,7 @@ import { handleClientError } from "@/lib/errorHandling";
 
 import {
   createProblemChatMessage,
+  getProblemDatasetDownloadUrl,
   getProblemChatMessages,
   getProblemChatRooms,
   getProblemHints,
@@ -51,6 +56,11 @@ interface UserProblemDetailClientProps {
 
 const updateArrayItem = <T,>(items: T[], index: number, value: T) =>
   items.map((item, itemIndex) => (itemIndex === index ? value : item));
+
+const MIN_PROBLEM_PANEL_WIDTH = 260;
+const MIN_SOLVE_PANEL_WIDTH = 400;
+const RESIZE_HANDLE_RESERVED_WIDTH = 32;
+const DEFAULT_PROBLEM_PANEL_PERCENT = 50;
 
 function getInitialProblemIndex(problemSet: ProblemSetDetail) {
   return Math.max(
@@ -195,6 +205,7 @@ export default function UserProblemDetailClient({
     );
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDatasetDownloading, setIsDatasetDownloading] = useState(false);
   const [showHintToast, setShowHintToast] = useState(false);
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
@@ -212,6 +223,11 @@ export default function UserProblemDetailClient({
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
+  const [problemPanelPercent, setProblemPanelPercent] = useState(
+    DEFAULT_PROBLEM_PANEL_PERCENT,
+  );
+  const [isPanelSplitAvailable, setIsPanelSplitAvailable] = useState(false);
+  const contentAreaRef = useRef<HTMLElement | null>(null);
   const activeChatRoomIdRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -229,6 +245,105 @@ export default function UserProblemDetailClient({
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
   const isCurrentProblemCorrect = problemStates[currentIndex] === "CORRECT";
+
+  const problemPanelStyle = useMemo(
+    () =>
+      ({
+        "--problem-panel-percent": `${problemPanelPercent}%`,
+      }) as CSSProperties & Record<"--problem-panel-percent", string>,
+    [problemPanelPercent],
+  );
+
+  useEffect(() => {
+    const container = contentAreaRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const updateSplitAvailability = () => {
+      const width = container.getBoundingClientRect().width;
+      const canSplit =
+        width >=
+        MIN_PROBLEM_PANEL_WIDTH +
+          MIN_SOLVE_PANEL_WIDTH +
+          RESIZE_HANDLE_RESERVED_WIDTH;
+
+      setIsPanelSplitAvailable(canSplit);
+
+      if (!canSplit) {
+        setProblemPanelPercent(DEFAULT_PROBLEM_PANEL_PERCENT);
+        return;
+      }
+
+      const minPercent = (MIN_PROBLEM_PANEL_WIDTH / width) * 100;
+      const maxPercent =
+        ((width - MIN_SOLVE_PANEL_WIDTH - RESIZE_HANDLE_RESERVED_WIDTH) /
+          width) *
+        100;
+
+      setProblemPanelPercent((prev) =>
+        Math.min(Math.max(prev, minPercent), maxPercent),
+      );
+    };
+
+    updateSplitAvailability();
+
+    const resizeObserver = new ResizeObserver(updateSplitAvailability);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const handlePanelResizeStart = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+
+      if (!isPanelSplitAvailable) {
+        return;
+      }
+
+      const container = contentAreaRef.current;
+
+      if (!container) {
+        return;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const maxProblemWidth =
+        rect.width - MIN_SOLVE_PANEL_WIDTH - RESIZE_HANDLE_RESERVED_WIDTH;
+
+      if (maxProblemWidth < MIN_PROBLEM_PANEL_WIDTH) {
+        return;
+      }
+
+      const updatePanelWidth = (clientX: number) => {
+        const nextWidth = Math.min(
+          Math.max(clientX - rect.left, MIN_PROBLEM_PANEL_WIDTH),
+          maxProblemWidth,
+        );
+
+        setProblemPanelPercent((nextWidth / rect.width) * 100);
+      };
+
+      const handlePointerMove = (pointerEvent: PointerEvent) => {
+        updatePanelWidth(pointerEvent.clientX);
+      };
+      const handlePointerUp = () => {
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      updatePanelWidth(event.clientX);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp, { once: true });
+    },
+    [isPanelSplitAvailable],
+  );
 
   const toggleProblemChat = useCallback(() => {
     setHasOpenedChatPanel(true);
@@ -523,6 +638,45 @@ export default function UserProblemDetailClient({
     }
   };
 
+  const handleDatasetDownload = async () => {
+    if (isDatasetDownloading) {
+      return;
+    }
+
+    setIsDatasetDownloading(true);
+
+    try {
+      const dataset = await getProblemDatasetDownloadUrl(problemSetId);
+
+      if (!dataset?.downloadUrl) {
+        setAlertModal({
+          open: true,
+          title: "CSV 다운로드 실패",
+          content: "다운로드할 데이터셋을 찾지 못했습니다.",
+        });
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = dataset.downloadUrl;
+      link.download = dataset.fileName || "dataset.csv";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      handleClientError(error, {
+        router,
+        fallbackTitle: "CSV 다운로드 실패",
+        fallbackMessage:
+          "CSV 다운로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+      });
+    } finally {
+      setIsDatasetDownloading(false);
+    }
+  };
+
   const startChatRoomTitleEdit = () => {
     setChatRoomTitleInput(chatRoomTitle ?? "");
     setChatRoomTitleEditing(true);
@@ -655,11 +809,44 @@ export default function UserProblemDetailClient({
             variant="problem-detail"
           />
 
-          <section className={problemDetailClasses.contentArea}>
-            <ProblemStatementCard content={currentProblem.content} />
+          <section
+            className={`${problemDetailClasses.contentArea} ${
+              isPanelSplitAvailable
+                ? ""
+                : problemDetailClasses.contentAreaStacked
+            }`}
+            ref={contentAreaRef}
+          >
+            <ProblemStatementCard
+              className={
+                isPanelSplitAvailable
+                  ? problemDetailClasses.problemResizablePane
+                  : problemDetailClasses.problemStackedPane
+              }
+              content={currentProblem.content}
+              isDownloadingDataset={isDatasetDownloading}
+              onDownloadDataset={handleDatasetDownload}
+              style={isPanelSplitAvailable ? problemPanelStyle : undefined}
+            />
+
+            {isPanelSplitAvailable && (
+              <button
+                aria-label="문제 내용과 문제풀이 영역 너비 조절"
+                aria-orientation="vertical"
+                className={problemDetailClasses.resizeHandle}
+                onPointerDown={handlePanelResizeStart}
+                role="separator"
+                type="button"
+              />
+            )}
 
             <ProblemSolveSection
               activeTab={activeTab}
+              className={
+                isPanelSplitAvailable
+                  ? problemDetailClasses.solveResizablePane
+                  : problemDetailClasses.solveStackedPane
+              }
               code={code}
               currentHints={currentHints}
               currentProblemExplanation={currentProblem.explanation}

@@ -78,7 +78,7 @@ function SubmissionResultView({
         </p>
       )}
       {submissionResult.submittedAt && (
-        <p>제출 시간: {submissionResult.submittedAt}</p>
+        <p>제출 시간: {formatSubmittedAt(submissionResult.submittedAt)}</p>
       )}
       {submissionResult.executionStatus && (
         <p>실행 상태: {submissionResult.executionStatus}</p>
@@ -91,6 +91,24 @@ function SubmissionResultView({
       )}
     </>
   );
+}
+
+function formatSubmittedAt(value: string) {
+  const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 function ExecutionResultView({
