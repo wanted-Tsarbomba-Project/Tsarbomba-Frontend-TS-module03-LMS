@@ -21,13 +21,15 @@ export default async function CourseProblemPage({
   const { courseId, lectureProblemSetId } = await params;
   const cookieHeader = (await cookies()).toString();
 
-  // 401 등으로 빈 배열이 떨어진 경우는 가드를 건너뛰고 아래 problemSet 조회가 401/에러 처리하도록
-  const enrollments = await getMyEnrollmentsServer().catch(() => []);
-  const enrolled = enrollments.some(
-    (e) => String(e.courseId) === String(courseId),
-  );
-  if (enrollments.length > 0 && !enrolled) {
-    redirect(`/courses/${courseId}`);
+  // null = 조회 실패(401 등), [] = 등록 0건. 실패만 건너뛰고 0건은 정상 차단
+  const enrollments = await getMyEnrollmentsServer().catch(() => null);
+  if (enrollments !== null) {
+    const enrolled = enrollments.some(
+      (e) => String(e.courseId) === String(courseId),
+    );
+    if (!enrolled) {
+      redirect(`/courses/${courseId}`);
+    }
   }
 
   let problemSet: ProblemSetDetail;
