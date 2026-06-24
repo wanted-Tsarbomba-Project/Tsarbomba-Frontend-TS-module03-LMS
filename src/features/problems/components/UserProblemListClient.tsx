@@ -99,6 +99,19 @@ export default function UserProblemListClient({
       event.preventDefault();
     };
     const preventScrollKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      const isInteractiveTarget =
+        target instanceof HTMLElement &&
+        Boolean(
+          target.closest(
+            'button, a, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])',
+          ),
+        );
+
+      if (isInteractiveTarget) {
+        return;
+      }
+
       if (
         [
           "ArrowUp",
