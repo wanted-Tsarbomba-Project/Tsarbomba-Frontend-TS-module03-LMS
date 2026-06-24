@@ -657,8 +657,19 @@ export default function UserProblemDetailClient({
         return;
       }
 
+      const parsedUrl = new URL(dataset.downloadUrl, window.location.origin);
+
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        setAlertModal({
+          open: true,
+          title: "CSV 다운로드 실패",
+          content: "유효하지 않은 다운로드 주소입니다.",
+        });
+        return;
+      }
+
       const link = document.createElement("a");
-      link.href = dataset.downloadUrl;
+      link.href = parsedUrl.toString();
       link.download = dataset.fileName || "dataset.csv";
       link.rel = "noopener noreferrer";
       document.body.appendChild(link);

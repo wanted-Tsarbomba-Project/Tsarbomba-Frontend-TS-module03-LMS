@@ -101,7 +101,7 @@ function formatSubmittedAt(value: string) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(undefined, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

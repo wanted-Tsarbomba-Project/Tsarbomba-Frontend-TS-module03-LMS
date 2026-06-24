@@ -313,7 +313,9 @@ export async function getProblemSetResult(
 
 export async function getProblemDatasetDownloadUrl(problemSetId: string) {
   const result = await requestJson<ProblemDatasetDownloadUrl>(
-    `/api/v1/problem-sets/${problemSetId}/dataset/download-url`,
+    `/api/v1/problem-sets/${encodeURIComponent(
+      problemSetId,
+    )}/dataset/download-url`,
     "데이터셋 다운로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해 주세요.",
     {
       method: "POST",
