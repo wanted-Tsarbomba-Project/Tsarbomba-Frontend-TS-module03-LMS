@@ -36,3 +36,12 @@ export const adminRuleClasses = {
   submitButton:
     "h-[50px] w-[180px] cursor-pointer rounded-[10px] border-0 bg-button-blue-bg text-body font-semibold text-text-white transition duration-200 ease-in-out hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
 } as const;
+
+export const adminMasterClasses = {
+  container: "box-border p-6 text-text-primary",
+  header: "mb-5 [&_h1]:m-0 [&_h1]:text-2xl [&_h1]:font-bold",
+  permissionActive:
+    "inline-flex h-8 min-w-[76px] cursor-pointer items-center justify-center rounded-base border border-button-blue-bg bg-button-blue-bg px-3 text-description font-semibold text-text-white transition hover:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
+  permissionInactive:
+    "inline-flex h-8 min-w-[76px] cursor-pointer items-center justify-center rounded-base border border-text-red bg-bg-box px-3 text-description font-semibold text-text-red transition hover:bg-text-red hover:text-text-white disabled:cursor-not-allowed disabled:opacity-60",
+} as const;
