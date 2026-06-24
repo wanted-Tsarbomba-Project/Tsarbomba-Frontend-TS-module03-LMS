@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import type { CSSProperties } from "react";
 
 import { problemDetailClasses } from "../problemDetailStyles";
 import type {
@@ -13,6 +14,7 @@ import ProblemResultPanel from "./ProblemResultPanel";
 
 interface ProblemSolveSectionProps {
   activeTab: ProblemResultTab;
+  className?: string;
   code: string;
   currentHints: ProblemHint[];
   currentProblemExplanation?: string;
@@ -26,10 +28,12 @@ interface ProblemSolveSectionProps {
   showHintToast: boolean;
   solutionEnabled: boolean;
   submissionResult: SubmissionResult | null;
+  style?: CSSProperties;
 }
 
 function ProblemSolveSection({
   activeTab,
+  className = "",
   code,
   currentHints,
   currentProblemExplanation,
@@ -43,9 +47,13 @@ function ProblemSolveSection({
   showHintToast,
   solutionEnabled,
   submissionResult,
+  style,
 }: ProblemSolveSectionProps) {
   return (
-    <section className={problemDetailClasses.solveBox}>
+    <section
+      className={`${problemDetailClasses.solveBox} ${className}`}
+      style={style}
+    >
       <div className={problemDetailClasses.editorSection}>
         <h2>문제풀이 영역</h2>
         {showHintToast && (

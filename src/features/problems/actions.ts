@@ -13,6 +13,7 @@ import type {
   ProblemHint,
   ProblemInfo,
   ProblemChatRoom,
+  ProblemDatasetDownloadUrl,
   ProblemSetDetail,
   ProblemSetDetailProblem,
   ProblemSetResult,
@@ -305,6 +306,20 @@ export async function getProblemSetResult(
     `/api/v1/problem-sets/${problemSetId}/result`,
     "문제 풀이 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     init,
+  );
+
+  return result.data ?? null;
+}
+
+export async function getProblemDatasetDownloadUrl(problemSetId: string) {
+  const result = await requestJson<ProblemDatasetDownloadUrl>(
+    `/api/v1/problem-sets/${encodeURIComponent(
+      problemSetId,
+    )}/dataset/download-url`,
+    "데이터셋 다운로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "POST",
+    },
   );
 
   return result.data ?? null;
