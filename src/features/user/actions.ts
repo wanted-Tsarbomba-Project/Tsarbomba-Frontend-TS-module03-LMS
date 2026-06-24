@@ -77,6 +77,21 @@ export const verifyPassword = async (password: string): Promise<void> => {
   );
 };
 
+/** 비밀번호 변경 — PUT /api/v1/users/me/password */
+export const changeMyPassword = async (
+  newPassword: string,
+  confirmPassword: string,
+): Promise<void> => {
+  await request(
+    "/api/v1/users/me/password",
+    {
+      method: "PUT",
+      body: JSON.stringify({ newPassword, confirmPassword }),
+    },
+    "비밀번호 변경에 실패했습니다.",
+  );
+};
+
 /** 회원 탈퇴 — DELETE /api/v1/users/me { password } */
 export const withdrawUser = async (password: string): Promise<void> => {
   await request(

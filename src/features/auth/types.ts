@@ -8,7 +8,13 @@ export interface AuthResponse<TData = unknown> {
 }
 
 /** 사용자 권한 */
-export type UserRole = "ADMIN" | "OPERATOR" | "INSTRUCTOR" | "STUDENT" | "USER";
+export type UserRole =
+  | "MASTER"
+  | "ADMIN"
+  | "OPERATOR"
+  | "INSTRUCTOR"
+  | "STUDENT"
+  | "USER";
 
 /** 로그인 요청 */
 export interface LoginRequest {

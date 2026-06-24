@@ -2,5 +2,10 @@
 import RulesClient from "@/features/admin/operations/components/RulesClient";
 
 export default function RulesPage() {
-  return <RulesClient />;
+  return (
+    <section className="box-border p-6 text-text-primary">
+      <h1 className="m-0 text-2xl font-bold">규칙 관리</h1>
+      <RulesClient />
+    </section>
+  );
 }

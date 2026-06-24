@@ -51,7 +51,9 @@ export default function LoginForm() {
 
         window.dispatchEvent(new Event("loginSuccess"));
 
-        if (role === "ADMIN") {
+        if (role === "MASTER") {
+          window.location.href = "/admin/master";
+        } else if (role === "ADMIN") {
           window.location.href = "/admin/rules";
         } else if (role === "OPERATOR") {
           window.location.href = "/admin/courses";

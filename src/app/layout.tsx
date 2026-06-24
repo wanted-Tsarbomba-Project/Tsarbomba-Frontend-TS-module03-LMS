@@ -53,14 +53,17 @@ export default function RootLayout({
   useEffect(() => {
     if (pathname !== "/") return;
 
-    if (userRole === "ADMIN") {
+    if (userRole === "MASTER") {
+      router.replace("/admin/master");
+    } else if (userRole === "ADMIN") {
       router.replace("/admin/rules");
     } else if (userRole === "OPERATOR") {
       router.replace("/admin/courses");
     }
   }, [pathname, router, userRole]);
 
-  const canAccessAdmin = userRole === "ADMIN" || userRole === "OPERATOR";
+  const canAccessAdmin =
+    userRole === "MASTER" || userRole === "ADMIN" || userRole === "OPERATOR";
 
   /* 1. 현재 페이지 경로 체크 패턴 정의 */
   const isAuthPath =
@@ -68,6 +71,8 @@ export default function RootLayout({
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth");
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isMasterAdminPath =
+    pathname === "/admin/master" || pathname.startsWith("/admin/master/");
   const isMypagePath = pathname.startsWith("/user/profile");
   const isProblemPath =
     pathname.startsWith("/problems") ||
@@ -77,7 +82,9 @@ export default function RootLayout({
   const isChatPath =
     pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
-  const showAdminAuthModal = isMount && isAdminPath && !canAccessAdmin;
+  const canAccessCurrentAdmin =
+    canAccessAdmin && (!isMasterAdminPath || userRole === "MASTER");
+  const showAdminAuthModal = isMount && isAdminPath && !canAccessCurrentAdmin;
 
   const handleAccessDeniedClose = () => {
     router.replace("/");
@@ -118,12 +125,14 @@ export default function RootLayout({
             <div className="flex flex-1 w-full max-w-300 mx-auto relative box-border gap-5 max-[1024px]:px-5">
               {(isMypagePath ||
                 isChatPath ||
-                (isAdminPath && canAccessAdmin)) && <Sidebar isOpen={isOpen} />}
+                (isAdminPath && canAccessCurrentAdmin)) && (
+                <Sidebar isOpen={isOpen} />
+              )}
 
               {isOpen &&
                 (isMypagePath ||
                   isChatPath ||
-                  (isAdminPath && canAccessAdmin)) && (
+                  (isAdminPath && canAccessCurrentAdmin)) && (
                   <div
                     className="fixed inset-0 bg-[#000000]/40 z-998 lg:hidden"
                     onClick={() => setIsOpen(false)}
@@ -131,7 +140,11 @@ export default function RootLayout({
                 )}
 
               <main className="flex-1 min-w-0 py-10">
-                {isAdminPath ? (canAccessAdmin ? children : null) : children}
+                {isAdminPath
+                  ? canAccessCurrentAdmin
+                    ? children
+                    : null
+                  : children}
               </main>
             </div>
           ) : (
