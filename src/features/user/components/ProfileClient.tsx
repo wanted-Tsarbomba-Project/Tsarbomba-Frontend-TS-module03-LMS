@@ -6,7 +6,7 @@ import type { Mode, MyProfile } from "../types";
 import ProfileView from "./ProfileView";
 import PasswordVerifyCard from "./PasswordVerifyCard";
 import ProfileEditForm from "./ProfileEditForm";
-import PasswordResetPanel from "./PasswordResetPanel";
+import PasswordChangePanel from "./PasswordChangePanel";
 import WithdrawModal from "./WithdrawModal";
 
 export default function ProfileClient({
@@ -39,7 +39,7 @@ export default function ProfileClient({
             onSaved={handleSaved}
             onWithdraw={() => setWithdrawOpen(true)}
           />
-          <PasswordResetPanel email={profile.email} />
+          <PasswordChangePanel email={profile.email} />
         </div>
 
         <WithdrawModal
