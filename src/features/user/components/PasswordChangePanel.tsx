@@ -9,7 +9,9 @@ import { fieldBase, fieldLabel } from "./styles";
 // 비밀번호 변경 (마이페이지 진입 시 이미 비번 확인했으므로 이메일 OTP 없이 바로 변경)
 export default function PasswordChangePanel({ email }: { email: string }) {
   const newPwId = useId();
+  const newPwErrId = useId();
   const newPwConfirmId = useId();
+  const newPwConfirmErrId = useId();
   const [newPw, setNewPw] = useState("");
   const [newPwConfirm, setNewPwConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export default function PasswordChangePanel({ email }: { email: string }) {
       return;
     }
     if (newPw !== newPwConfirm) {
-      setPwErr("비밀번호가 일치하지 않습니다.");
+      // pwMismatch UI 가 이미 confirm 칸 아래에 표시 — 별도 setPwErr 불필요
       return;
     }
     setLoading(true);
@@ -42,16 +44,12 @@ export default function PasswordChangePanel({ email }: { email: string }) {
   };
 
   // 변경 완료 후 재로그인
+  // BE 가 accessToken/refreshToken 쿠키를 만료시키므로 FE 는 클라이언트 캐시만 정리
   const handleDoneClose = () => {
     setDoneOpen(false);
     if (typeof window !== "undefined") {
       localStorage.clear();
       sessionStorage.clear();
-      document.cookie.split(";").forEach((cookie) => {
-        document.cookie =
-          cookie.split("=")[0].trim() +
-          "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/";
-      });
       window.dispatchEvent(new Event("loginSuccess"));
       window.location.href = "/auth/login";
     }
@@ -83,7 +81,14 @@ export default function PasswordChangePanel({ email }: { email: string }) {
               if (pwErr) setPwErr("");
             }}
             placeholder={PW_PLACEHOLDER}
+            aria-invalid={pwErr ? true : undefined}
+            aria-describedby={pwErr ? newPwErrId : undefined}
           />
+          {pwErr && (
+            <p id={newPwErrId} className="mt-1 text-xs text-text-red">
+              {pwErr}
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor={newPwConfirmId} className={fieldLabel}>
@@ -99,14 +104,13 @@ export default function PasswordChangePanel({ email }: { email: string }) {
               if (e.key === "Enter") handleChange();
             }}
             placeholder="비밀번호를 한 번 더 입력해주세요"
+            aria-invalid={pwMismatch ? true : undefined}
+            aria-describedby={pwMismatch ? newPwConfirmErrId : undefined}
           />
           {pwMismatch && (
-            <p className="mt-1 text-xs text-text-red">
+            <p id={newPwConfirmErrId} className="mt-1 text-xs text-text-red">
               비밀번호가 일치하지 않습니다.
             </p>
-          )}
-          {pwErr && !pwMismatch && (
-            <p className="mt-1 text-xs text-text-red">{pwErr}</p>
           )}
         </div>
 
