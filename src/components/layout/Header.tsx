@@ -10,6 +10,7 @@ import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
 import { logoutService } from "@/features/auth/actions";
+import { getMyProfile } from "@/features/user/actions";
 import {
   buildCourseSearchHref,
   COURSE_SEARCH_PARAM,
@@ -64,6 +65,15 @@ function HeaderInner({ isSimple }: HeaderProps) {
     const timer = window.setTimeout(() => {
       setIsMounted(true);
       syncHeaderStatus();
+
+      // localStorage 잔재로 가짜 로그인 표시되는 걸 방지 — BE 세션 검증 후 401 이면 정리
+      if (localStorage.getItem("userNickname")) {
+        getMyProfile().catch(() => {
+          localStorage.removeItem("userNickname");
+          localStorage.removeItem("userRole");
+          syncHeaderStatus();
+        });
+      }
     }, 0);
 
     window.addEventListener("loginSuccess", syncHeaderStatus);
