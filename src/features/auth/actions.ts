@@ -229,6 +229,47 @@ export const resetPassword = async (
   return response.json().catch(() => null);
 };
 
+/* 추가 인증(step-up) 코드 검증 — POST /api/v1/auth/step-up/verify*/
+export const verifyStepUp = async (
+  code: string,
+  trustDevice: boolean = false,
+): Promise<AuthResponse> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/step-up/verify`, {
+    method: "POST",
+    headers: HEADERS,
+    credentials: "include",
+    body: JSON.stringify({ code, trustDevice }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(
+        response,
+        "인증번호가 일치하지 않거나 만료되었습니다.",
+      ),
+    );
+  }
+
+  return response.json();
+};
+
+/* 추가 인증(step-up) 코드 재발송 — POST /api/v1/auth/step-up/resend */
+export const resendStepUp = async (): Promise<AuthResponse | null> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/step-up/resend`, {
+    method: "POST",
+    headers: HEADERS,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "인증번호 재발송에 실패했습니다."),
+    );
+  }
+
+  return response.json().catch(() => null);
+};
+
 /* 로그아웃 */
 export const logoutService = async (): Promise<AuthResponse | null> => {
   const response = await fetch(`${BASE_URL}/api/v1/auth/logout`, {
