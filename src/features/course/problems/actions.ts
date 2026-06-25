@@ -108,6 +108,9 @@ interface LectureProblemProgress {
   currentProblemNumber?: number;
   currentProblemId?: number;
   solvedCount?: number;
+  // BE lecture_problem_progress.is_completed — 완료 권위 플래그 (네이밍 대비 둘 다 수용)
+  completed?: boolean;
+  isCompleted?: boolean;
   problems?: Array<{
     problemId?: number;
     problemNumber?: number;
