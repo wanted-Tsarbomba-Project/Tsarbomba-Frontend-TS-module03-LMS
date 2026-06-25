@@ -20,19 +20,19 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write             # OIDC 토큰 발급(키리스 핵심)
+      id-token: write # OIDC 토큰 발급(키리스 핵심)
       contents: read
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
         with:
-          persist-credentials: false   # 이후 스텝에 토큰 잔존 방지
+          persist-credentials: false # 이후 스텝에 토큰 잔존 방지
 
       - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: 의존성 설치
         run: npm ci
@@ -56,7 +56,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           TAG: ${{ github.sha }}
-          API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}   # env로 받아 인젝션 방지
+          API_URL: "" # env로 받아 인젝션 방지
         run: |
           set -euo pipefail
           docker build \

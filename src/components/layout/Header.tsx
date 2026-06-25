@@ -10,6 +10,8 @@ import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
 import { logoutService } from "@/features/auth/actions";
+import { getMyProfile } from "@/features/user/actions";
+import { ApiClientError } from "@/lib/errorHandling";
 import {
   buildCourseSearchHref,
   COURSE_SEARCH_PARAM,
@@ -64,6 +66,18 @@ function HeaderInner({ isSimple }: HeaderProps) {
     const timer = window.setTimeout(() => {
       setIsMounted(true);
       syncHeaderStatus();
+
+      // localStorage 잔재로 가짜 로그인 표시되는 걸 방지 — 인증 만료(401)일 때만 정리.
+      // 네트워크/500 등 일시 오류로 정상 세션을 로그아웃시키지 않도록 401 만 구분.
+      if (localStorage.getItem("userNickname")) {
+        getMyProfile().catch((err) => {
+          if (err instanceof ApiClientError && err.status === 401) {
+            localStorage.removeItem("userNickname");
+            localStorage.removeItem("userRole");
+            syncHeaderStatus();
+          }
+        });
+      }
     }, 0);
 
     window.addEventListener("loginSuccess", syncHeaderStatus);

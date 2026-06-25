@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/features/auth/actions";
 import type { LoginResponseData } from "@/features/auth/types";
+import OneButtonModal from "@/components/common/OneButtonModal";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -11,6 +12,9 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  // 모달 닫을 때 이동할 경로 — role 에 따라 분기
+  const [successRedirect, setSuccessRedirect] = useState("/");
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,15 +55,16 @@ export default function LoginForm() {
 
         window.dispatchEvent(new Event("loginSuccess"));
 
-        if (role === "MASTER") {
-          window.location.href = "/admin/master";
-        } else if (role === "ADMIN") {
-          window.location.href = "/admin/rules";
-        } else if (role === "OPERATOR") {
-          window.location.href = "/admin/courses";
-        } else {
-          window.location.href = "/";
-        }
+        const redirectByRole =
+          role === "MASTER"
+            ? "/admin/master"
+            : role === "ADMIN"
+              ? "/admin/rules"
+              : role === "OPERATOR"
+                ? "/admin/courses"
+                : "/";
+        setSuccessRedirect(redirectByRole);
+        setSuccessOpen(true);
       } else {
         setErrorMsg("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       }
@@ -174,6 +179,16 @@ export default function LoginForm() {
           </div>
         </form>
       </div>
+
+      <OneButtonModal
+        isOpen={successOpen}
+        onClose={() => {
+          setSuccessOpen(false);
+          window.location.href = successRedirect;
+        }}
+        modalTitle="로그인 완료"
+        modalContent="환영합니다!"
+      />
     </div>
   );
 }
