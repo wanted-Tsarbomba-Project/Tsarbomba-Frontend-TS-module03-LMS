@@ -87,10 +87,11 @@ export default function LectureDetailPage() {
             const p = await getLectureProblemProgress(String(lpsId));
             const totalCount = p?.totalCount ?? 0;
             const solvedCount = p?.solvedCount ?? 0;
-            return [
-              l.lectureId,
-              totalCount > 0 && solvedCount >= totalCount,
-            ] as const;
+            const done =
+              p?.completed ??
+              p?.isCompleted ??
+              (totalCount > 0 && solvedCount >= totalCount);
+            return [l.lectureId, done] as const;
           }
           const p = await getLectureProgress(l.lectureId);
           return [l.lectureId, !!p?.completed] as const;
@@ -223,6 +224,7 @@ export default function LectureDetailPage() {
       setLockedNavTarget(item);
       return;
     }
+    // 연결된 문제세트가 있으면 문제 풀이로, 그 외엔 강의 페이지로
     const link = linkByLecture.get(item.lectureId);
     if (link) {
       setProblemNavTarget(link);
@@ -232,6 +234,8 @@ export default function LectureDetailPage() {
   };
 
   const currentLink = linkByLecture.get(Number(lectureId));
+  // BE 응답에 lectureType 이 없어 videoUrl 유무로 영상/문제 구분 (문제세트 링크 있으면 확정 문제 강의)
+  const isProblemLecture = !!currentLink || !lecture?.videoUrl;
 
   if (loading) {
     return <LoadingIndicator message="강의를 불러오는 중입니다." />;
@@ -310,12 +314,12 @@ export default function LectureDetailPage() {
           </div>
 
           <p className="mb-3 text-xs text-blue-900">
-            {currentLink
+            {isProblemLecture
               ? "문제를 모두 풀이해야 다음 강의가 열립니다."
               : "강의 영상의 90% 이상을 시청해야 다음 강의가 열립니다. 완료 전에는 재생바 이동이 제한됩니다."}
           </p>
 
-          {currentLink ? (
+          {isProblemLecture ? (
             <div className="w-full aspect-video bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-5 px-6 text-center">
               <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
                 <rect
@@ -345,8 +349,10 @@ export default function LectureDetailPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setProblemNavTarget(currentLink)}
-                className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors"
+                onClick={() => currentLink && setProblemNavTarget(currentLink)}
+                disabled={!currentLink}
+                title={currentLink ? undefined : "연결된 문제 세트가 없습니다."}
+                className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 문제 풀러 가기
               </button>
@@ -377,7 +383,7 @@ export default function LectureDetailPage() {
             </div>
           )}
 
-          {!currentLink && (
+          {!isProblemLecture && (
             <div className="mt-4 flex items-start justify-between gap-4">
               <p className="flex-1 text-sm text-gray-500 leading-relaxed">
                 {lecture.description}
@@ -513,7 +519,8 @@ export default function LectureDetailPage() {
                 {lectures.map((item) => {
                   const isCurrent =
                     String(item.lectureId) === String(lectureId);
-                  const isProblem = linkByLecture.has(item.lectureId);
+                  const isProblem =
+                    linkByLecture.has(item.lectureId) || !item.videoUrl;
                   const locked = isLocked(item) && !isCurrent;
                   return (
                     <li key={item.lectureId}>
@@ -602,7 +609,7 @@ export default function LectureDetailPage() {
           setShowCompletionModal(false);
           router.push(`/courses/${courseId}`);
         }}
-        modalTitle="🎉 강좌 수강 완료"
+        modalTitle="강좌 수강 완료"
         modalContent="모든 강의를 끝까지 들으셨습니다! 추천 문제를 풀어보세요."
       />
 

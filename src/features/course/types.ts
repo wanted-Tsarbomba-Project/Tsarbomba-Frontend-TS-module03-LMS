@@ -94,8 +94,9 @@ export interface ProblemSetConnection {
 
 /* 강좌에 연결된 문제세트 (조회 응답) */
 export interface CourseProblemSetLink {
-  courseProblemSetId: number;
+  // 신 응답(lecture-problem-sets)은 lectureProblemSetId 를 줌. courseProblemSetId 는 구 모델 호환용.
   lectureProblemSetId?: number;
+  courseProblemSetId?: number;
   courseId: number;
   lectureId: number;
   problemSetId: number;
