@@ -83,6 +83,20 @@ select {
   font-family: inherit;
 }
 
+.p-skeleton {
+  background: var(--color-bg-navbar);
+  border-radius: var(--radius-base);
+}
+
+.p-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+}
+
 /* ── Auth 폼 공통 클래스 ── */
 @layer components {
   /* 입력 라벨 */
