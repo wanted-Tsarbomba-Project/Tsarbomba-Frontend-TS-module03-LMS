@@ -216,6 +216,7 @@ export default function LectureDetailPage() {
 
   const goToProblem = (link: CourseProblemSetLink) => {
     const lpsId = link.lectureProblemSetId ?? link.courseProblemSetId;
+    if (lpsId == null) return; // ID 없으면 /problems/undefined 라우팅 방지
     router.push(`/courses/${courseId}/problems/${lpsId}`);
   };
 
@@ -344,18 +345,20 @@ export default function LectureDetailPage() {
                   문제 강의입니다
                 </p>
                 <p className="text-sm text-gray-500">
-                  아래 버튼을 눌러 문제를 풀어보세요.
+                  {currentLink
+                    ? "아래 버튼을 눌러 문제를 풀어보세요."
+                    : "문제 연결 정보를 불러오지 못했어요. 잠시 후 새로고침 해주세요."}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => currentLink && setProblemNavTarget(currentLink)}
-                disabled={!currentLink}
-                title={currentLink ? undefined : "연결된 문제 세트가 없습니다."}
-                className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                문제 풀러 가기
-              </button>
+              {currentLink && (
+                <button
+                  type="button"
+                  onClick={() => setProblemNavTarget(currentLink)}
+                  className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors"
+                >
+                  문제 풀러 가기
+                </button>
+              )}
             </div>
           ) : (
             <div className="w-full aspect-video bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">

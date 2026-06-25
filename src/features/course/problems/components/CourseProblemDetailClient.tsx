@@ -359,9 +359,11 @@ export default function CourseProblemDetailClient({
       }
     } catch (error) {
       // 이미 완료한 문제세트 재제출(LRN-009) — 에러가 아니라 완료로 보고 다음 강의로 안내
-      const code = error instanceof ApiClientError ? error.code : "";
-      const msg = error instanceof Error ? error.message : "";
-      if (code === "LRN-009" || /already completed/i.test(msg)) {
+      // BE 오류 계약(ApiClientError)일 때만 처리해 임의 Error 로 실제 실패가 숨겨지지 않게 함
+      if (
+        error instanceof ApiClientError &&
+        (error.code === "LRN-009" || /already completed/i.test(error.message))
+      ) {
         setLectureCompleteModalOpen(true);
         return;
       }
