@@ -1,11 +1,7 @@
 // 강좌 도메인 — 서버 컴포넌트 전용 조회
 import { cookies } from "next/headers";
+import { SERVER_API_BASE_URL as BASE_URL } from "@/lib/serverEnv";
 import type { Course, CourseDetail, Enrollment, LectureSummary } from "./types";
-
-// 서버 컴포넌트 fetch 는 프록시(rewrites)를 안 거치므로 BE 절대주소가 필요.
-// 서버 전용 API_PROXY_TARGET 우선, 없으면 NEXT_PUBLIC_API_URL.
-const BASE_URL =
-  process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /** 미인증(401) 식별용 */
 export class UnauthorizedError extends Error {
