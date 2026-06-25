@@ -40,6 +40,15 @@ export default function LoginForm() {
 
       if (res && res.data) {
         const resData = res.data as Partial<LoginResponseData>;
+
+        if (resData.stepUpRequired) {
+          if (resData.maskedEmail) {
+            sessionStorage.setItem("stepUpEmail", resData.maskedEmail);
+          }
+          router.push("/auth/step-up");
+          return;
+        }
+
         const role = resData.role;
         const nickname = resData.nickname;
 
