@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
-import Logo from "../../../public/assets/img/logo-Icon.png";
+import Logo from "../../../public/assets/img/tsar-dog/basic_tsardog.svg";
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import WhitebombLogo from "../../../public/assets/img/whitebomb-Icon.svg";
 import { Searchbar, TwoButtonModal } from "../common";
