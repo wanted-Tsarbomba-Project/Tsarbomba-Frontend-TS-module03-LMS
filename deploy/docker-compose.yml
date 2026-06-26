@@ -9,7 +9,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - API_PROXY_TARGET=http://43.200.241.157:8080   # ← codebomb-spring:8080
+      - API_PROXY_TARGET=http://172.31.45.217:8080   # ← codebomb-spring 사설IP (SSR 전용, 브라우저는 상대경로 /api→ALB)
     restart: unless-stopped
     logging:
       driver: json-file

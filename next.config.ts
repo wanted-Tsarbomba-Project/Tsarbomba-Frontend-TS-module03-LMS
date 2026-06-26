@@ -1,19 +1,15 @@
 import type { NextConfig } from "next";
 
 // 프록시 대상 BE 주소 — 서버 전용 API_PROXY_TARGET 우선, 없으면 NEXT_PUBLIC_API_URL.
-// 둘 다 없으면 destination 이 "undefined/api/..." 가 되어 조용히 깨지므로 빌드 시 명시적으로 차단.
+// 프로덕션(ALB)에서는 둘 다 비우고 브라우저가 상대경로 /api 를 ALB로 직접 보낸다 → Next rewrite 불필요.
+// 값이 있을 때(로컬 개발 등)만 Next 프록시 rewrite 를 건다.
 const apiProxyTarget =
-  process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_URL;
-
-if (!apiProxyTarget) {
-  throw new Error(
-    "API_PROXY_TARGET (또는 NEXT_PUBLIC_API_URL) 환경변수가 필요합니다. .env.local 을 확인하세요.",
-  );
-}
+  process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
   async rewrites() {
+    if (!apiProxyTarget) return [];
     return [
       {
         source: "/api/:path*",

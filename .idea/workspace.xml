@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="481ad3ad-4af5-404a-b9f1-8a299fcfe5a5" name="변경" comment="" />
+    <list default="true" id="481ad3ad-4af5-404a-b9f1-8a299fcfe5a5" name="변경" comment="deploy test v1.0.3">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -45,6 +49,7 @@
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;develop&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
@@ -55,6 +60,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Project\\tsarbombaFE\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -93,6 +99,9 @@
       <workItem from="1781656684497" duration="782000" />
       <workItem from="1782106778880" duration="1411000" />
       <workItem from="1782183482883" duration="5880000" />
+      <workItem from="1782270468791" duration="2666000" />
+      <workItem from="1782349909069" duration="1357000" />
+      <workItem from="1782439742430" duration="7324000" />
     </task>
     <task id="LOCAL-00001" summary="deploy set v1.0">
       <option name="closed" value="true" />
@@ -118,7 +127,23 @@
       <option name="project" value="LOCAL" />
       <updated>1782193293619</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="0624 커밋">
+      <option name="closed" value="true" />
+      <created>1782270563240</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1782270563240</updated>
+    </task>
+    <task id="LOCAL-00005" summary="deploy test v1.0.3">
+      <option name="closed" value="true" />
+      <created>1782270692055</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1782270692055</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -139,6 +164,8 @@
     <MESSAGE value="deploy set v1.0" />
     <MESSAGE value="deploy set v1.0.1" />
     <MESSAGE value="deploy set v1.0.2 deploy.yml 수정" />
-    <option name="LAST_COMMIT_MESSAGE" value="deploy set v1.0.2 deploy.yml 수정" />
+    <MESSAGE value="0624 커밋" />
+    <MESSAGE value="deploy test v1.0.3" />
+    <option name="LAST_COMMIT_MESSAGE" value="deploy test v1.0.3" />
   </component>
 </project>
