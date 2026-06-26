@@ -2,6 +2,18 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { findEmail } from "@/features/auth/actions";
+
+const PHONE_REGEX = /^01[0-9]-\d{3,4}-\d{4}$/;
+
+const toUserMessage = (err: unknown, fallback: string): string => {
+  const msg = err instanceof Error ? err.message : "";
+  const technical = /JDBC|Hikari|Connection|Exception|SQL|timeout|timed out/i;
+  if (msg && !msg.includes("\n") && msg.length <= 60 && !technical.test(msg)) {
+    return msg;
+  }
+  return fallback;
+};
 
 export default function FindIdPage() {
   const router = useRouter();
@@ -10,17 +22,36 @@ export default function FindIdPage() {
   const [phone, setPhone] = useState("");
   const [resultEmail, setResultEmail] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleFindIdSubmit = (e: React.FormEvent) => {
+  const handleFindIdSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!name || !phone) {
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName || !trimmedPhone) {
       setErrorMsg("이름과 전화번호를 모두 입력해주세요.");
       return;
     }
+    if (!PHONE_REGEX.test(trimmedPhone)) {
+      setErrorMsg("전화번호 형식을 확인해주세요. (예: 010-1234-5678)");
+      return;
+    }
+    if (loading) return;
 
-    setResultEmail("codebomba***@naver.com");
+    setLoading(true);
+    try {
+      const email = await findEmail(trimmedName, trimmedPhone);
+      setResultEmail(email);
+    } catch (err) {
+      setErrorMsg(
+        toUserMessage(err, "일치하는 회원 정보를 찾을 수 없습니다."),
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,22 +103,14 @@ export default function FindIdPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end pt-1 text-xs text-text-secondary select-none">
-                <span
-                  className="cursor-pointer hover:text-text-blue transition-colors"
-                  onClick={() => router.push("/auth/reset-pw")}
-                >
-                  비밀번호 찾기
-                </span>
-              </div>
-
               {errorMsg && <p className="auth-error text-left">{errorMsg}</p>}
 
               <button
                 type="submit"
-                className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-6 hover:bg-button-blue-hover-bg transition-colors"
+                disabled={loading}
+                className="w-full h-11 text-body border-none rounded-base bg-button-blue-bg text-text-white font-medium flex items-center justify-center cursor-pointer mt-6 hover:bg-button-blue-hover-bg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                확인
+                {loading ? "조회 중..." : "확인"}
               </button>
             </form>
           </>
