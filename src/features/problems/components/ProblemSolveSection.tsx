@@ -8,6 +8,7 @@ import type {
   ExecutionResult,
   ProblemHint,
   ProblemResultTab,
+  RecommendedCourse,
   SubmissionResult,
 } from "../types";
 import ProblemResultPanel from "./ProblemResultPanel";
@@ -23,8 +24,10 @@ interface ProblemSolveSectionProps {
   isCurrentProblemCorrect: boolean;
   isSubmitting: boolean;
   onCodeChange: (nextCode: string) => void;
+  onRecommendedCourseSelect?: (courseId: number) => void;
   onSubmit: () => void;
   onTabChange: (tab: ProblemResultTab) => void;
+  recommendedCourses?: RecommendedCourse[];
   showHintToast: boolean;
   solutionEnabled: boolean;
   submissionResult: SubmissionResult | null;
@@ -42,8 +45,10 @@ function ProblemSolveSection({
   isCurrentProblemCorrect,
   isSubmitting,
   onCodeChange,
+  onRecommendedCourseSelect,
   onSubmit,
   onTabChange,
+  recommendedCourses = [],
   showHintToast,
   solutionEnabled,
   submissionResult,
@@ -86,6 +91,19 @@ function ProblemSolveSection({
           실행결과
         </button>
         <button
+          aria-selected={activeTab === "recommendedCourses"}
+          className={
+            activeTab === "recommendedCourses"
+              ? problemDetailClasses.activeTab
+              : ""
+          }
+          onClick={() => onTabChange("recommendedCourses")}
+          role="tab"
+          type="button"
+        >
+          추천강좌
+        </button>
+        <button
           aria-selected={activeTab === "hint"}
           className={activeTab === "hint" ? problemDetailClasses.activeTab : ""}
           disabled={!hintEnabled}
@@ -114,6 +132,8 @@ function ProblemSolveSection({
         currentHints={currentHints}
         currentProblemExplanation={currentProblemExplanation}
         executionResult={executionResult}
+        onRecommendedCourseSelect={onRecommendedCourseSelect}
+        recommendedCourses={recommendedCourses}
         submissionResult={submissionResult}
       />
 

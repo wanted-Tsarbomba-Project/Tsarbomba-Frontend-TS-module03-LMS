@@ -20,7 +20,7 @@ const skeletonClasses = {
   resizeHandle:
     "w-2 shrink-0 rounded-base bg-border-light max-[1180px]:hidden",
   textBlock: "mt-4 flex flex-col gap-3",
-  tabs: "mt-3 mb-2 flex gap-2 overflow-hidden",
+  tabs: "mt-3 mb-2 grid min-w-0 grid-cols-4 gap-2 max-[560px]:gap-1.5",
   submitWrap: "mt-3 flex justify-end",
 } as const;
 
@@ -91,9 +91,10 @@ export default function ProblemDetailSkeleton() {
             </div>
 
             <div className={skeletonClasses.tabs}>
-              <Skeleton borderRadius="8px" height="42px" width="96px" />
-              <Skeleton borderRadius="8px" height="42px" width="96px" />
-              <Skeleton borderRadius="8px" height="42px" width="104px" />
+              <Skeleton borderRadius="8px" height="42px" width="100%" />
+              <Skeleton borderRadius="8px" height="42px" width="100%" />
+              <Skeleton borderRadius="8px" height="42px" width="100%" />
+              <Skeleton borderRadius="8px" height="42px" width="100%" />
             </div>
 
             <Skeleton borderRadius="8px" height="180px" width="100%" />
