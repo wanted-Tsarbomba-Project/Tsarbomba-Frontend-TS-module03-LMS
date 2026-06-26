@@ -97,6 +97,17 @@ select {
   );
 }
 
+.recommended-course-select-panel .p-multiselect-filter-container {
+  display: flex;
+  align-items: center;
+}
+
+.recommended-course-select-panel .p-multiselect-filter-icon {
+  top: 50%;
+  margin-top: 0;
+  transform: translateY(-50%);
+}
+
 /* ── Auth 폼 공통 클래스 ── */
 @layer components {
   /* 입력 라벨 */

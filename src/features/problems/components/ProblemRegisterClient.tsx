@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -14,10 +14,17 @@ import { handleClientError } from "@/lib/errorHandling";
 import {
   createProblem,
   createProblemRequestBody,
+  getSelectableRecommendedCourses,
   INITIAL_PROBLEM_INFO,
   INITIAL_SUB_PROBLEM,
+  updateProblemsRecommendedCourses,
 } from "../actions";
-import type { ProblemCategory, ProblemInfo, SubProblem } from "../types";
+import type {
+  ProblemCategory,
+  ProblemInfo,
+  SelectableRecommendedCourse,
+  SubProblem,
+} from "../types";
 import RegisterForm from "./RegisterForm";
 const problemFormPageClasses = {
   "container": "min-h-screen bg-bg-main p-[30px]",
@@ -55,6 +62,9 @@ export default function ProblemRegisterClient({
     createInitialSubProblem(),
   ]);
   const [file, setFile] = useState<File | null>(null);
+  const [selectableCourses, setSelectableCourses] = useState<
+    SelectableRecommendedCourse[]
+  >([]);
   const categories = initialCategories;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -63,6 +73,28 @@ export default function ProblemRegisterClient({
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const [openValidationModal, setOpenValidationModal] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourses = async () => {
+      try {
+        const courses = await getSelectableRecommendedCourses();
+
+        if (isMounted) {
+          setSelectableCourses(courses);
+        }
+      } catch (error) {
+        console.error("추천 강좌 목록 조회 실패:", error);
+      }
+    };
+
+    void loadCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleProblemInfoChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -149,6 +181,36 @@ export default function ProblemRegisterClient({
         };
       }),
     );
+  };
+
+  const handleRecommendedCourseChange = (
+    problemIndex: number,
+    courseIds: number[],
+  ) => {
+    setProblems((prev) =>
+      prev.map((problem, currentIndex) => {
+        if (currentIndex !== problemIndex) {
+          return problem;
+        }
+
+        return {
+          ...problem,
+          recommendedCourseIds: getOrderedSelectedCourseIds(
+            problem.recommendedCourseIds ?? [],
+            courseIds,
+          ),
+        };
+      }),
+    );
+  };
+
+  const handleRecommendedCourseSearch = async (keyword: string) => {
+    try {
+      const courses = await getSelectableRecommendedCourses(keyword);
+      setSelectableCourses((prev) => mergeSelectableCourses(prev, courses));
+    } catch (error) {
+      console.error("추천 강좌 검색 실패:", error);
+    }
   };
 
   const handleAddProblem = () => {
@@ -290,7 +352,22 @@ export default function ProblemRegisterClient({
         categories,
       );
 
-      await createProblem(requestBody, file);
+      const createResult = await createProblem(requestBody, file);
+      const createdProblemIds = extractCreatedProblemIds(createResult);
+      const hasRecommendedCourses = problems.some(
+        (problem) => (problem.recommendedCourseIds?.length ?? 0) > 0,
+      );
+
+      if (hasRecommendedCourses && createdProblemIds.length < problems.length) {
+        throw new Error("추천 강좌를 연결할 소문제 정보를 확인하지 못했습니다.");
+      }
+
+      const createdProblems = problems.map((problem, index) => ({
+        ...problem,
+        problemId: createdProblemIds[index],
+      }));
+
+      await updateProblemsRecommendedCourses(createdProblems, false);
 
       setOpenConfirmModal(false);
       setOpenSuccessModal(true);
@@ -323,12 +400,15 @@ export default function ProblemRegisterClient({
         onFileChange={setFile}
         onProblemChange={handleProblemChange}
         onProblemInfoChange={handleProblemInfoChange}
+        onRecommendedCourseChange={handleRecommendedCourseChange}
+        onRecommendedCourseSearch={handleRecommendedCourseSearch}
         onRemoveFile={() => setFile(null)}
         onRemoveProblem={handleRemoveProblem}
         onRemoveTestCase={handleRemoveTestCase}
         onTestCaseChange={handleTestCaseChange}
         problemInfo={problemInfo}
         problems={problems}
+        selectableCourses={selectableCourses}
       />
 
       <div className={problemFormPageClasses.bottomButtonGroup}>
@@ -386,4 +466,54 @@ export default function ProblemRegisterClient({
       />
     </main>
   );
+}
+
+function mergeSelectableCourses(
+  prev: SelectableRecommendedCourse[],
+  next: SelectableRecommendedCourse[],
+) {
+  const courseMap = new Map<number, SelectableRecommendedCourse>();
+
+  [...prev, ...next].forEach((course) => {
+    const existingCourse = courseMap.get(course.courseId);
+
+    courseMap.set(course.courseId, {
+      ...existingCourse,
+      ...course,
+      categoryId: course.categoryId ?? existingCourse?.categoryId,
+      categoryName: course.categoryName ?? existingCourse?.categoryName,
+    });
+  });
+
+  return Array.from(courseMap.values());
+}
+
+function getOrderedSelectedCourseIds(prevIds: number[], nextIds: number[]) {
+  return [
+    ...prevIds.filter((courseId) => nextIds.includes(courseId)),
+    ...nextIds.filter((courseId) => !prevIds.includes(courseId)),
+  ];
+}
+
+function extractCreatedProblemIds(response: unknown) {
+  const payload = response as {
+    data?: {
+      problems?: Array<{ problemId?: number; id?: number }>;
+      problemSet?: {
+        problems?: Array<{ problemId?: number; id?: number }>;
+      };
+    };
+    problemSet?: {
+      problems?: Array<{ problemId?: number; id?: number }>;
+    };
+    problems?: Array<{ problemId?: number; id?: number }>;
+  } | null;
+  const problems =
+    payload?.data?.problems ??
+    payload?.data?.problemSet?.problems ??
+    payload?.problems ??
+    payload?.problemSet?.problems ??
+    [];
+
+  return problems.map((problem) => problem.problemId ?? problem.id);
 }

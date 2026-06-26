@@ -19,6 +19,7 @@ import {
   getProblemChatMessages,
   getProblemChatRooms,
   getProblemHints,
+  getProblemRecommendedCourses,
   getProblemSetDetail,
   getProblemSetResult,
   runProblem,
@@ -32,6 +33,7 @@ import type {
   ExecutionResult,
   ProblemHint,
   ProblemResultTab,
+  RecommendedCourse,
   ProblemSetDetail,
   ProblemSetResult,
   ProblemChatRoom,
@@ -194,6 +196,9 @@ export default function UserProblemDetailClient({
     initialState.solutionEnabled,
   );
   const [hints, setHints] = useState<ProblemHint[][]>(initialState.hints);
+  const [recommendedCourses, setRecommendedCourses] = useState<
+    Record<number, RecommendedCourse[]>
+  >({});
   const [activeTab, setActiveTab] = useState<ProblemResultTab>("result");
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
   const [submissionResults, setSubmissionResults] = useState<
@@ -210,6 +215,8 @@ export default function UserProblemDetailClient({
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [emptySubmitModalOpen, setEmptySubmitModalOpen] = useState(false);
+  const [pendingRecommendedCourseId, setPendingRecommendedCourseId] =
+    useState<number | null>(null);
   const [alertModal, setAlertModal] = useState({ open: false, title: "", content: "" });
   const [chatOpen, setChatOpen] = useState(false);
   const [hasOpenedChatPanel, setHasOpenedChatPanel] = useState(false);
@@ -410,6 +417,42 @@ export default function UserProblemDetailClient({
       isMounted = false;
     };
   }, [initialUserId, problemSetId, router, userId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecommendedCourses = async () => {
+      if (!currentProblem?.problemId || recommendedCourses[currentProblem.problemId]) {
+        return;
+      }
+
+      try {
+        const courses = await getProblemRecommendedCourses(currentProblem.problemId);
+
+        if (isMounted) {
+          setRecommendedCourses((prev) => ({
+            ...prev,
+            [currentProblem.problemId]: courses,
+          }));
+        }
+      } catch (error) {
+        console.error("추천 강좌 조회 실패:", error);
+
+        if (isMounted) {
+          setRecommendedCourses((prev) => ({
+            ...prev,
+            [currentProblem.problemId]: [],
+          }));
+        }
+      }
+    };
+
+    void loadRecommendedCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentProblem?.problemId, recommendedCourses]);
 
   useEffect(() => {
     let isMounted = true;
@@ -688,6 +731,20 @@ export default function UserProblemDetailClient({
     }
   };
 
+  const handleRecommendedCourseSelect = (courseId: number) => {
+    setPendingRecommendedCourseId(courseId);
+  };
+
+  const handleRecommendedCourseMove = () => {
+    if (pendingRecommendedCourseId === null) {
+      return;
+    }
+
+    const targetCourseId = pendingRecommendedCourseId;
+    setPendingRecommendedCourseId(null);
+    router.push(`/courses/${targetCourseId}`);
+  };
+
   const startChatRoomTitleEdit = () => {
     setChatRoomTitleInput(chatRoomTitle ?? "");
     setChatRoomTitleEditing(true);
@@ -866,8 +923,14 @@ export default function UserProblemDetailClient({
               isCurrentProblemCorrect={isCurrentProblemCorrect}
               isSubmitting={isSubmitting}
               onCodeChange={handleCodeChange}
+              onRecommendedCourseSelect={handleRecommendedCourseSelect}
               onSubmit={handleSubmit}
               onTabChange={setActiveTab}
+              recommendedCourses={
+                currentProblem?.problemId
+                  ? (recommendedCourses[currentProblem.problemId] ?? [])
+                  : []
+              }
               showHintToast={showHintToast}
               solutionEnabled={solutionEnabled[currentIndex]}
               submissionResult={submissionResult}
@@ -913,7 +976,10 @@ export default function UserProblemDetailClient({
           }
         }}
         onEmptySubmitClose={() => setEmptySubmitModalOpen(false)}
+        onRecommendedCourseCancel={() => setPendingRecommendedCourseId(null)}
+        onRecommendedCourseConfirm={handleRecommendedCourseMove}
         onSuccessClose={() => setSuccessModalOpen(false)}
+        recommendedCourseModalOpen={pendingRecommendedCourseId !== null}
         successModalOpen={successModalOpen}
         warningModalOpen={warningModalOpen}
       />

@@ -26,12 +26,22 @@ export const problemDetailClasses = {
     "min-h-[220px] w-full resize-y rounded-base border border-border-light p-3 font-mono text-body text-text-primary",
   hintToast:
     "absolute left-1/2 top-[42px] z-10 -translate-x-1/2 whitespace-nowrap rounded-base bg-button-blue-bg px-[18px] py-3 text-body font-semibold text-text-white",
-  tabs: "mt-3 mb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [&_button]:min-w-24 [&_button]:shrink-0 [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-3.5 [&_button]:py-[9px] [&_button]:text-[15px] [&_button]:text-text-primary [&_button:disabled]:cursor-not-allowed [&_button:disabled]:bg-bg-navbar [&_button:disabled]:text-[#9ca3af]",
+  tabs: "mt-3 mb-2 grid min-w-0 grid-cols-4 gap-2 [&_button]:min-w-0 [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-2.5 [&_button]:py-[9px] [&_button]:text-[15px] [&_button]:text-text-primary [&_button:disabled]:cursor-not-allowed [&_button:disabled]:bg-bg-navbar [&_button:disabled]:text-[#9ca3af] max-[560px]:gap-1.5 max-[560px]:[&_button]:px-1.5 max-[560px]:[&_button]:text-description",
   activeTab: "bg-bg-navbar! text-text-blue!",
   bottomPanel:
     "h-[180px] w-full max-w-full overflow-y-auto rounded-base border border-border-light p-3 text-body text-text-primary",
   executionOutput: "m-0 whitespace-pre-wrap break-words font-mono",
   executionError: "m-0 whitespace-pre-wrap break-words font-mono text-text-red",
+  emptyRecommendedCourse: "m-0 text-body text-text-secondary",
+  recommendedCourseWrap: "flex h-full flex-col gap-3",
+  recommendedCourseCard:
+    "flex min-h-[112px] min-w-0 w-full cursor-pointer gap-3 overflow-hidden rounded-base border border-border-light bg-bg-box p-3 text-left [font:inherit] no-underline transition hover:bg-bg-navbar",
+  recommendedCourseThumb:
+    "h-[88px] w-[132px] shrink-0 rounded-base bg-bg-navbar bg-cover bg-center",
+  recommendedCourseText:
+    "flex min-w-0 flex-1 flex-col gap-1 overflow-hidden [&_strong]:truncate [&_strong]:text-body [&_strong]:text-text-primary [&_span]:line-clamp-2 [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:break-words [&_span]:text-description [&_span]:text-text-secondary",
+  recommendedCourseControls:
+    "flex items-center justify-end gap-2 text-description text-text-secondary [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-2.5 [&_button]:py-1.5 [&_button]:text-description [&_button]:text-text-primary [&_button:hover]:bg-bg-navbar",
   submitWrap: "mt-3 flex min-w-0 justify-end overflow-visible",
   submitButton:
     "h-11 min-w-[120px] shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-4 text-body font-semibold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",

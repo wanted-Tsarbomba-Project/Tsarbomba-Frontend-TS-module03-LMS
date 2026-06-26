@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -14,14 +14,18 @@ import { handleClientError } from "@/lib/errorHandling";
 import {
   createProblemUpdateRequestBody,
   deleteProblem,
+  getEditableProblemRecommendedCourses,
+  getSelectableRecommendedCourses,
   INITIAL_SUB_PROBLEM,
   updateProblem,
+  updateProblemsRecommendedCourses,
 } from "../actions";
 import type {
   NormalizedProblemDetail,
   ProblemCategory,
   ProblemDatasetFile,
   ProblemInfo,
+  SelectableRecommendedCourse,
   SubProblem,
 } from "../types";
 import RegisterForm from "./RegisterForm";
@@ -72,6 +76,9 @@ export default function ProblemEditClient({
   const [file, setFile] = useState<ProblemDatasetFile | null>(
     initialDetail.file,
   );
+  const [selectableCourses, setSelectableCourses] = useState<
+    SelectableRecommendedCourse[]
+  >([]);
   const datasetId = initialDetail.datasetId;
   const categories = initialCategories;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,6 +93,63 @@ export default function ProblemEditClient({
     title: "",
     content: "",
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecommendedCourses = async () => {
+      try {
+        const [selectable, ...editableResults] = await Promise.all([
+          getSelectableRecommendedCourses(),
+          ...initialDetail.problems
+            .filter((problem) => typeof problem.problemId === "number")
+            .map((problem) =>
+              getEditableProblemRecommendedCourses(problem.problemId as number),
+            ),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSelectableCourses(
+          mergeSelectableCourses(
+            selectable,
+            editableResults.flatMap((result) => result?.courses ?? []),
+          ),
+        );
+
+        setProblems((prev) =>
+          prev.map((problem) => {
+            const editableResult = editableResults.find(
+              (result) => result?.problemId === problem.problemId,
+            );
+
+            if (!editableResult) {
+              return problem;
+            }
+
+            return {
+              ...problem,
+              recommendedCourseIds:
+                editableResult.selectedCourseIds ??
+                editableResult.courses
+                  .filter((course) => course.selected)
+                  .map((course) => course.courseId),
+            };
+          }),
+        );
+      } catch (error) {
+        console.error("추천 강좌 연결 정보 조회 실패:", error);
+      }
+    };
+
+    void loadRecommendedCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialDetail.problems]);
 
   const handleProblemInfoChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -172,6 +236,36 @@ export default function ProblemEditClient({
         };
       }),
     );
+  };
+
+  const handleRecommendedCourseChange = (
+    problemIndex: number,
+    courseIds: number[],
+  ) => {
+    setProblems((prev) =>
+      prev.map((problem, currentIndex) => {
+        if (currentIndex !== problemIndex) {
+          return problem;
+        }
+
+        return {
+          ...problem,
+          recommendedCourseIds: getOrderedSelectedCourseIds(
+            problem.recommendedCourseIds ?? [],
+            courseIds,
+          ),
+        };
+      }),
+    );
+  };
+
+  const handleRecommendedCourseSearch = async (keyword: string) => {
+    try {
+      const courses = await getSelectableRecommendedCourses(keyword);
+      setSelectableCourses((prev) => mergeSelectableCourses(prev, courses));
+    } catch (error) {
+      console.error("추천 강좌 검색 실패:", error);
+    }
   };
 
   const handleAddProblem = () => {
@@ -304,6 +398,7 @@ export default function ProblemEditClient({
       );
 
       await updateProblem(problemSetId, requestBody, file);
+      await updateProblemsRecommendedCourses(problems, true);
 
       setOpenConfirmModal(false);
       setOpenSuccessModal(true);
@@ -368,12 +463,15 @@ export default function ProblemEditClient({
         onFileChange={setFile}
         onProblemChange={handleProblemChange}
         onProblemInfoChange={handleProblemInfoChange}
+        onRecommendedCourseChange={handleRecommendedCourseChange}
+        onRecommendedCourseSearch={handleRecommendedCourseSearch}
         onRemoveFile={() => setFile(null)}
         onRemoveProblem={handleRemoveProblem}
         onRemoveTestCase={handleRemoveTestCase}
         onTestCaseChange={handleTestCaseChange}
         problemInfo={problemInfo}
         problems={problems}
+        selectableCourses={selectableCourses}
       />
 
       <div className={problemFormPageClasses.bottomButtonGroup}>
@@ -460,4 +558,31 @@ export default function ProblemEditClient({
       />
     </main>
   );
+}
+
+function mergeSelectableCourses(
+  prev: SelectableRecommendedCourse[],
+  next: SelectableRecommendedCourse[],
+) {
+  const courseMap = new Map<number, SelectableRecommendedCourse>();
+
+  [...prev, ...next].forEach((course) => {
+    const existingCourse = courseMap.get(course.courseId);
+
+    courseMap.set(course.courseId, {
+      ...existingCourse,
+      ...course,
+      categoryId: course.categoryId ?? existingCourse?.categoryId,
+      categoryName: course.categoryName ?? existingCourse?.categoryName,
+    });
+  });
+
+  return Array.from(courseMap.values());
+}
+
+function getOrderedSelectedCourseIds(prevIds: number[], nextIds: number[]) {
+  return [
+    ...prevIds.filter((courseId) => nextIds.includes(courseId)),
+    ...nextIds.filter((courseId) => !prevIds.includes(courseId)),
+  ];
 }
