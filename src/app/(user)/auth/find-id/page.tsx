@@ -28,11 +28,14 @@ export default function FindIdPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!name || !phone) {
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName || !trimmedPhone) {
       setErrorMsg("이름과 전화번호를 모두 입력해주세요.");
       return;
     }
-    if (!PHONE_REGEX.test(phone)) {
+    if (!PHONE_REGEX.test(trimmedPhone)) {
       setErrorMsg("전화번호 형식을 확인해주세요. (예: 010-1234-5678)");
       return;
     }
@@ -40,7 +43,7 @@ export default function FindIdPage() {
 
     setLoading(true);
     try {
-      const email = await findEmail(name.trim(), phone.trim());
+      const email = await findEmail(trimmedName, trimmedPhone);
       setResultEmail(email);
     } catch (err) {
       setErrorMsg(

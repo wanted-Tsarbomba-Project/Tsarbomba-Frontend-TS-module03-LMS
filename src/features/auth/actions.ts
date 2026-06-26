@@ -170,9 +170,9 @@ export const findEmail = async (
     );
   }
 
-  const json = (await response.json()) as AuthResponse<
+  const json = (await response.json().catch(() => null)) as AuthResponse<
     { email?: string; maskedEmail?: string } | string
-  >;
+  > | null;
   const data = json?.data;
   const email =
     typeof data === "string" ? data : (data?.email ?? data?.maskedEmail);
