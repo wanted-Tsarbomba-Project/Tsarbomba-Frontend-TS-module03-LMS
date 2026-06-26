@@ -2,6 +2,7 @@ import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 
 import type {
   CreateProblemRequest,
+  EditableRecommendedCoursesResponse,
   NormalizedProblemDetail,
   ProblemDatasetFile,
   ProblemCategoryId,
@@ -14,12 +15,14 @@ import type {
   ProblemInfo,
   ProblemChatRoom,
   ProblemDatasetDownloadUrl,
+  ProblemRecommendedCoursesResponse,
   ProblemSetDetail,
   ProblemSetRecommendationHideResponse,
   ProblemSetRecommendationResponse,
   ProblemSetDetailProblem,
   ProblemSetResult,
   ProblemSetSummary,
+  SelectableRecommendedCoursesResponse,
   ProblemStatus,
   RawProblemDetail,
   SubmissionResult,
@@ -27,11 +30,7 @@ import type {
   UpdateProblemRequest,
 } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not defined");
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export const DIFFICULTY_MAP = {
   EASY: "쉬움",
@@ -59,6 +58,7 @@ export const INITIAL_SUB_PROBLEM: SubProblem = {
       timeoutMs: 3,
     },
   ],
+  recommendedCourseIds: [],
 };
 
 interface ApiResponse<T> {
@@ -101,6 +101,42 @@ export function createProblemRequestBody(
       })),
     })),
   };
+}
+
+export async function updateProblemRecommendedCourses(
+  problemId: number,
+  courseIds: number[],
+) {
+  return requestJson<unknown>(
+    `/api/v1/problems/${encodeURIComponent(
+      String(problemId),
+    )}/recommended-courses`,
+    "추천 강좌를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    {
+      method: "PUT",
+      body: JSON.stringify({ courseIds }),
+    },
+  );
+}
+
+export async function updateProblemsRecommendedCourses(
+  problems: SubProblem[],
+  includeEmpty = true,
+) {
+  const targets = problems.filter(
+    (problem) =>
+      typeof problem.problemId === "number" &&
+      (includeEmpty || (problem.recommendedCourseIds?.length ?? 0) > 0),
+  );
+
+  await Promise.all(
+    targets.map((problem) =>
+      updateProblemRecommendedCourses(
+        problem.problemId as number,
+        problem.recommendedCourseIds ?? [],
+      ),
+    ),
+  );
 }
 
 export async function createProblem(
@@ -313,6 +349,49 @@ export async function getProblemSetResult(
   return result.data ?? null;
 }
 
+export async function getProblemRecommendedCourses(
+  problemId: number,
+  init: NextRequestInit = {},
+) {
+  const result = await requestJson<ProblemRecommendedCoursesResponse>(
+    `/api/v1/problems/${encodeURIComponent(
+      String(problemId),
+    )}/recommended-courses`,
+    "추천 강좌를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    init,
+  );
+
+  return result.data?.courses ?? [];
+}
+
+export async function getEditableProblemRecommendedCourses(problemId: number) {
+  const result = await requestJson<EditableRecommendedCoursesResponse>(
+    `/api/v1/problems/${encodeURIComponent(
+      String(problemId),
+    )}/recommended-courses/edit`,
+    "추천 강좌 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  );
+
+  return result.data ?? null;
+}
+
+export async function getSelectableRecommendedCourses(keyword = "") {
+  const params = new URLSearchParams();
+
+  if (keyword.trim()) {
+    params.set("keyword", keyword.trim());
+  }
+
+  const result = await requestJson<SelectableRecommendedCoursesResponse>(
+    `/api/v1/recommended-courses/selectable${
+      params.toString() ? `?${params.toString()}` : ""
+    }`,
+    "선택 가능한 추천 강좌를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  );
+
+  return result.data?.courses ?? [];
+}
+
 export async function getProblemDatasetDownloadUrl(problemSetId: string) {
   const result = await requestJson<ProblemDatasetDownloadUrl>(
     `/api/v1/problem-sets/${encodeURIComponent(
@@ -453,7 +532,10 @@ export async function sendProblemChatMessage(
   return result.data;
 }
 
-export async function updateProblemChatRoomTitle(roomId: number, title: string) {
+export async function updateProblemChatRoomTitle(
+  roomId: number,
+  title: string,
+) {
   const result = await requestJson<ChatRoomTitleUpdate>(
     `/api/v1/chat/${roomId}`,
     "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
@@ -546,6 +628,7 @@ function normalizeProblemDetail(
             : INITIAL_SUB_PROBLEM.testCases.map((testCase) => ({
                 ...testCase,
               })),
+          recommendedCourseIds: [],
         }))
       : [
           {

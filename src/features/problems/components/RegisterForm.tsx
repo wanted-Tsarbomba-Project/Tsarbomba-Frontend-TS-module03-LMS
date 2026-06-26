@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from "react";
 import { useRef } from "react";
+import { MultiSelect } from "primereact/multiselect";
 
 import { DIFFICULTY_MAP } from "../actions";
 const registerFormClasses = {
@@ -30,12 +31,24 @@ const registerFormClasses = {
     "cursor-pointer rounded-base border border-border-light bg-bg-gray-box px-[18px] py-2.5 text-[15px] font-semibold text-text-primary hover:bg-bg-gray-box-hover",
   addSmallButton:
     "cursor-pointer rounded-base border border-button-blue-bg bg-bg-box px-3 py-2 text-description font-semibold text-text-blue hover:bg-button-blue-bg hover:text-text-white",
+  courseSelect:
+    "w-full rounded-base border border-border-light text-body text-text-primary [&_.p-multiselect-label]:p-3 [&_.p-multiselect-label]:text-body [&_.p-multiselect-trigger]:w-11",
+  selectedCourseList: "mt-3 flex flex-col gap-2",
+  selectedCourseItem:
+    "flex min-w-0 items-center gap-2 rounded-base border border-border-light bg-bg-navbar px-3 py-2 text-description text-text-primary",
+  selectedCourseNumber:
+    "flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-button-blue-bg text-[12px] font-semibold text-text-white",
+  selectedCourseText:
+    "min-w-0 flex-1 truncate",
+  selectedCourseRemoveButton:
+    "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border-light bg-bg-box p-0 text-[14px] font-semibold leading-none text-text-secondary hover:bg-button-red-bg hover:text-text-white [&_span]:block [&_span]:-translate-y-px [&_span]:leading-none",
 } as const;
 
 import type {
   ProblemCategory,
   ProblemDatasetFile,
   ProblemInfo,
+  SelectableRecommendedCourse,
   SubProblem,
 } from "../types";
 
@@ -54,6 +67,8 @@ interface RegisterFormProps {
   onProblemInfoChange: (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
+  onRecommendedCourseChange: (problemIndex: number, courseIds: number[]) => void;
+  onRecommendedCourseSearch: (keyword: string) => void;
   onRemoveFile: () => void;
   onRemoveProblem: (index: number) => void;
   onRemoveTestCase: (problemIndex: number, testCaseIndex: number) => void;
@@ -62,6 +77,11 @@ interface RegisterFormProps {
     testCaseIndex: number,
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
+  selectableCourses: SelectableRecommendedCourse[];
+}
+
+function getSelectableCourseLabel(course: SelectableRecommendedCourse) {
+  return `${course.categoryName ?? "카테고리 없음"} - ${course.title}`;
 }
 
 export default function RegisterForm({
@@ -74,12 +94,18 @@ export default function RegisterForm({
   onFileChange,
   onProblemChange,
   onProblemInfoChange,
+  onRecommendedCourseChange,
+  onRecommendedCourseSearch,
   onRemoveFile,
   onRemoveProblem,
   onRemoveTestCase,
   onTestCaseChange,
+  selectableCourses,
 }: RegisterFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectableCourseMap = new Map(
+    selectableCourses.map((course) => [course.courseId, course]),
+  );
 
   const handleRemoveFile = () => {
     if (fileInputRef.current) {
@@ -248,6 +274,76 @@ export default function RegisterForm({
               onChange={(event) => onProblemChange(index, event)}
               value={problem.solution}
             />
+          </div>
+
+          <div className={registerFormClasses.inputGroup}>
+            <label htmlFor={`recommendedCourses-${index}`}>추천 강좌</label>
+            <MultiSelect
+              appendTo={
+                typeof document === "undefined" ? undefined : document.body
+              }
+              className={registerFormClasses.courseSelect}
+              display="comma"
+              emptyFilterMessage="검색 결과가 없습니다."
+              emptyMessage="선택 가능한 강좌가 없습니다."
+              filter
+              id={`recommendedCourses-${index}`}
+              maxSelectedLabels={0}
+              onChange={(event) =>
+                onRecommendedCourseChange(index, event.value as number[])
+              }
+              onFilter={(event) => onRecommendedCourseSearch(event.filter)}
+              optionLabel="label"
+              optionValue="courseId"
+              options={selectableCourses.map((course) => ({
+                ...course,
+                label: getSelectableCourseLabel(course),
+              }))}
+              panelClassName="recommended-course-select-panel"
+              placeholder="추천 강좌 선택"
+              selectedItemsLabel="{0}개 강좌 선택"
+              value={problem.recommendedCourseIds ?? []}
+            />
+            {(problem.recommendedCourseIds?.length ?? 0) > 0 && (
+              <div className={registerFormClasses.selectedCourseList}>
+                {problem.recommendedCourseIds?.map((courseId, courseIndex) => {
+                  const course = selectableCourseMap.get(courseId);
+                  const label = course
+                    ? getSelectableCourseLabel(course)
+                    : `강좌 ID ${courseId}`;
+
+                  return (
+                    <div
+                      className={registerFormClasses.selectedCourseItem}
+                      key={courseId}
+                      title={label}
+                    >
+                      <span className={registerFormClasses.selectedCourseNumber}>
+                        {courseIndex + 1}
+                      </span>
+                      <span className={registerFormClasses.selectedCourseText}>
+                        {label}
+                      </span>
+                      <button
+                        aria-label={`${label} 추천 강좌 삭제`}
+                        className={registerFormClasses.selectedCourseRemoveButton}
+                        onClick={() =>
+                          onRecommendedCourseChange(
+                            index,
+                            (problem.recommendedCourseIds ?? []).filter(
+                              (selectedCourseId) => selectedCourseId !== courseId,
+                            ),
+                          )
+                        }
+                        type="button"
+                      >
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className={registerFormClasses.testCaseGroup}>

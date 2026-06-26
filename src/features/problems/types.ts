@@ -31,6 +31,7 @@ export interface SubProblem {
   hint: string;
   solution: string;
   testCases: ProblemTestCase[];
+  recommendedCourseIds?: number[];
 }
 
 export interface ExistingDatasetFile {
@@ -55,6 +56,37 @@ export interface CreateProblemRequest {
     explanation: string;
     testCases: ProblemTestCase[];
   }>;
+}
+
+export interface RecommendedCourse {
+  courseId: number;
+  title: string;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+}
+
+export interface SelectableRecommendedCourse extends RecommendedCourse {
+  categoryId?: number | null;
+  categoryName?: string | null;
+}
+
+export interface EditableRecommendedCourse extends SelectableRecommendedCourse {
+  selected?: boolean;
+  displayOrder?: number | null;
+}
+
+export interface ProblemRecommendedCoursesResponse {
+  courses: RecommendedCourse[];
+}
+
+export interface SelectableRecommendedCoursesResponse {
+  courses: SelectableRecommendedCourse[];
+}
+
+export interface EditableRecommendedCoursesResponse {
+  problemId: number;
+  selectedCourseIds: number[];
+  courses: EditableRecommendedCourse[];
 }
 
 export interface UpdateProblemRequest {
@@ -116,7 +148,7 @@ export interface NormalizedProblemDetail {
 
 export type ProblemStatus = "LOCKED" | "UNSOLVED" | "CORRECT" | "WRONG";
 
-export type ProblemResultTab = "result" | "hint" | "solution";
+export type ProblemResultTab = "result" | "hint" | "recommendedCourses" | "solution";
 
 export interface ProblemSetDetailProblem {
   problemId: number;

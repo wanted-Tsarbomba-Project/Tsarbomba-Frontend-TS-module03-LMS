@@ -76,7 +76,9 @@ function ProblemSolveSection({
       >
         <button
           aria-selected={activeTab === "result"}
-          className={activeTab === "result" ? problemDetailClasses.activeTab : ""}
+          className={
+            activeTab === "result" ? problemDetailClasses.activeTab : ""
+          }
           onClick={() => onTabChange("result")}
           role="tab"
           type="button"

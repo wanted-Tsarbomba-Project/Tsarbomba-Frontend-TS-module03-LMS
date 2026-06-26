@@ -22,7 +22,10 @@ interface ProblemDetailModalsProps {
   onChatRoomTitleConfirm: () => void;
   onChatRoomTitleConfirmClose: () => void;
   onEmptySubmitClose: () => void;
+  onRecommendedCourseCancel: () => void;
+  onRecommendedCourseConfirm: () => void;
   onSuccessClose: () => void;
+  recommendedCourseModalOpen: boolean;
   successModalOpen: boolean;
   warningModalOpen: boolean;
 }
@@ -39,7 +42,10 @@ export default function ProblemDetailModals({
   onChatRoomTitleConfirm,
   onChatRoomTitleConfirmClose,
   onEmptySubmitClose,
+  onRecommendedCourseCancel,
+  onRecommendedCourseConfirm,
   onSuccessClose,
+  recommendedCourseModalOpen,
   successModalOpen,
   warningModalOpen,
 }: ProblemDetailModalsProps) {
@@ -78,6 +84,13 @@ export default function ProblemDetailModals({
         modalTitle="정말 나가시겠습니까?"
         onClose={onBackCancel}
         onConfirm={onBackConfirm}
+      />
+      <WarningModal
+        isOpen={recommendedCourseModalOpen}
+        modalContent="작성한 내용은 저장되지 않습니다."
+        modalTitle="정말 나가시겠습니까?"
+        onClose={onRecommendedCourseCancel}
+        onConfirm={onRecommendedCourseConfirm}
       />
     </>
   );

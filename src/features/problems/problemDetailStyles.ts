@@ -32,6 +32,16 @@ export const problemDetailClasses = {
     "h-[180px] w-full max-w-full overflow-y-auto rounded-base border border-border-light p-3 text-body text-text-primary",
   executionOutput: "m-0 whitespace-pre-wrap break-words font-mono",
   executionError: "m-0 whitespace-pre-wrap break-words font-mono text-text-red",
+  emptyRecommendedCourse: "m-0 text-body text-text-secondary",
+  recommendedCourseWrap: "flex h-full flex-col gap-3",
+  recommendedCourseCard:
+    "flex min-h-[112px] min-w-0 w-full cursor-pointer gap-3 overflow-hidden rounded-base border border-border-light bg-bg-box p-3 text-left [font:inherit] no-underline transition hover:bg-bg-navbar",
+  recommendedCourseThumb:
+    "h-[88px] w-[132px] shrink-0 rounded-base bg-bg-navbar bg-cover bg-center",
+  recommendedCourseText:
+    "flex min-w-0 flex-1 flex-col gap-1 overflow-hidden [&_strong]:truncate [&_strong]:text-body [&_strong]:text-text-primary [&_span]:line-clamp-2 [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:break-words [&_span]:text-description [&_span]:text-text-secondary",
+  recommendedCourseControls:
+    "flex items-center justify-end gap-2 text-description text-text-secondary [&_button]:cursor-pointer [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-2.5 [&_button]:py-1.5 [&_button]:text-description [&_button]:text-text-primary [&_button:hover]:bg-bg-navbar",
   submitWrap: "mt-3 flex min-w-0 justify-end overflow-visible",
   submitButton:
     "h-11 min-w-[120px] shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-4 text-body font-semibold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
