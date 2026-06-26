@@ -83,6 +83,31 @@ select {
   font-family: inherit;
 }
 
+.p-skeleton {
+  background: var(--color-bg-navbar);
+  border-radius: var(--radius-base);
+}
+
+.p-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+}
+
+.recommended-course-select-panel .p-multiselect-filter-container {
+  display: flex;
+  align-items: center;
+}
+
+.recommended-course-select-panel .p-multiselect-filter-icon {
+  top: 50%;
+  margin-top: 0;
+  transform: translateY(-50%);
+}
+
 /* ── Auth 폼 공통 클래스 ── */
 @layer components {
   /* 입력 라벨 */

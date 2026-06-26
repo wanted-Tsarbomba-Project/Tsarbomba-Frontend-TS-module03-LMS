@@ -1,10 +1,13 @@
 "use client";
 
 // CSR - 문제풀이 결과 패널: 실행/제출 결과와 힌트/해설 탭이 풀이 상태에 따라 즉시 전환됨
+import { useState } from "react";
+
 import type {
   ExecutionResult,
   ProblemHint,
   ProblemResultTab,
+  RecommendedCourse,
   SubmissionResult,
 } from "../types";
 import { problemDetailClasses } from "../problemDetailStyles";
@@ -14,6 +17,8 @@ interface ProblemResultPanelProps {
   currentHints: ProblemHint[];
   currentProblemExplanation?: string;
   executionResult: ExecutionResult | null;
+  onRecommendedCourseSelect?: (courseId: number) => void;
+  recommendedCourses?: RecommendedCourse[];
   submissionResult: SubmissionResult | null;
 }
 
@@ -22,6 +27,8 @@ export default function ProblemResultPanel({
   currentHints,
   currentProblemExplanation,
   executionResult,
+  onRecommendedCourseSelect,
+  recommendedCourses = [],
   submissionResult,
 }: ProblemResultPanelProps) {
   if (activeTab === "hint") {
@@ -46,6 +53,17 @@ export default function ProblemResultPanel({
     );
   }
 
+  if (activeTab === "recommendedCourses") {
+    return (
+      <div className={problemDetailClasses.bottomPanel}>
+        <RecommendedCourseView
+          courses={recommendedCourses}
+          onRecommendedCourseSelect={onRecommendedCourseSelect}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={problemDetailClasses.bottomPanel}>
       {submissionResult ? (
@@ -54,6 +72,71 @@ export default function ProblemResultPanel({
         <ExecutionResultView executionResult={executionResult} />
       ) : (
         ""
+      )}
+    </div>
+  );
+}
+
+function RecommendedCourseView({
+  courses,
+  onRecommendedCourseSelect,
+}: {
+  courses: RecommendedCourse[];
+  onRecommendedCourseSelect?: (courseId: number) => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const safeActiveIndex = courses.length ? activeIndex % courses.length : 0;
+  const activeCourse = courses.length ? courses[safeActiveIndex] : null;
+
+  if (!activeCourse) {
+    return <p className={problemDetailClasses.emptyRecommendedCourse}>추천 강좌가 없습니다.</p>;
+  }
+
+  return (
+    <div className={problemDetailClasses.recommendedCourseWrap}>
+      <button
+        className={problemDetailClasses.recommendedCourseCard}
+        onClick={() => onRecommendedCourseSelect?.(activeCourse.courseId)}
+        title={`${activeCourse.title}${
+          activeCourse.description ? `\n${activeCourse.description}` : ""
+        }`}
+        type="button"
+      >
+        <div
+          aria-hidden="true"
+          className={problemDetailClasses.recommendedCourseThumb}
+          style={
+            activeCourse.thumbnailUrl
+              ? { backgroundImage: `url(${activeCourse.thumbnailUrl})` }
+              : undefined
+          }
+        />
+        <div className={problemDetailClasses.recommendedCourseText}>
+          <strong>{activeCourse.title}</strong>
+          {activeCourse.description && <span>{activeCourse.description}</span>}
+        </div>
+      </button>
+
+      {courses.length > 1 && (
+        <div className={problemDetailClasses.recommendedCourseControls}>
+          <button
+            onClick={() =>
+              setActiveIndex((prev) => (prev - 1 + courses.length) % courses.length)
+            }
+            type="button"
+          >
+            이전
+          </button>
+          <span>
+            {safeActiveIndex + 1} / {courses.length}
+          </span>
+          <button
+            onClick={() => setActiveIndex((prev) => (prev + 1) % courses.length)}
+            type="button"
+          >
+            다음
+          </button>
+        </div>
       )}
     </div>
   );
@@ -78,7 +161,7 @@ function SubmissionResultView({
         </p>
       )}
       {submissionResult.submittedAt && (
-        <p>제출 시간: {submissionResult.submittedAt}</p>
+        <p>제출 시간: {formatSubmittedAt(submissionResult.submittedAt)}</p>
       )}
       {submissionResult.executionStatus && (
         <p>실행 상태: {submissionResult.executionStatus}</p>
@@ -91,6 +174,24 @@ function SubmissionResultView({
       )}
     </>
   );
+}
+
+function formatSubmittedAt(value: string) {
+  const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 function ExecutionResultView({

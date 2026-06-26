@@ -120,42 +120,79 @@ export function VideoLectureCard({
           />
         </div>
 
-        {/* 파일 첨부 */}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-900 transition-colors"
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 13 13"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* 파일 첨부 (여러 개 가능) */}
+        <div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-blue transition-colors cursor-pointer"
             >
-              <path d="M6.5 1v8M4 3.5L6.5 1 9 3.5" />
-              <path d="M2 10v1a1 1 0 001 1h7a1 1 0 001-1v-1" />
-            </svg>
-            {item.file ? (
-              <span className="max-w-48 truncate text-blue-900">
-                {item.file.name}
-              </span>
-            ) : (
-              "파일 첨부"
-            )}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            className="hidden"
-            onChange={(e) =>
-              onUpdate(item.id, "file", e.target.files?.[0] ?? null)
-            }
-          />
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 13 13"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6.5 1v8M4 3.5L6.5 1 9 3.5" />
+                <path d="M2 10v1a1 1 0 001 1h7a1 1 0 001-1v-1" />
+              </svg>
+              파일 첨부
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                if (picked.length === 0) return;
+                onUpdate(item.id, "files", [...item.files, ...picked]);
+                e.target.value = ""; // 같은 파일 재선택 허용
+              }}
+            />
+          </div>
+
+          {item.files.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-1">
+              {item.files.map((f, idx) => (
+                <li
+                  key={`${f.name}-${idx}`}
+                  className="flex items-center gap-2 text-sm text-text-blue"
+                >
+                  <span className="truncate flex-1">{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdate(
+                        item.id,
+                        "files",
+                        item.files.filter((_, i) => i !== idx),
+                      )
+                    }
+                    className="text-text-placeholder hover:text-text-red transition-colors shrink-0"
+                    aria-label="첨부 삭제"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    >
+                      <path d="M10.5 3.5l-7 7M3.5 3.5l7 7" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

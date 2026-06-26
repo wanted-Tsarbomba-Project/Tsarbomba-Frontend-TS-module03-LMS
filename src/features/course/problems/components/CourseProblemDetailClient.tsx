@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
 import { OneButtonModal, WarningModal } from "@/components/common";
-import { handleClientError } from "@/lib/errorHandling";
+import { ApiClientError, handleClientError } from "@/lib/errorHandling";
 
 // 강좌 전용: 입장/제출
 import { submitLectureProblem } from "../actions";
@@ -78,10 +78,7 @@ function getInitialProblemIndex(problemSet: ProblemSetDetail) {
   );
 }
 
-function getInitialProblemState(
-  problemSet: ProblemSetDetail,
-  lpsId: string,
-) {
+function getInitialProblemState(problemSet: ProblemSetDetail, lpsId: string) {
   const initialIndex = getInitialProblemIndex(problemSet);
   const drafts = loadDrafts(lpsId);
 
@@ -361,6 +358,15 @@ export default function CourseProblemDetailClient({
         window.setTimeout(() => setShowHintToast(false), 2000);
       }
     } catch (error) {
+      // 이미 완료한 문제세트 재제출(LRN-009) — 에러가 아니라 완료로 보고 다음 강의로 안내
+      // BE 오류 계약(ApiClientError)일 때만 처리해 임의 Error 로 실제 실패가 숨겨지지 않게 함
+      if (
+        error instanceof ApiClientError &&
+        (error.code === "LRN-009" || /already completed/i.test(error.message))
+      ) {
+        setLectureCompleteModalOpen(true);
+        return;
+      }
       handleClientError(error, {
         router,
         fallbackTitle: "답안 제출 실패",
@@ -541,7 +547,7 @@ export default function CourseProblemDetailClient({
       <OneButtonModal
         isOpen={lectureCompleteModalOpen}
         modalContent="모든 문제를 풀었습니다! 다음 강의로 이동합니다."
-        modalTitle="🎉 강의 완료"
+        modalTitle="강의 완료"
         onClose={() => {
           setLectureCompleteModalOpen(false);
           router.push(nextLecturePath);

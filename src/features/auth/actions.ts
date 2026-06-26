@@ -153,20 +153,31 @@ export const verifyCode = async (
   return response.json();
 };
 
-/* 아이디(이메일) 찾기 — 백엔드 개발 전, 목업 응답 */
-export const findId = async (
-  _name: string,
-  _phone: string,
-): Promise<AuthResponse & { email?: string; userEmail?: string }> => {
-  return {
-    status: "OK",
-    success: true,
-    statusCode: 200,
-    message: "이메일 찾기 성공",
-    data: "codebomba***@naver.com",
-    email: "codebomba***@naver.com",
-    userEmail: "codebomba***@naver.com",
-  };
+/* 이메일(아이디) 찾기 — POST /api/v1/users/find-email (이름+전화번호 → 마스킹 이메일) */
+export const findEmail = async (
+  name: string,
+  phone: string,
+): Promise<string> => {
+  const response = await fetch(`${BASE_URL}/api/v1/users/find-email`, {
+    method: "POST",
+    headers: HEADERS,
+    body: JSON.stringify({ name, phone }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "일치하는 회원 정보를 찾을 수 없습니다."),
+    );
+  }
+
+  const json = (await response.json().catch(() => null)) as AuthResponse<
+    { email?: string; maskedEmail?: string } | string
+  > | null;
+  const data = json?.data;
+  const email =
+    typeof data === "string" ? data : (data?.email ?? data?.maskedEmail);
+  if (!email) throw new Error("이메일 정보를 받지 못했습니다.");
+  return email;
 };
 
 /* 비밀번호 재설정 - 코드 이메일 발송 — POST /api/v1/auth/password/forgot */
@@ -223,6 +234,47 @@ export const resetPassword = async (
   if (!response.ok) {
     throw new Error(
       await handleBadResponse(response, "비밀번호 변경에 실패했습니다."),
+    );
+  }
+
+  return response.json().catch(() => null);
+};
+
+/* 추가 인증(step-up) 코드 검증 — POST /api/v1/auth/step-up/verify*/
+export const verifyStepUp = async (
+  code: string,
+  trustDevice: boolean = false,
+): Promise<AuthResponse> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/step-up/verify`, {
+    method: "POST",
+    headers: HEADERS,
+    credentials: "include",
+    body: JSON.stringify({ code, trustDevice }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(
+        response,
+        "인증번호가 일치하지 않거나 만료되었습니다.",
+      ),
+    );
+  }
+
+  return response.json();
+};
+
+/* 추가 인증(step-up) 코드 재발송 — POST /api/v1/auth/step-up/resend */
+export const resendStepUp = async (): Promise<AuthResponse | null> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/step-up/resend`, {
+    method: "POST",
+    headers: HEADERS,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "인증번호 재발송에 실패했습니다."),
     );
   }
 

@@ -165,6 +165,7 @@ export default function CourseDetailClient({
       setResultModal({
         title: "로그인 필요",
         content: "수강 신청은 로그인 후 이용할 수 있습니다.",
+        redirect: "/auth/login",
       });
       return;
     }

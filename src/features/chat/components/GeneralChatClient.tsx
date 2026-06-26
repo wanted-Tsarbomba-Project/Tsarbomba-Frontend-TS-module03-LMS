@@ -81,7 +81,11 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const [titleInputValue, setTitleInputValue] = useState("");
   const [linkedProblemState, setLinkedProblemState] =
     useState<LinkedProblem | null>(null);
-  const [modal, setModal] = useState({ open: false, title: "", content: "" });
+  const [modal, setModal] = useState({
+    open: false,
+    title: "",
+    content: "",
+  });
 
   const activeRoomId = roomId;
   const linkedProblem = activeRoomId ? linkedProblemState : null;

@@ -102,9 +102,15 @@ export default function YoutubeProgressPlayer({
   const playingRef = useRef(false);
   const lastTickAtRef = useRef<number | null>(null);
   const tickTimerRef = useRef<number | null>(null);
+  const autoSaveTimerRef = useRef<number | null>(null);
   const existingWatchedSecRef = useRef(0);
   const completedRef = useRef(false);
   const lastSafePosRef = useRef(0);
+  // 저장 직렬화 — 자동저장/일시정지/종료 저장이 겹쳐 delta 중복·위치 역전되는 것 방지
+  const savingRef = useRef(false);
+
+  // 재생 중 주기 저장 간격 — ENDED 이벤트가 누락돼도 진도가 누적되도록
+  const AUTO_SAVE_INTERVAL_MS = 10_000;
 
   // 콜백 ref 갱신은 effect 안에서 — render 도중 ref.current 변형 금지 룰 준수.
   const onProgressSavedRef = useRef(onProgressSaved);
@@ -115,6 +121,13 @@ export default function YoutubeProgressPlayer({
   useEffect(() => {
     const videoId = getYoutubeVideoId(videoUrl);
     if (!videoId) return;
+
+    // 강의 전환 시 이전 강의의 진도 값이 남지 않도록 초기화 (init 실패해도 안전)
+    existingWatchedSecRef.current = 0;
+    completedRef.current = false;
+    lastSafePosRef.current = 0;
+    watchedDeltaRef.current = 0;
+    savingRef.current = false;
 
     let mounted = true;
     let initialLastPosition = 0;
@@ -158,22 +171,73 @@ export default function YoutubeProgressPlayer({
       lastTickAtRef.current = null;
     };
 
-    const saveProgress = async () => {
-      const player = playerRef.current;
-      const rawDelta = watchedDeltaRef.current;
-      if (!player || rawDelta <= 0) return;
+    const startAutoSaveTimer = () => {
+      if (autoSaveTimerRef.current !== null) return;
+      autoSaveTimerRef.current = window.setInterval(() => {
+        void saveProgress();
+      }, AUTO_SAVE_INTERVAL_MS);
+    };
 
-      const lastPositionSec = Math.floor(player.getCurrentTime());
+    const stopAutoSaveTimer = () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearInterval(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+
+    // ended=true: 영상 끝까지 본 경우 재생바를 끝으로 두고 누적을 durationSec 까지 채워 BE 100% 완료 판단 유도
+    const saveProgress = async (ended = false) => {
+      const player = playerRef.current;
+      if (!player) return;
+      // 직렬화 — 진행 중 저장이 있으면 자동저장은 건너뛰고, 종료 저장은 끝난 뒤 한 번 더 실행
+      if (savingRef.current) {
+        if (ended) {
+          window.setTimeout(() => void saveProgress(true), 300);
+        }
+        return;
+      }
+      savingRef.current = true;
+      try {
+        await runSaveProgress(ended);
+      } finally {
+        savingRef.current = false;
+      }
+    };
+
+    const runSaveProgress = async (ended: boolean) => {
+      const player = playerRef.current;
+      if (!player) return;
+
       const durationSec = Math.floor(player.getDuration());
+      const rawDelta = watchedDeltaRef.current;
+
+      // BE 실제 누적을 다시 읽어 남은 만큼만 전송 — FE 추적값이 낮으면 과다 전송돼 LRN-010 거부됨
+      if (ended && durationSec > 0) {
+        try {
+          const fresh = await getLectureProgress(lectureId);
+          existingWatchedSecRef.current = fresh?.watchedSec ?? 0;
+          completedRef.current = !!fresh?.completed;
+        } catch {
+          /* 조회 실패해도 아래 로직으로 진행 */
+        }
+      }
 
       const remaining =
         durationSec > 0
           ? Math.max(0, durationSec - existingWatchedSecRef.current)
           : rawDelta;
-      const watchedDeltaSec = Math.min(rawDelta, remaining);
+      const watchedDeltaSec = ended
+        ? remaining
+        : Math.min(rawDelta, remaining);
+      const lastPositionSec =
+        ended && durationSec > 0
+          ? durationSec
+          : Math.floor(player.getCurrentTime());
 
       if (watchedDeltaSec <= 0) {
         watchedDeltaRef.current = 0;
+        // 종료인데 이미 100% 채워진 상태면 갱신만 트리거 (완료 모달 노출용)
+        if (ended) onProgressSavedRef.current?.();
         return;
       }
 
@@ -234,14 +298,20 @@ export default function YoutubeProgressPlayer({
             if (event.data === window.YT?.PlayerState.PLAYING) {
               playingRef.current = true;
               startWatchTimer();
+              startAutoSaveTimer();
               return;
             }
-            if (
-              event.data === window.YT?.PlayerState.PAUSED ||
-              event.data === window.YT?.PlayerState.ENDED
-            ) {
+            if (event.data === window.YT?.PlayerState.ENDED) {
               playingRef.current = false;
               stopWatchTimer();
+              stopAutoSaveTimer();
+              void saveProgress(true); // 끝까지 봄 → 100% 강제 마감
+              return;
+            }
+            if (event.data === window.YT?.PlayerState.PAUSED) {
+              playingRef.current = false;
+              stopWatchTimer();
+              stopAutoSaveTimer();
               void saveProgress();
             }
           },
@@ -255,6 +325,7 @@ export default function YoutubeProgressPlayer({
       mounted = false;
       playingRef.current = false;
       stopWatchTimer();
+      stopAutoSaveTimer();
       void saveProgress();
       playerRef.current?.destroy();
       playerRef.current = null;

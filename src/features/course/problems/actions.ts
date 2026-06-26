@@ -6,11 +6,8 @@ import type {
   SubmissionResult,
 } from "@/features/problems/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not defined");
-}
+// 빈값이어도 상대경로(/api/...)로 호출되어 next.config rewrites 가 가로채도록 throw 대신 "" 폴백
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface ApiResponse<T> {
   data?: T;
@@ -108,6 +105,9 @@ interface LectureProblemProgress {
   currentProblemNumber?: number;
   currentProblemId?: number;
   solvedCount?: number;
+  // BE lecture_problem_progress.is_completed — 완료 권위 플래그 (네이밍 대비 둘 다 수용)
+  completed?: boolean;
+  isCompleted?: boolean;
   problems?: Array<{
     problemId?: number;
     problemNumber?: number;

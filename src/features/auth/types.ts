@@ -24,6 +24,8 @@ export interface LoginRequest {
 
 /** 로그인 응답 data */
 export interface LoginResponseData {
+  stepUpRequired?: boolean;
+  maskedEmail?: string;
   nickname?: string;
   role?: UserRole;
 }

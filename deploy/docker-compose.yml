@@ -1,12 +1,15 @@
 # ① 프론트 EC2 스택 — Next.js
 # NEXT_PUBLIC_API_URL은 이미지에 "빌드 시점"에 구워짐(workflow build-arg) → 런타임 .env 불필요.
 # ECR_REGISTRY는 GitHub Actions ssh 스텝에서 export로 주입한다.
+
 services:
   frontend:
     image: ${ECR_REGISTRY}/codebomb-frontend:latest
     container_name: lms-frontend
     ports:
-      - "3000:3000"                # SG: 지금은 내 IP, 운영 시 사용자 공개(0.0.0.0/0 또는 리버스프록시)
+      - "3000:3000"
+    environment:
+      - API_PROXY_TARGET=http://172.31.45.217:8080   # ← codebomb-spring 사설IP (SSR 전용, 브라우저는 상대경로 /api→ALB)
     restart: unless-stopped
     logging:
       driver: json-file
