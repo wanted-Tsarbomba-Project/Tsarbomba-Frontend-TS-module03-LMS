@@ -8,6 +8,7 @@ import {
   uploadCourseThumbnail,
 } from "@/features/course/actions";
 import { createLecture } from "@/features/course/lectureActions";
+import { uploadLectureMaterial } from "@/features/course/materialActions";
 import { configureCourseProblemSets } from "@/features/course/problemSetActions";
 import { isValidYoutubeUrl } from "@/features/course/youtube";
 import type { ProblemSetConnection } from "@/features/course/types";
@@ -101,7 +102,7 @@ export default function CourseNewPage() {
         title: "",
         videoUrl: "",
         description: "",
-        file: null,
+        files: [],
       },
     ]);
   };
@@ -239,6 +240,13 @@ export default function CourseNewPage() {
           lectureType: isVideo ? "VIDEO" : "PROBLEM",
         });
         lectureIdMap[item.id] = lectureId;
+
+        // 영상 강의에 첨부파일이 있으면 생성된 lectureId 로 순차 업로드 (BE 가 1개씩 받음)
+        if (isVideo && v!.files.length > 0) {
+          for (const file of v!.files) {
+            await uploadLectureMaterial(lectureId, file);
+          }
+        }
       }
 
       const connections: ProblemSetConnection[] = [];

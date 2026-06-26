@@ -13,6 +13,7 @@ import {
   getCourseLectures,
   updateLecture,
 } from "@/features/course/lectureActions";
+import { uploadLectureMaterial } from "@/features/course/materialActions";
 import {
   configureCourseProblemSets,
   getCourseProblemSets,
@@ -139,7 +140,7 @@ export default function CourseEditPage() {
               title: l.title ?? "",
               videoUrl: l.videoUrl ?? "",
               description: l.description ?? "",
-              file: null,
+              files: [],
               lectureOrder: l.lectureOrder,
             } as VideoLecture;
           }),
@@ -195,7 +196,7 @@ export default function CourseEditPage() {
         title: "",
         videoUrl: "",
         description: "",
-        file: null,
+        files: [],
         lectureOrder: prev.length + 1,
       } as VideoLecture,
     ]);
@@ -344,6 +345,13 @@ export default function CourseEditPage() {
           lectureIdMap[item.id] = item.lectureId;
         } else {
           lectureIdMap[item.id] = await createLecture(courseId, body);
+        }
+
+        // 새로 첨부한 파일들 순차 업로드 (기존 자료는 BE 가 보관, BE 가 1개씩 받음)
+        if (isVideo && v!.files.length > 0) {
+          for (const file of v!.files) {
+            await uploadLectureMaterial(lectureIdMap[item.id], file);
+          }
         }
       }
 

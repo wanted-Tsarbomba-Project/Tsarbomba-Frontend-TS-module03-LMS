@@ -9,6 +9,11 @@ import {
 } from "@/features/course/lectureActions";
 import { getCourseProblemSets } from "@/features/course/problemSetActions";
 import { getMyEnrollments } from "@/features/course/enrollmentActions";
+import {
+  getLectureMaterials,
+  issueMaterialDownloadUrl,
+  type LectureMaterial,
+} from "@/features/course/materialActions";
 import { getLectureProblemProgress } from "@/features/course/problems/actions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
@@ -49,6 +54,8 @@ export default function LectureDetailPage() {
   const [lecture, setLecture] = useState<LectureSummary | null>(null);
   const [lectures, setLectures] = useState<LectureSummary[]>([]);
   const [problemLinks, setProblemLinks] = useState<CourseProblemSetLink[]>([]);
+  const [materials, setMaterials] = useState<LectureMaterial[]>([]);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [panelOpen, setPanelOpen] = useState(true);
@@ -148,14 +155,17 @@ export default function LectureDetailPage() {
           return;
         }
 
-        const [lectureData, lectureList, links] = await Promise.all([
-          getLecture(lectureId),
-          getCourseLectures(courseId),
-          getCourseProblemSets(courseId).catch(() => []),
-        ]);
+        const [lectureData, lectureList, links, materialList] =
+          await Promise.all([
+            getLecture(lectureId),
+            getCourseLectures(courseId),
+            getCourseProblemSets(courseId).catch(() => []),
+            getLectureMaterials(lectureId).catch(() => []),
+          ]);
         setLecture(lectureData);
         setLectures(lectureList);
         setProblemLinks(links);
+        setMaterials(materialList);
         const entries = await loadAllProgress(lectureList, links);
 
         const sortedList = [...lectureList].sort(
@@ -218,6 +228,26 @@ export default function LectureDetailPage() {
     const lpsId = link.lectureProblemSetId ?? link.courseProblemSetId;
     if (lpsId == null) return; // ID 없으면 /problems/undefined 라우팅 방지
     router.push(`/courses/${courseId}/problems/${lpsId}`);
+  };
+
+  // 자료 다운로드 — URL 발급(POST) 후 숨김 <a download> 클릭 (새 탭/흰 화면 없이 바로 다운로드)
+  const handleDownloadMaterial = async (m: LectureMaterial) => {
+    if (downloadingId !== null) return;
+    setDownloadingId(m.lectureMaterialId);
+    try {
+      const url = await issueMaterialDownloadUrl(m.lectureMaterialId);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = m.originalFileName;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {
+      /* 발급 실패 — 조용히 무시 (버튼 재시도 가능) */
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const handleListItemClick = (item: LectureSummary) => {
@@ -387,30 +417,52 @@ export default function LectureDetailPage() {
           )}
 
           {!isProblemLecture && (
-            <div className="mt-4 flex items-start justify-between gap-4">
-              <p className="flex-1 text-sm text-gray-500 leading-relaxed">
+            <div className="mt-4">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 {lecture.description}
               </p>
-              <button
-                type="button"
-                disabled
-                title="준비 중인 기능입니다"
-                className="shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-400 cursor-not-allowed"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M8 2v8m0 0l3-3m-3 3L5 7M3 12h10" />
-                </svg>
-                첨부 파일
-              </button>
+
+              {materials.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-text-primary mb-2">
+                    첨부 파일
+                  </p>
+                  <ul className="flex flex-col gap-2">
+                    {materials.map((m) => (
+                      <li key={m.lectureMaterialId}>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadMaterial(m)}
+                          disabled={downloadingId === m.lectureMaterialId}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-border-light rounded-lg text-text-primary hover:bg-bg-gray-box transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0"
+                          >
+                            <path d="M8 2v8m0 0l3-3m-3 3L5 7M3 12h10" />
+                          </svg>
+                          <span className="truncate flex-1 text-left">
+                            {m.originalFileName}
+                          </span>
+                          <span className="shrink-0 text-xs text-text-secondary">
+                            {downloadingId === m.lectureMaterialId
+                              ? "준비 중..."
+                              : "다운로드"}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
