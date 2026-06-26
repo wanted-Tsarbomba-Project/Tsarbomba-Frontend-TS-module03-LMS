@@ -6,11 +6,8 @@ import type {
   SubmissionResult,
 } from "@/features/problems/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not defined");
-}
+// 빈값이어도 상대경로(/api/...)로 호출되어 next.config rewrites 가 가로채도록 throw 대신 "" 폴백
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface ApiResponse<T> {
   data?: T;
