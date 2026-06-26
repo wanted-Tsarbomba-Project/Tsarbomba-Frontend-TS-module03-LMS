@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // CSR - 문제풀이 상호작용: 서버 초기 문제 데이터를 상태로 받아 코드 입력, 실행, 제출, 문제 이동을 즉시 처리함
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -217,7 +217,11 @@ export default function UserProblemDetailClient({
   const [emptySubmitModalOpen, setEmptySubmitModalOpen] = useState(false);
   const [pendingRecommendedCourseId, setPendingRecommendedCourseId] =
     useState<number | null>(null);
-  const [alertModal, setAlertModal] = useState({ open: false, title: "", content: "" });
+  const [alertModal, setAlertModal] = useState({
+    open: false,
+    title: "",
+    content: "",
+  });
   const [chatOpen, setChatOpen] = useState(false);
   const [hasOpenedChatPanel, setHasOpenedChatPanel] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
@@ -406,7 +410,8 @@ export default function UserProblemDetailClient({
           router,
           fallbackTitle: "문제 조회 실패",
           fallbackMessage: "문제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          showModal: (title, content) => setAlertModal({ open: true, title, content }),
+          showModal: (title, content) =>
+            setAlertModal({ open: true, title, content }),
         });
       }
     };
@@ -575,7 +580,8 @@ export default function UserProblemDetailClient({
         router,
         fallbackTitle: "힌트 조회 실패",
         fallbackMessage: "힌트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
       });
       return [];
     }
@@ -603,7 +609,8 @@ export default function UserProblemDetailClient({
         router,
         fallbackTitle: "코드 실행 실패",
         fallbackMessage: "코드를 실행하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
       });
     } finally {
       setIsRunning(false);
@@ -674,7 +681,8 @@ export default function UserProblemDetailClient({
         router,
         fallbackTitle: "답안 제출 실패",
         fallbackMessage: "답안을 제출하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
       });
     } finally {
       setIsSubmitting(false);
@@ -724,7 +732,8 @@ export default function UserProblemDetailClient({
         fallbackTitle: "CSV 다운로드 실패",
         fallbackMessage:
           "CSV 다운로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
       });
     } finally {
       setIsDatasetDownloading(false);
@@ -802,7 +811,8 @@ export default function UserProblemDetailClient({
         fallbackTitle: "채팅방 이름 수정 실패",
         fallbackMessage:
           "채팅방 이름을 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        showModal: (title, content) => setAlertModal({ open: true, title, content }),
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
       });
     } finally {
       setChatRoomTitleUpdating(false);
@@ -987,3 +997,4 @@ export default function UserProblemDetailClient({
     </>
   );
 }
+

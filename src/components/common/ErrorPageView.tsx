@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { getStatusGuide, getStatusTitle } from "@/lib/errorHandling";
+import { getTsarDogErrorImage } from "@/lib/tsarDogErrorImage";
 
 interface ErrorPageViewProps {
   status?: number;
@@ -20,6 +22,8 @@ const errorPageClasses = {
     "flex min-h-screen items-start justify-center bg-bg-main p-6 text-text-primary",
   panel:
     "w-[min(100%,680px)] rounded-base border border-border-light bg-bg-box p-6 max-[560px]:p-5",
+  imageWrap: "mb-5 flex justify-center",
+  image: "h-[132px] w-[132px]",
   status:
     "mt-0 mb-2 text-title-md font-semibold leading-[26px] text-text-blue",
   title: "mt-0 mb-3 text-title-lg font-semibold leading-7 text-text-primary",
@@ -43,6 +47,7 @@ export default function ErrorPageView({
 }: ErrorPageViewProps) {
   const router = useRouter();
   const title = getStatusTitle(status);
+  const errorImageSrc = getTsarDogErrorImage(status);
 
   useEffect(() => {
     if (!code && !path && !timestamp) return;
@@ -58,6 +63,16 @@ export default function ErrorPageView({
   return (
     <main className={errorPageClasses.wrapper}>
       <section className={errorPageClasses.panel}>
+        <div className={errorPageClasses.imageWrap}>
+          <Image
+            alt="에러 안내 이미지"
+            className={errorPageClasses.image}
+            height={132}
+            priority
+            src={errorImageSrc}
+            width={132}
+          />
+        </div>
         <p className={errorPageClasses.status}>{status}</p>
         <h1 className={errorPageClasses.title}>{title}</h1>
         <p className={errorPageClasses.message}>{message || getStatusGuide(status)}</p>

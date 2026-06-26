@@ -37,7 +37,11 @@ export default function RankingClient({
   );
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState({ open: false, title: "", content: "" });
+  const [modal, setModal] = useState({
+    open: false,
+    title: "",
+    content: "",
+  });
 
   const totalPages = Math.max(
     Math.ceil(rankings.length / RANKING_PAGE_SIZE),

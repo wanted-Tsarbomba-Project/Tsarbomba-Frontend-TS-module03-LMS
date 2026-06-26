@@ -52,7 +52,11 @@ export default function UserProblemListClient({
 }: UserProblemListClientProps) {
   const router = useRouter();
 
-  const [modal, setModal] = useState({ open: false, title: "", content: "" });
+  const [modal, setModal] = useState({
+    open: false,
+    title: "",
+    content: "",
+  });
   const [recommendations, setRecommendations] = useState<
     ProblemSetRecommendation[]
   >([]);
