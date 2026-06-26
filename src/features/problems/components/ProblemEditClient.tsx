@@ -50,6 +50,7 @@ type ModalState = {
   open: boolean;
   title: string;
   content: string;
+  status?: number;
 };
 
 const createInitialSubProblem = (): SubProblem => ({

@@ -150,7 +150,11 @@ export default function AlramsClient() {
         modalContent={noticeModal.content}
         modalTitle={noticeModal.title}
         onClose={() =>
-          setNoticeModal({ isOpen: false, title: "", content: "" })
+          setNoticeModal({
+            isOpen: false,
+            title: "",
+            content: "",
+          })
         }
       />
     </>

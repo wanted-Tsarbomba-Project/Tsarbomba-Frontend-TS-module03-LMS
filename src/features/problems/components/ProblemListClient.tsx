@@ -48,7 +48,11 @@ export default function ProblemListClient() {
 
   const [problemSets, setProblemSets] = useState<ProblemSetSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [modal, setModal] = useState({ open: false, title: "", content: "" });
+  const [modal, setModal] = useState({
+    open: false,
+    title: "",
+    content: "",
+  });
 
   const columns = useMemo<ListColumn<ProblemSetSummary>[]>(
     () => [
