@@ -21,7 +21,7 @@ export interface VideoLecture {
   title: string;
   videoUrl: string;
   description: string;
-  file: File | null;
+  files: File[];
   lectureOrder?: number;
 }
 

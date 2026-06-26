@@ -62,19 +62,7 @@ export default function FindIdPage() {
             <h1 className="text-title-lg font-bold text-text-primary mb-6">
               아이디 찾기
             </h1>
-            <form
-              onSubmit={handleFindIdSubmit}
-              className="space-y-4"
-              noValidate
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  (e.target as HTMLElement).tagName === "INPUT"
-                ) {
-                  e.preventDefault();
-                }
-              }}
-            >
+            <form onSubmit={handleFindIdSubmit} className="space-y-4" noValidate>
               <div className="text-left flex flex-col">
                 <label className="auth-label">이름*</label>
                 <input
