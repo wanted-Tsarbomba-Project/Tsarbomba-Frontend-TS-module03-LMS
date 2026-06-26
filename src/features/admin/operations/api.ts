@@ -2,11 +2,8 @@ import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 
 import type { ApiResponse } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not defined");
-}
+// 빈값이어도 상대경로(/api/...)로 호출되어 프록시/ALB 가 처리하도록 throw 대신 "" 폴백
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const FALLBACK_MESSAGE =
