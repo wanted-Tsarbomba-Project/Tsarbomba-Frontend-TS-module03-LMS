@@ -157,19 +157,23 @@ export default function Sidebar({
                 문제 관리
               </Link>
             </li>
+            <li>
+              <Link
+                className={
+                  pathname.startsWith("/admin/badges")
+                    ? itemActiveClass
+                    : itemBaseClass
+                }
+                href="/admin/badges"
+              >
+                뱃지 관리
+              </Link>
+            </li>
           </>
         )}
 
         {(userRole === "MASTER" || userRole === "ADMIN") && (
           <>
-            {/* <li>
-              <Link
-                className={pathname === "/admin/badges" ? itemActiveClass : itemBaseClass}
-                href="/admin/badges"
-              >
-                뱃지 관리
-              </Link>
-            </li> */}
             <li>
               <Link
                 className={
