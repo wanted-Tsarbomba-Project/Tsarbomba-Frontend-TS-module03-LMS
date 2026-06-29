@@ -1,3 +1,12 @@
+# v0.2.1 (2026-06-29)
+
+### 강좌 학습 현황
+
+- **Fixed**
+  - 수강생 학습 현황 페이지네이션(#162) 적용 후 `getCourseLearningProgress` 반환 타입이 `StudentLearningProgressPage` 로 바뀌었으나 `CourseDetailClient` 가 배열로 받아 발생하던 배포 빌드 타입 오류 수정 (`page.content` 사용)
+
+---
+
 # v0.2.0 (2026-06-29)
 
 ## 구글 소셜 로그인 (#167)
