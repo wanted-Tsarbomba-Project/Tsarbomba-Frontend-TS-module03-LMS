@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/features/auth/actions";
+import { getGoogleAuthUrl, login } from "@/features/auth/actions";
 import type { LoginResponseData } from "@/features/auth/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 
@@ -12,9 +12,31 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   // 모달 닫을 때 이동할 경로 — role 에 따라 분기
   const [successRedirect, setSuccessRedirect] = useState("/");
+
+  // 구글 로그인 — BE 가 준 동의 URL 로 이동 (BE 콜백이 신규/기존 분기 처리)
+  const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    setErrorMsg("");
+    try {
+      const url = await getGoogleAuthUrl();
+      // 기존 회원 재로그인은 BE 가 쿠키만 발급하고 홈으로 302 → localStorage 를 채울 타이밍이 없음.
+      // 콜백 복귀 후 헤더가 프로필을 1회 조회하도록 플래그를 남긴다 (신규 가입은 완료 폼에서 직접 세팅).
+      sessionStorage.setItem("oauthLoginPending", "1");
+      window.location.href = url;
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "구글 로그인 시작 중 오류가 발생했습니다.",
+      );
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,9 +203,11 @@ export default function LoginForm() {
 
             <button
               type="button"
-              className="w-full h-11 text-base border-none rounded-base bg-bg-gray-box text-text-primary font-semibold flex items-center justify-center cursor-pointer hover:bg-bg-gray-box-hover transition-colors mt-1"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              className="w-full h-11 text-base border-none rounded-base bg-bg-gray-box text-text-primary font-semibold flex items-center justify-center cursor-pointer hover:bg-bg-gray-box-hover transition-colors mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              GOOGLE로 로그인
+              {googleLoading ? "이동 중..." : "GOOGLE로 로그인"}
             </button>
           </div>
         </form>
