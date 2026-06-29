@@ -16,3 +16,7 @@ export interface CreateBadgePayload {
   description: string;
   requiredPoint: number;
 }
+
+export interface UpdateBadgePayload extends CreateBadgePayload {
+  status: BadgeStatus;
+}
