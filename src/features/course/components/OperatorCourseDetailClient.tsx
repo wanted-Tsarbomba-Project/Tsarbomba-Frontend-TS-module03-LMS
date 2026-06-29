@@ -3,17 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteCourse } from "@/features/course/actions";
-import { getCourseLearningProgress } from "@/features/course/progressActions";
+import {
+  getCourseLearningProgress,
+  getStudentProblemSet,
+} from "@/features/course/progressActions";
+import { getCourseProblemSets } from "@/features/course/problemSetActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   CourseDetail,
   LectureSummary,
   StudentLearningProgress,
+  StudentLearningProgressPage,
+  StudentProblemEntry,
 } from "@/features/course/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
+import Pagination from "@/components/common/Pagination";
 
 interface OperatorCourseDetailClientProps {
   courseId: string;
@@ -24,36 +31,11 @@ interface OperatorCourseDetailClientProps {
 const outlineBtn =
   "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg cursor-pointer hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
 
-const progressColumns: ListColumn<StudentLearningProgress>[] = [
-  { key: "index", label: "No." },
-  { key: "studentName", label: "이름" },
-  {
-    key: "lecture",
-    label: "강의 수강률",
-    render: (item) =>
-      `${item.completedLectureCount}/${item.totalLectureCount} ${item.lectureProgressRate}%`,
-  },
-  {
-    key: "problem",
-    label: "문제 풀이 현황",
-    render: (item) =>
-      `${item.completedProblemCount}/${item.totalProblemCount} 개`,
-  },
-  {
-    key: "action",
-    label: "문제 풀이",
-    render: () => (
-      <button
-        type="button"
-        disabled
-        title="준비 중인 기능입니다"
-        className="px-3 py-1 text-xs font-medium text-blue-900 border border-blue-900 rounded-md opacity-60 cursor-not-allowed"
-      >
-        이동하기
-      </button>
-    ),
-  },
-];
+const STATUS_LABEL: Record<string, string> = {
+  CORRECT: "정답",
+  WRONG: "오답",
+  UNSOLVED: "미제출",
+};
 
 export default function OperatorCourseDetailClient({
   courseId,
@@ -65,18 +47,56 @@ export default function OperatorCourseDetailClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 학습률 — 요청 시 로드 (선조회 불필요).
+  // 학습률 모달
   const [showProgress, setShowProgress] = useState(false);
-  const [progressData, setProgressData] = useState<StudentLearningProgress[]>(
-    [],
-  );
+  const [progressPage, setProgressPage] =
+    useState<StudentLearningProgressPage | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
   const [progressLoading, setProgressLoading] = useState(false);
+
+  // 문제 풀이 현황 모달
+  const [problemModal, setProblemModal] = useState<{
+    studentName: string;
+    entries: StudentProblemEntry[];
+  } | null>(null);
+  const [problemLoading, setProblemLoading] = useState(false);
+  const [problemError, setProblemError] = useState<string | null>(null);
 
   const [resultModal, setResultModal] = useState<{
     title: string;
     content: string;
     redirect?: string;
   } | null>(null);
+
+  const progressColumns: ListColumn<StudentLearningProgress>[] = [
+    { key: "index", label: "No." },
+    { key: "studentName", label: "닉네임" },
+    {
+      key: "lecture",
+      label: "강의 수강률",
+      render: (item) =>
+        `${item.completedLectureCount}/${item.totalLectureCount} ${item.lectureProgressRate}%`,
+    },
+    {
+      key: "problem",
+      label: "문제 풀이 현황",
+      render: (item) =>
+        `${item.completedProblemCount}/${item.totalProblemCount} 개`,
+    },
+    {
+      key: "action",
+      label: "문제 풀이",
+      render: (item) => (
+        <button
+          type="button"
+          onClick={() => handleProblemClick(item)}
+          className="px-3 py-1 text-xs font-medium text-blue-900 border border-blue-900 rounded-md hover:bg-blue-900 hover:text-white transition-colors cursor-pointer"
+        >
+          이동하기
+        </button>
+      ),
+    },
+  ];
 
   const handleLectureClick = (lectureId: number) => {
     router.push(`/courses/${courseId}/lectures/${lectureId}`);
@@ -105,16 +125,55 @@ export default function OperatorCourseDetailClient({
     }
   };
 
-  const handleProgressClick = async () => {
-    setShowProgress(true);
-    if (progressData.length > 0) return;
+  const loadProgress = async (page: number) => {
     setProgressLoading(true);
     try {
-      setProgressData(await getCourseLearningProgress(courseId));
+      const data = await getCourseLearningProgress(courseId, page);
+      setProgressPage(data);
+      setCurrentPage(page);
     } catch {
       /* ignore */
     } finally {
       setProgressLoading(false);
+    }
+  };
+
+  const handleProgressClick = async () => {
+    setShowProgress(true);
+    if (progressPage && currentPage === 0) return;
+    await loadProgress(0);
+  };
+
+  const handlePageChange = async (page: number) => {
+    await loadProgress(page);
+  };
+
+  const handleProblemClick = async (student: StudentLearningProgress) => {
+    setProblemLoading(true);
+    setProblemError(null);
+    setProblemModal({ studentName: student.studentName, entries: [] });
+
+    try {
+      const links = await getCourseProblemSets(courseId);
+      const ids = links
+        .map((l) => l.lectureProblemSetId)
+        .filter((id): id is number => id != null);
+
+      if (ids.length === 0) {
+        setProblemError("이 강좌에 연결된 문제세트가 없습니다.");
+        return;
+      }
+
+      const entries = await Promise.all(
+        ids.map((id) => getStudentProblemSet(courseId, student.userId, id)),
+      );
+
+      setProblemModal({ studentName: student.studentName, entries });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "불러오지 못했습니다.";
+      setProblemError(msg);
+    } finally {
+      setProblemLoading(false);
     }
   };
 
@@ -256,9 +315,10 @@ export default function OperatorCourseDetailClient({
         modalContent="삭제하면 복구할 수 없습니다. 삭제하시겠습니까?"
       />
 
+      {/* 학습률 모달 */}
       {showProgress && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-screen flex flex-col">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-screen flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">
                 수강생 학습 현황
@@ -287,7 +347,7 @@ export default function OperatorCourseDetailClient({
                 <LoadingIndicator message="학습 현황을 불러오는 중입니다." />
               ) : (
                 <List
-                  data={progressData}
+                  data={progressPage?.content ?? []}
                   columns={progressColumns}
                   rowKey={(item) => item.userId}
                   emptyMessage="수강생 데이터가 없습니다."
@@ -295,10 +355,122 @@ export default function OperatorCourseDetailClient({
               )}
             </div>
 
+            {!progressLoading && (progressPage?.totalPages ?? 0) > 1 && (
+              <div className="px-6 py-3 border-t border-gray-100">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={progressPage?.totalPages ?? 1}
+                  onPageChange={handlePageChange}
+                  disabled={progressLoading}
+                />
+              </div>
+            )}
+
             <div className="flex justify-end px-6 py-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setShowProgress(false)}
+                className="px-5 py-2.5 text-sm text-white bg-blue-900 rounded-lg hover:bg-blue-950 transition-colors font-medium"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 문제 풀이 현황 모달 */}
+      {problemModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  문제 풀이 현황
+                </h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {problemModal.studentName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProblemModal(null);
+                  setProblemError(null);
+                }}
+                className="text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                >
+                  <path d="M15 5L5 15M5 5l10 10" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6">
+              {problemLoading ? (
+                <LoadingIndicator message="문제 풀이 현황을 불러오는 중입니다." />
+              ) : problemError ? (
+                <p className="text-center text-sm text-red-500 py-8">
+                  {problemError}
+                </p>
+              ) : problemModal.entries.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-8">
+                  문제 풀이 데이터가 없습니다.
+                </p>
+              ) : (
+                <div className="space-y-6">
+                  {problemModal.entries.map((entry, i) => (
+                    <div key={i}>
+                      {entry.title && (
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                          {entry.title}
+                        </h4>
+                      )}
+                      {entry.problems.length === 0 ? (
+                        <p className="text-sm text-gray-400">
+                          문제가 없습니다.
+                        </p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {entry.problems.map((problem, j) => (
+                            <li
+                              key={problem.problemId}
+                              className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden"
+                            >
+                              <div className="flex items-center justify-between px-4 py-3">
+                                <span className="text-sm text-gray-700">
+                                  {j + 1}. {problem.title}
+                                </span>
+                                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-white border border-gray-200">
+                                  {STATUS_LABEL[problem.status] ??
+                                    problem.status}
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end px-6 py-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setProblemModal(null);
+                  setProblemError(null);
+                }}
                 className="px-5 py-2.5 text-sm text-white bg-blue-900 rounded-lg hover:bg-blue-950 transition-colors font-medium"
               >
                 닫기

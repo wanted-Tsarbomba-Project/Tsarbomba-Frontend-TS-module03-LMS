@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createCourse,
@@ -60,6 +60,8 @@ export default function CourseNewPage() {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 동기 가드 — isSubmitting(상태)은 비동기라 빠른 중복 클릭을 못 막음. 등록 1회만 실행 보장.
+  const submittingRef = useRef(false);
   const [resultModal, setResultModal] = useState<{
     title: string;
     content: string;
@@ -205,6 +207,8 @@ export default function CourseNewPage() {
   };
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return; // 동기 가드 — 빠른 중복 클릭 차단
+    submittingRef.current = true;
     setShowConfirm(false);
     setIsSubmitting(true);
     try {
@@ -278,6 +282,7 @@ export default function CourseNewPage() {
       setResultModal({ title: "등록 실패", content: msg, isSuccess: false });
     } finally {
       setIsSubmitting(false);
+      submittingRef.current = false;
     }
   };
 

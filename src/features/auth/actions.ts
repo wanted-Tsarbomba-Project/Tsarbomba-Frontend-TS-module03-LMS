@@ -281,6 +281,79 @@ export const resendStepUp = async (): Promise<AuthResponse | null> => {
   return response.json().catch(() => null);
 };
 
+/* 구글 로그인 시작 — GET /api/v1/auth/oauth2/google
+ * BE 가 발급한 구글 동의 URL 반환 → 프론트가 해당 URL 로 이동 */
+export const getGoogleAuthUrl = async (): Promise<string> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/oauth2/google`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "구글 로그인 시작에 실패했습니다."),
+    );
+  }
+
+  const json = (await response.json()) as AuthResponse<{
+    authorizationUri: string;
+  }>;
+  const uri = json?.data?.authorizationUri;
+  if (!uri) throw new Error("구글 로그인 URL 을 받지 못했습니다.");
+  return uri;
+};
+
+/* 소셜 임시정보 조회 — GET /api/v1/auth/oauth2/temp-info
+ * 신규 가입 추가정보 페이지에서 구글이 준 email/name 표시용 (TEMP_TOKEN 쿠키 필요) */
+export const getOauthTempInfo = async (): Promise<{
+  email: string;
+  name: string;
+}> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/oauth2/temp-info`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(
+        response,
+        "임시 회원 정보를 불러오지 못했습니다.",
+      ),
+    );
+  }
+
+  const json = (await response.json()) as AuthResponse<{
+    email: string;
+    name: string;
+  }>;
+  if (!json?.data?.email || !json?.data?.name) {
+    throw new Error("임시 회원 정보가 비어있습니다.");
+  }
+  return json.data;
+};
+
+/* 소셜 추가정보 제출 — POST /api/v1/auth/oauth2/complete
+ * 닉네임/전화번호로 가입 완료. 성공 시 BE 가 AT/RT 쿠키 발급 + TEMP_TOKEN 제거 */
+export const completeOauthSignup = async (
+  nickname: string,
+  phone: string,
+): Promise<AuthResponse | null> => {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/oauth2/complete`, {
+    method: "POST",
+    headers: HEADERS,
+    credentials: "include",
+    body: JSON.stringify({ nickname, phone }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await handleBadResponse(response, "회원가입을 완료하지 못했습니다."),
+    );
+  }
+
+  return response.json().catch(() => null);
+};
+
 /* 로그아웃 */
 export const logoutService = async (): Promise<AuthResponse | null> => {
   const response = await fetch(`${BASE_URL}/api/v1/auth/logout`, {

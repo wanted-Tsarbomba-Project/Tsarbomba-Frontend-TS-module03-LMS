@@ -50,6 +50,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState("닉네임");
   const [userRole, setUserRole] = useState("");
+  const [equippedBadgeUrl, setEquippedBadgeUrl] = useState("");
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -60,6 +61,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
     setIsLoggedIn(status.isLoggedIn);
     setNickname(status.nickname);
     setUserRole(status.userRole);
+    setEquippedBadgeUrl(localStorage.getItem("equippedBadgeUrl") ?? "");
   };
 
   useEffect(() => {
@@ -77,13 +79,32 @@ function HeaderInner({ isSimple }: HeaderProps) {
             syncHeaderStatus();
           }
         });
+      } else if (sessionStorage.getItem("oauthLoginPending")) {
+        // 구글 기존 회원 재로그인 — 쿠키만 있고 localStorage 가 비어있는 상태.
+        // 프로필을 1회 조회해 헤더를 채운다. 플래그가 있을 때만 호출하므로 불필요한 401 없음.
+        getMyProfile()
+          .then((profile) => {
+            // 성공했을 때만 플래그 제거 — 일시 실패 시 새로고침으로 재시도 가능하게 유지.
+            sessionStorage.removeItem("oauthLoginPending");
+            localStorage.setItem("userNickname", profile.nickname);
+            localStorage.setItem("userRole", profile.role);
+            syncHeaderStatus();
+          })
+          .catch((err) => {
+            // 인증 만료(401)는 복구 불가 → 플래그 제거. 네트워크/5xx 는 유지해 재시도 여지를 남긴다.
+            if (err instanceof ApiClientError && err.status === 401) {
+              sessionStorage.removeItem("oauthLoginPending");
+            }
+          });
       }
     }, 0);
 
     window.addEventListener("loginSuccess", syncHeaderStatus);
+    window.addEventListener("badgeChanged", syncHeaderStatus);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("loginSuccess", syncHeaderStatus);
+      window.removeEventListener("badgeChanged", syncHeaderStatus);
     };
   }, []);
 
@@ -250,17 +271,31 @@ function HeaderInner({ isSimple }: HeaderProps) {
                     : "border-[#1a237e] bg-white text-[#1a237e] hover:bg-[#1a237e] hover:text-white"
                 }`}
               >
-                <div className="w-4 h-4 relative">
-                  <Image
-                    src={BluebombLogo}
-                    className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-0" : "group-hover:opacity-0"}`}
-                    alt="블루폭탄로고"
-                  />
-                  <Image
-                    src={WhitebombLogo}
-                    className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                    alt="화이트폭탄로고"
-                  />
+                <div className="w-5 h-5 relative rounded-full overflow-hidden shrink-0">
+                  {equippedBadgeUrl ? (
+                    <Image
+                      alt="장착 뱃지"
+                      className="w-5 h-5 object-cover rounded-full"
+                      height={20}
+                      loader={({ src }) => src}
+                      src={equippedBadgeUrl}
+                      unoptimized
+                      width={20}
+                    />
+                  ) : (
+                    <>
+                      <Image
+                        src={BluebombLogo}
+                        className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-0" : "group-hover:opacity-0"}`}
+                        alt="블루폭탄로고"
+                      />
+                      <Image
+                        src={WhitebombLogo}
+                        className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                        alt="화이트폭탄로고"
+                      />
+                    </>
+                  )}
                 </div>
                 <span>{nickname}</span>
               </button>

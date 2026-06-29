@@ -11,6 +11,7 @@ interface YTPlayer {
   getCurrentTime(): number;
   getDuration(): number;
   seekTo(seconds: number, allowSeekAhead?: boolean): void;
+  setPlaybackRate(rate: number): void;
   destroy(): void;
 }
 
@@ -22,6 +23,7 @@ interface YTPlayerOptions {
   events?: {
     onReady?: (event: { target: YTPlayer }) => void;
     onStateChange?: (event: { data: number }) => void;
+    onPlaybackRateChange?: (event: { data: number; target: YTPlayer }) => void;
   };
 }
 
@@ -108,9 +110,13 @@ export default function YoutubeProgressPlayer({
   const lastSafePosRef = useRef(0);
   // 저장 직렬화 — 자동저장/일시정지/종료 저장이 겹쳐 delta 중복·위치 역전되는 것 방지
   const savingRef = useRef(false);
+  // 재생바 끝 도달로 강제 완료 저장을 1회만 트리거하기 위한 가드
+  const endSaveTriggeredRef = useRef(false);
 
-  // 재생 중 주기 저장 간격 — ENDED 이벤트가 누락돼도 진도가 누적되도록
+  // 재생 중 주기 저장 간격 — 위치 이어보기용 (완료는 영상 끝 도달 시에만)
   const AUTO_SAVE_INTERVAL_MS = 10_000;
+  // 재생 중 BE 누적 상한 비율 — 완료 기준(90%) 직전까지만 보고해 끝까지 봐야 완료되게 함
+  const PLAYING_CAP_RATIO = 0.89;
 
   // 콜백 ref 갱신은 effect 안에서 — render 도중 ref.current 변형 금지 룰 준수.
   const onProgressSavedRef = useRef(onProgressSaved);
@@ -128,6 +134,7 @@ export default function YoutubeProgressPlayer({
     lastSafePosRef.current = 0;
     watchedDeltaRef.current = 0;
     savingRef.current = false;
+    endSaveTriggeredRef.current = false;
 
     let mounted = true;
     let initialLastPosition = 0;
@@ -159,6 +166,18 @@ export default function YoutubeProgressPlayer({
         if (elapsedSec > 0) {
           watchedDeltaRef.current += elapsedSec;
           lastTickAtRef.current = now;
+        }
+
+        // 재생바가 끝(±1.5초)에 닿으면 강제 완료 저장 — YT ENDED 이벤트 누락 대비.
+        const duration = player.getDuration();
+        if (
+          !completedRef.current &&
+          !endSaveTriggeredRef.current &&
+          duration > 0 &&
+          currentPos >= duration - 1.5
+        ) {
+          endSaveTriggeredRef.current = true;
+          void saveProgress(true);
         }
       }, 1000);
     };
@@ -216,15 +235,21 @@ export default function YoutubeProgressPlayer({
         try {
           const fresh = await getLectureProgress(lectureId);
           existingWatchedSecRef.current = fresh?.watchedSec ?? 0;
-          completedRef.current = !!fresh?.completed;
         } catch {
           /* 조회 실패해도 아래 로직으로 진행 */
         }
       }
 
+      // 재생 중에는 누적이 완료 기준(90%)에 닿지 않도록 89% 로 상한 → 영상 끝(ended)에 도달해야만 완료.
+      const allowedTotalSec =
+        durationSec > 0
+          ? ended
+            ? durationSec
+            : Math.floor(durationSec * PLAYING_CAP_RATIO)
+          : 0;
       const remaining =
         durationSec > 0
-          ? Math.max(0, durationSec - existingWatchedSecRef.current)
+          ? Math.max(0, allowedTotalSec - existingWatchedSecRef.current)
           : rawDelta;
       const watchedDeltaSec = ended
         ? remaining
@@ -234,9 +259,12 @@ export default function YoutubeProgressPlayer({
           ? durationSec
           : Math.floor(player.getCurrentTime());
 
+      // 끝까지 봄 → 이후 seek 제한 해제 (완료 확정은 BE 가 누적 100% 로 판정)
+      if (ended) completedRef.current = true;
+
       if (watchedDeltaSec <= 0) {
         watchedDeltaRef.current = 0;
-        // 종료인데 이미 100% 채워진 상태면 갱신만 트리거 (완료 모달 노출용)
+        // 종료인데 이미 채워진 상태면 갱신만 트리거 (완료 모달 노출용)
         if (ended) onProgressSavedRef.current?.();
         return;
       }
@@ -249,16 +277,14 @@ export default function YoutubeProgressPlayer({
           watchedDeltaSec,
         });
         existingWatchedSecRef.current += watchedDeltaSec;
-        if (
-          !completedRef.current &&
-          durationSec > 0 &&
-          existingWatchedSecRef.current / durationSec >= 0.9
-        ) {
-          completedRef.current = true;
-        }
         onProgressSavedRef.current?.();
       } catch {
         watchedDeltaRef.current += rawDelta;
+        // 저장 실패 시 완료 처리 롤백 — seek 제한 유지
+        if (ended) {
+          completedRef.current = false;
+          endSaveTriggeredRef.current = false;
+        }
       }
     };
 
@@ -292,6 +318,12 @@ export default function YoutubeProgressPlayer({
           onReady: ({ target }) => {
             if (initialLastPosition > 0) {
               target.seekTo(initialLastPosition, true);
+            }
+          },
+          // 첫 시청(미완료) 중에는 배속을 1배로 강제 — 빨리 감아 완료 처리되는 것 방지.
+          onPlaybackRateChange: ({ data, target }) => {
+            if (!completedRef.current && data !== 1) {
+              target.setPlaybackRate(1);
             }
           },
           onStateChange: (event) => {
