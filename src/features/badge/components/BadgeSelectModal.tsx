@@ -1,0 +1,94 @@
+"use client";
+
+import Image from "next/image";
+
+import LoadingIndicator from "@/components/common/LoadingIndicator";
+import type { MyBadge } from "../types";
+
+interface BadgeSelectModalProps {
+  badges: MyBadge[];
+  loading?: boolean;
+  onSelect: (badge: MyBadge) => void;
+  onClose: () => void;
+}
+
+export default function BadgeSelectModal({
+  badges,
+  loading = false,
+  onSelect,
+  onClose,
+}: BadgeSelectModalProps) {
+  const activeBadges = badges.filter((b) => b.status === "ACTIVE");
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg-box rounded-2xl p-6 w-[360px] max-h-[80vh] flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-text-primary">뱃지 선택</h2>
+          <button
+            className="text-text-secondary hover:text-text-primary text-xl cursor-pointer"
+            onClick={onClose}
+            type="button"
+          >
+            ✕
+          </button>
+        </div>
+
+        {loading ? (
+          <LoadingIndicator message="뱃지 목록을 불러오는 중입니다." />
+        ) : activeBadges.length === 0 ? (
+          <p className="text-center text-sm text-text-secondary py-8">
+            아직 획득한 뱃지가 없어요
+          </p>
+        ) : (
+          <ul className="grid grid-cols-3 gap-3 overflow-y-auto">
+            {activeBadges.map((badge) => (
+              <li key={badge.badgeId}>
+                <button
+                  className={`w-full flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all cursor-pointer ${
+                    badge.isEquipped
+                      ? "border-text-blue bg-bg-navbar"
+                      : "border-transparent hover:border-border-light hover:bg-bg-navbar"
+                  }`}
+                  onClick={() => onSelect(badge)}
+                  title={badge.badgeName}
+                  type="button"
+                >
+                  <div className="w-14 h-14 rounded-full overflow-hidden border border-border-light bg-bg-gray-box flex items-center justify-center">
+                    {badge.imageUrl ? (
+                      <Image
+                        alt={badge.badgeName}
+                        className="w-full h-full object-cover"
+                        height={56}
+                        loader={({ src }) => src}
+                        src={badge.imageUrl}
+                        unoptimized
+                        width={56}
+                      />
+                    ) : (
+                      <span className="text-xs text-text-secondary">없음</span>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-center font-medium text-text-primary leading-tight line-clamp-2">
+                    {badge.badgeName}
+                  </span>
+                  {badge.isEquipped && (
+                    <span className="text-[10px] text-text-blue font-bold">
+                      착용 중
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -6,6 +6,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
+import BadgeSelectModal from "@/features/badge/components/BadgeSelectModal";
+import { equipBadge, getMyBadges } from "@/features/badge/actions";
+import type { MyBadge } from "@/features/badge/types";
+import OneButtonModal from "@/components/common/OneButtonModal";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -59,6 +63,10 @@ export default function Sidebar({
   const [nickname, setNickname] = useState(propsNickname || "닉네임");
   const [userRole, setUserRole] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [myBadges, setMyBadges] = useState<MyBadge[]>([]);
+  const [badgeModalOpen, setBadgeModalOpen] = useState(false);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const [equipError, setEquipError] = useState("");
 
   const isAdminPath = pathname.startsWith("/admin");
   const isMypage = pathname.startsWith("/user/profile");
@@ -80,6 +88,21 @@ export default function Sidebar({
       window.removeEventListener("storage", updateUserInfo);
     };
   }, [propsNickname]);
+
+  useEffect(() => {
+    if (!isMypage) return;
+
+    setBadgesLoading(true);
+    getMyBadges()
+      .then((badges) => {
+        setMyBadges(badges);
+        const equipped = badges.find((b) => b.isEquipped);
+        localStorage.setItem("equippedBadgeUrl", equipped?.imageUrl ?? "");
+        window.dispatchEvent(new Event("badgeChanged"));
+      })
+      .catch(() => {})
+      .finally(() => setBadgesLoading(false));
+  }, [isMypage]);
 
   useEffect(() => {
     if (!isChatPage) return;
@@ -117,6 +140,22 @@ export default function Sidebar({
       window.removeEventListener("chatRoomUpdated", fetchChatRooms);
     };
   }, [isChatPage]);
+
+  const equippedBadge = myBadges.find((b) => b.isEquipped);
+
+  const handleBadgeSelect = async (badge: MyBadge) => {
+    try {
+      const updated = await equipBadge(badge.badgeId);
+      setMyBadges((prev) =>
+        prev.map((b) => ({ ...b, isEquipped: b.badgeId === updated.badgeId })),
+      );
+      localStorage.setItem("equippedBadgeUrl", updated.imageUrl ?? "");
+      window.dispatchEvent(new Event("badgeChanged"));
+      setBadgeModalOpen(false);
+    } catch {
+      setEquipError("뱃지 장착에 실패했어요. 다시 시도해 주세요.");
+    }
+  };
 
   const itemBaseClass =
     "block w-full text-left px-4 py-2.5 rounded-lg text-base font-semibold text-[#4b5563] hover:bg-[#f3f4f6] hover:text-[#1a237e] transition-all cursor-pointer";
@@ -227,13 +266,30 @@ export default function Sidebar({
   const mypageMenu = (
     <div className="w-full flex flex-col gap-5">
       <div className="flex items-center gap-3 px-2 py-1">
-        <div className="w-12 h-12 rounded-full bg-white border border-[#e8e8e8] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-          <Image
-            alt="프로필"
-            className="w-8 h-8 object-contain text-[#1a237e]"
-            src={BluebombLogo}
-          />
-        </div>
+        <button
+          className="w-12 h-12 rounded-full bg-bg-box border border-border-light flex items-center justify-center overflow-hidden shrink-0 shadow-sm cursor-pointer hover:ring-2 hover:ring-text-blue transition-all"
+          onClick={() => setBadgeModalOpen(true)}
+          title="뱃지 변경"
+          type="button"
+        >
+          {equippedBadge?.imageUrl ? (
+            <Image
+              alt="장착 뱃지"
+              className="w-full h-full object-cover"
+              height={48}
+              loader={({ src }) => src}
+              src={equippedBadge.imageUrl}
+              unoptimized
+              width={48}
+            />
+          ) : (
+            <Image
+              alt="프로필"
+              className="w-8 h-8 object-contain text-[#1a237e]"
+              src={BluebombLogo}
+            />
+          )}
+        </button>
         <span className="text-lg font-bold text-[#1f2937] tracking-tight">
           {nickname}
         </span>
@@ -337,16 +393,32 @@ export default function Sidebar({
   }
 
   return (
-    <aside
-      className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300 ${
-        isOpen
-          ? "max-lg:block max-lg:fixed max-lg:left-5 max-lg:top-24 max-lg:z-999 max-lg:shadow-xl"
-          : ""
-      }`}
-    >
-      {isAdminPath && adminMenu}
-      {isMypage && mypageMenu}
-      {isChatPage && chatMenu}
-    </aside>
+    <>
+      {badgeModalOpen && (
+        <BadgeSelectModal
+          badges={myBadges}
+          loading={badgesLoading}
+          onClose={() => setBadgeModalOpen(false)}
+          onSelect={handleBadgeSelect}
+        />
+      )}
+      <OneButtonModal
+        isOpen={!!equipError}
+        modalTitle="뱃지 장착 실패"
+        modalContent={equipError}
+        onClose={() => setEquipError("")}
+      />
+      <aside
+        className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300 ${
+          isOpen
+            ? "max-lg:block max-lg:fixed max-lg:left-5 max-lg:top-24 max-lg:z-999 max-lg:shadow-xl"
+            : ""
+        }`}
+      >
+        {isAdminPath && adminMenu}
+        {isMypage && mypageMenu}
+        {isChatPage && chatMenu}
+      </aside>
+    </>
   );
 }
