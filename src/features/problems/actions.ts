@@ -64,6 +64,14 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+interface PageResponse<T> {
+  content?: T[];
+  items?: T[];
+  problemSets?: T[];
+  totalElements?: number;
+  totalPages?: number;
+}
+
 type NextRequestInit = RequestInit & {
   next?: {
     revalidate?: number;
@@ -228,7 +236,9 @@ export async function getProblemSets(
     ? `/api/v1/problem-sets?categoryId=${encodeURIComponent(categoryId)}`
     : "/api/v1/problem-sets";
 
-  const result = await requestJson<ProblemSetSummary[]>(
+  const result = await requestJson<
+    ProblemSetSummary[] | PageResponse<ProblemSetSummary>
+  >(
     path,
     "문제 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     {
@@ -237,7 +247,50 @@ export async function getProblemSets(
     },
   );
 
-  return result.data ?? [];
+  return extractProblemSets(result);
+}
+
+function extractProblemSets(result: unknown): ProblemSetSummary[] {
+  const directList = getProblemSetList(result);
+
+  if (directList) {
+    return directList;
+  }
+
+  if (!result || typeof result !== "object") {
+    return [];
+  }
+
+  const payload = result as { data?: unknown };
+  const nestedList = getProblemSetList(payload.data);
+
+  return nestedList ?? [];
+}
+
+function getProblemSetList(value: unknown): ProblemSetSummary[] | null {
+  if (Array.isArray(value)) {
+    return value as ProblemSetSummary[];
+  }
+
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const page = value as PageResponse<ProblemSetSummary>;
+
+  if (Array.isArray(page.content)) {
+    return page.content;
+  }
+
+  if (Array.isArray(page.items)) {
+    return page.items;
+  }
+
+  if (Array.isArray(page.problemSets)) {
+    return page.problemSets;
+  }
+
+  return null;
 }
 
 export async function getProblemCategories(
