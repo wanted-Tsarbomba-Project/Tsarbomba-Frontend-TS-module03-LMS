@@ -82,15 +82,19 @@ function HeaderInner({ isSimple }: HeaderProps) {
       } else if (sessionStorage.getItem("oauthLoginPending")) {
         // 구글 기존 회원 재로그인 — 쿠키만 있고 localStorage 가 비어있는 상태.
         // 프로필을 1회 조회해 헤더를 채운다. 플래그가 있을 때만 호출하므로 불필요한 401 없음.
-        sessionStorage.removeItem("oauthLoginPending");
         getMyProfile()
           .then((profile) => {
+            // 성공했을 때만 플래그 제거 — 일시 실패 시 새로고침으로 재시도 가능하게 유지.
+            sessionStorage.removeItem("oauthLoginPending");
             localStorage.setItem("userNickname", profile.nickname);
             localStorage.setItem("userRole", profile.role);
             syncHeaderStatus();
           })
-          .catch(() => {
-            /* 쿠키 미발급/만료 등 — 비로그인 유지 */
+          .catch((err) => {
+            // 인증 만료(401)는 복구 불가 → 플래그 제거. 네트워크/5xx 는 유지해 재시도 여지를 남긴다.
+            if (err instanceof ApiClientError && err.status === 401) {
+              sessionStorage.removeItem("oauthLoginPending");
+            }
           });
       }
     }, 0);
