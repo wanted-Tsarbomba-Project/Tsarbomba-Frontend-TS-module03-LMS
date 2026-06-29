@@ -18,7 +18,7 @@ const badgeListClasses = {
     "cursor-pointer rounded-lg bg-button-blue-bg px-4 py-2 text-sm font-medium text-text-white shadow-sm transition hover:bg-button-blue-hover-bg",
   grid: "grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4",
   card:
-    "overflow-hidden rounded-xl border border-border-light bg-bg-box shadow-sm transition hover:shadow-md",
+    "cursor-pointer overflow-hidden rounded-xl border border-border-light bg-bg-box shadow-sm transition hover:shadow-md",
   imageWrap: "flex h-48 items-center justify-center bg-bg-navbar",
   image: "h-full w-full object-cover",
   fallbackImage:
@@ -127,7 +127,13 @@ export default function AdminBadgeListClient() {
             const isActive = badge.status === "ACTIVE";
 
             return (
-              <article className={badgeListClasses.card} key={badge.badgeId}>
+              <article
+                className={badgeListClasses.card}
+                key={badge.badgeId}
+                onClick={() =>
+                  router.push(`/admin/badges/${badge.badgeId}/edit`)
+                }
+              >
                 <div className={badgeListClasses.imageWrap}>
                   {badge.imageUrl ? (
                     <img
