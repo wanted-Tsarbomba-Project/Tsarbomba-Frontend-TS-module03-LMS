@@ -50,6 +50,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState("닉네임");
   const [userRole, setUserRole] = useState("");
+  const [equippedBadgeUrl, setEquippedBadgeUrl] = useState("");
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -60,6 +61,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
     setIsLoggedIn(status.isLoggedIn);
     setNickname(status.nickname);
     setUserRole(status.userRole);
+    setEquippedBadgeUrl(localStorage.getItem("equippedBadgeUrl") ?? "");
   };
 
   useEffect(() => {
@@ -81,9 +83,11 @@ function HeaderInner({ isSimple }: HeaderProps) {
     }, 0);
 
     window.addEventListener("loginSuccess", syncHeaderStatus);
+    window.addEventListener("badgeChanged", syncHeaderStatus);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("loginSuccess", syncHeaderStatus);
+      window.removeEventListener("badgeChanged", syncHeaderStatus);
     };
   }, []);
 
@@ -250,17 +254,31 @@ function HeaderInner({ isSimple }: HeaderProps) {
                     : "border-[#1a237e] bg-white text-[#1a237e] hover:bg-[#1a237e] hover:text-white"
                 }`}
               >
-                <div className="w-4 h-4 relative">
-                  <Image
-                    src={BluebombLogo}
-                    className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-0" : "group-hover:opacity-0"}`}
-                    alt="블루폭탄로고"
-                  />
-                  <Image
-                    src={WhitebombLogo}
-                    className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                    alt="화이트폭탄로고"
-                  />
+                <div className="w-5 h-5 relative rounded-full overflow-hidden shrink-0">
+                  {equippedBadgeUrl ? (
+                    <Image
+                      alt="장착 뱃지"
+                      className="w-5 h-5 object-cover rounded-full"
+                      height={20}
+                      loader={({ src }) => src}
+                      src={equippedBadgeUrl}
+                      unoptimized
+                      width={20}
+                    />
+                  ) : (
+                    <>
+                      <Image
+                        src={BluebombLogo}
+                        className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-0" : "group-hover:opacity-0"}`}
+                        alt="블루폭탄로고"
+                      />
+                      <Image
+                        src={WhitebombLogo}
+                        className={`w-4 h-4 object-contain absolute inset-0 transition-opacity ${isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                        alt="화이트폭탄로고"
+                      />
+                    </>
+                  )}
                 </div>
                 <span>{nickname}</span>
               </button>
