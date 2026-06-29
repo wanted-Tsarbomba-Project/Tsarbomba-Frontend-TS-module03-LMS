@@ -84,6 +84,28 @@ export interface StudentLearningProgress {
   totalProblemCount: number;
 }
 
+/* 학습 현황 페이지네이션 응답 */
+export interface StudentLearningProgressPage {
+  content: StudentLearningProgress[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+/* 어드민 — 특정 수강생의 문제 풀이 현황 */
+export interface StudentProblemItem {
+  problemId: number;
+  title: string;
+  status: "UNSOLVED" | "CORRECT" | "WRONG";
+}
+
+export interface StudentProblemEntry {
+  title?: string;
+  problems: StudentProblemItem[];
+}
+
 /* 강좌 - 문제세트 연결 요청 (configure용) */
 export interface ProblemSetConnection {
   problemSetId: number;
