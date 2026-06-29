@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId } from "react";
 import Image from "next/image";
 
 import LoadingIndicator from "@/components/common/LoadingIndicator";
@@ -8,6 +9,7 @@ import type { MyBadge } from "../types";
 interface BadgeSelectModalProps {
   badges: MyBadge[];
   loading?: boolean;
+  fetchFailed?: boolean;
   onSelect: (badge: MyBadge) => void;
   onClose: () => void;
 }
@@ -15,10 +17,20 @@ interface BadgeSelectModalProps {
 export default function BadgeSelectModal({
   badges,
   loading = false,
+  fetchFailed = false,
   onSelect,
   onClose,
 }: BadgeSelectModalProps) {
+  const titleId = useId();
   const activeBadges = badges.filter((b) => b.status === "ACTIVE");
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return (
     <div
@@ -26,12 +38,18 @@ export default function BadgeSelectModal({
       onClick={onClose}
     >
       <div
+        aria-labelledby={titleId}
+        aria-modal="true"
         className="bg-bg-box rounded-2xl p-6 w-[360px] max-h-[80vh] flex flex-col gap-4"
+        role="dialog"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-text-primary">뱃지 선택</h2>
+          <h2 className="text-lg font-bold text-text-primary" id={titleId}>
+            뱃지 선택
+          </h2>
           <button
+            aria-label="모달 닫기"
             className="text-text-secondary hover:text-text-primary text-xl cursor-pointer"
             onClick={onClose}
             type="button"
@@ -42,6 +60,10 @@ export default function BadgeSelectModal({
 
         {loading ? (
           <LoadingIndicator message="뱃지 목록을 불러오는 중입니다." />
+        ) : fetchFailed ? (
+          <p className="text-center text-sm text-text-red py-8">
+            뱃지 목록을 불러오지 못했어요. 다시 시도해 주세요.
+          </p>
         ) : activeBadges.length === 0 ? (
           <p className="text-center text-sm text-text-secondary py-8">
             아직 획득한 뱃지가 없어요

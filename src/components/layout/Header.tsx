@@ -256,10 +256,14 @@ function HeaderInner({ isSimple }: HeaderProps) {
               >
                 <div className="w-5 h-5 relative rounded-full overflow-hidden shrink-0">
                   {equippedBadgeUrl ? (
-                    <img
-                      src={equippedBadgeUrl}
-                      alt="뱃지"
+                    <Image
+                      alt="장착 뱃지"
                       className="w-5 h-5 object-cover rounded-full"
+                      height={20}
+                      loader={({ src }) => src}
+                      src={equippedBadgeUrl}
+                      unoptimized
+                      width={20}
                     />
                   ) : (
                     <>

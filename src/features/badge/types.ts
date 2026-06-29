@@ -4,7 +4,7 @@ export interface MyBadge {
   description: string;
   requiredPoint: number;
   imageUrl: string;
-  status: "ACTIVE" | "INACTIVE" | string;
+  status: "ACTIVE" | "INACTIVE";
   earnedAt: string;
   isEquipped: boolean;
 }

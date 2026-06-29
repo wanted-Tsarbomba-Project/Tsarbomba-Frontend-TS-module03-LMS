@@ -66,6 +66,7 @@ export default function Sidebar({
   const [myBadges, setMyBadges] = useState<MyBadge[]>([]);
   const [badgeModalOpen, setBadgeModalOpen] = useState(false);
   const [badgesLoading, setBadgesLoading] = useState(false);
+  const [badgesFetchFailed, setBadgesFetchFailed] = useState(false);
   const [equipError, setEquipError] = useState("");
 
   const isAdminPath = pathname.startsWith("/admin");
@@ -93,6 +94,7 @@ export default function Sidebar({
     if (!isMypage) return;
 
     setBadgesLoading(true);
+    setBadgesFetchFailed(false);
     getMyBadges()
       .then((badges) => {
         setMyBadges(badges);
@@ -100,7 +102,7 @@ export default function Sidebar({
         localStorage.setItem("equippedBadgeUrl", equipped?.imageUrl ?? "");
         window.dispatchEvent(new Event("badgeChanged"));
       })
-      .catch(() => {})
+      .catch(() => setBadgesFetchFailed(true))
       .finally(() => setBadgesLoading(false));
   }, [isMypage]);
 
@@ -267,9 +269,9 @@ export default function Sidebar({
     <div className="w-full flex flex-col gap-5">
       <div className="flex items-center gap-3 px-2 py-1">
         <button
+          aria-label="대표 뱃지 변경"
           className="w-12 h-12 rounded-full bg-bg-box border border-border-light flex items-center justify-center overflow-hidden shrink-0 shadow-sm cursor-pointer hover:ring-2 hover:ring-text-blue transition-all"
           onClick={() => setBadgeModalOpen(true)}
-          title="뱃지 변경"
           type="button"
         >
           {equippedBadge?.imageUrl ? (
@@ -397,6 +399,7 @@ export default function Sidebar({
       {badgeModalOpen && (
         <BadgeSelectModal
           badges={myBadges}
+          fetchFailed={badgesFetchFailed}
           loading={badgesLoading}
           onClose={() => setBadgeModalOpen(false)}
           onSelect={handleBadgeSelect}
