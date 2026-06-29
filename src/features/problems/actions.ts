@@ -1,4 +1,5 @@
 import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
+import { SERVER_API_BASE_URL } from "@/lib/serverEnv";
 
 import type {
   CreateProblemRequest,
@@ -29,8 +30,6 @@ import type {
   SubProblem,
   UpdateProblemRequest,
 } from "./types";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export const DIFFICULTY_MAP = {
   EASY: "쉬움",
@@ -156,7 +155,7 @@ export async function createProblem(
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${CREATE_PATH}`, {
+    response = await fetch(resolveApiUrl(CREATE_PATH), {
       method: "POST",
       credentials: "include",
       body: formData,
@@ -674,7 +673,7 @@ async function requestJson<T>(
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(resolveApiUrl(path), {
       ...init,
       credentials: "include",
       headers: {
@@ -709,6 +708,29 @@ async function requestJson<T>(
   }
 
   return JSON.parse(text) as ApiResponse<T>;
+}
+
+function resolveApiUrl(path: string) {
+  if (/^https?:\/\//.test(path)) {
+    return path;
+  }
+
+  if (SERVER_API_BASE_URL) {
+    return `${SERVER_API_BASE_URL}${path}`;
+  }
+
+  if (typeof window !== "undefined") {
+    return path;
+  }
+
+  throw new ApiClientError(
+    {
+      message:
+        "서버 API 주소가 설정되지 않았습니다. API_PROXY_TARGET 또는 NEXT_PUBLIC_API_URL을 확인해 주세요.",
+      path,
+    },
+    DEFAULT_FALLBACK_MESSAGE,
+  );
 }
 
 async function updateProblemWithFormData(
