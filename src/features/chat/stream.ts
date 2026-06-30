@@ -98,7 +98,12 @@ function handleFrame(raw: string, h: ChatStreamHandlers) {
 
 function waitForNextPaint() {
   return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => resolve());
+    if (document.visibilityState === "visible") {
+      requestAnimationFrame(() => resolve());
+      return;
+    }
+
+    window.setTimeout(resolve, 0);
   });
 }
 

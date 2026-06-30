@@ -372,6 +372,8 @@ export default function UserProblemDetailClient({
   }, []);
 
   const resetChatState = useCallback(() => {
+    chatStreamAbortRef.current?.abort();
+    chatStreamAbortRef.current = null;
     setChatRoomId(null);
     setChatRoomTitle(null);
     setChatRoomTitleInput("");
@@ -898,7 +900,6 @@ export default function UserProblemDetailClient({
         {
           onToken: (token) => {
             assistantContent += token;
-            setChatSending(false);
             setLastAssistant(assistantContent);
           },
           onRoom: (roomId) => {
@@ -907,7 +908,6 @@ export default function UserProblemDetailClient({
           },
           onError: (error) => {
             streamErrorReceived = true;
-            setChatSending(false);
             setLastAssistant(error.message, true);
           },
         },

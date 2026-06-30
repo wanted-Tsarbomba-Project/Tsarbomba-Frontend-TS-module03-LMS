@@ -229,7 +229,6 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         {
           onToken: (token) => {
             assistantContent += token;
-            setSending(false);
             setLastAssistant(assistantContent);
           },
           onRoom: (roomId) => {
@@ -237,7 +236,6 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           },
           onError: (error) => {
             streamErrorReceived = true;
-            setSending(false);
             setLastAssistant(error.message, true);
           },
         },
