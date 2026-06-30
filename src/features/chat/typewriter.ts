@@ -17,7 +17,7 @@ export function createChatTypewriter({
 }: ChatTypewriterOptions) {
   let displayedContent = "";
   let queuedCharacters: string[] = [];
-  let timerId: ReturnType<typeof window.setTimeout> | null = null;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
   let flushResolvers: Array<() => void> = [];
 
@@ -35,7 +35,7 @@ export function createChatTypewriter({
       return;
     }
 
-    window.clearTimeout(timerId);
+    clearTimeout(timerId);
     timerId = null;
   };
 
@@ -62,7 +62,7 @@ export function createChatTypewriter({
     }
 
     if (queuedCharacters.length > 0) {
-      timerId = window.setTimeout(tick, intervalMs);
+      timerId = setTimeout(tick, intervalMs);
       return;
     }
 
@@ -74,7 +74,7 @@ export function createChatTypewriter({
       return;
     }
 
-    timerId = window.setTimeout(tick, intervalMs);
+    timerId = setTimeout(tick, intervalMs);
   };
 
   return {
