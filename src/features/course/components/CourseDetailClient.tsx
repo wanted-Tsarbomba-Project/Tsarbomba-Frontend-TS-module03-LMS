@@ -515,7 +515,10 @@ export default function CourseDetailClient({
               {recommendLoading ? (
                 <LoadingIndicator message="추천 문제를 불러오는 중입니다." />
               ) : recommendBlocked ? (
-                <p className="text-center text-sm text-gray-500 py-8 leading-relaxed">
+                <p
+                  role="status"
+                  className="text-center text-sm text-gray-500 py-8 leading-relaxed"
+                >
                   강좌의 모든 강의를 수강한 뒤<br />
                   추천 문제를 받을 수 있어요.
                 </p>

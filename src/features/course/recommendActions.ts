@@ -27,7 +27,10 @@ export const getFinalProblemSetCandidates = async (
     if (!res.ok) return { status: "error" };
 
     const json = await res.json().catch(() => null);
-    const data = (json?.data ?? []) as ProblemSetSummary[];
+    // 응답이 배열이 아니면 빈 목록으로 — 모달의 .length/.map 런타임 오류 방지
+    const data = Array.isArray(json?.data)
+      ? (json.data as ProblemSetSummary[])
+      : [];
     return { status: "ok", problemSets: data };
   } catch {
     return { status: "error" };
