@@ -1,3 +1,16 @@
+# v1.4.0 (2026-06-30)
+
+### 강좌 추천 문제
+
+- **Added**
+  - 강좌 상세 수강 신청 버튼 옆 `추가 문제` 버튼 + 추천 모달 추가 — 강좌의 문제 카테고리에서 강좌 미포함 문제세트를 랜덤 추천 (`GET /lectures/{lectureId}/final-problem-set-candidates` 연동)
+  - 모든 강의를 수강하기 전 누르면 "모든 강의를 수강한 뒤 이용" 안내 표시 (BE 403 검증 기준)
+
+- **Fixed**
+  - 강좌 등록 시 문제 카테고리 선택 후 문제세트가 페이지네이션 응답(`data.content`)으로 바뀌어 안 뜨던 문제 수정
+
+---
+
 # v1.3.1 (2026-06-30)
 
 ### AI 채팅 Typewriter (#187)
@@ -31,17 +44,6 @@
 
 ---
 
-### 강좌 추천 문제
-
-- **Added**
-  - 강좌 상세 수강 신청 버튼 옆 `추가 문제` 버튼 + 추천 모달 추가 — 강좌의 문제 카테고리에서 강좌 미포함 문제세트를 랜덤 추천 (`GET /lectures/{lectureId}/final-problem-set-candidates` 연동)
-  - 모든 강의를 수강하기 전 누르면 "모든 강의를 수강한 뒤 이용" 안내 표시 (BE 403 검증 기준)
-
-- **Fixed**
-  - 강좌 등록 시 문제 카테고리 선택 후 문제세트가 페이지네이션 응답(`data.content`)으로 바뀌어 안 뜨던 문제 수정
-
----
-
 ### 영상 강의 수강
 
 - **Fixed**
@@ -52,7 +54,7 @@
 ### 강좌 학습 현황
 
 - **Fixed**
-  - 수강생 학습 현황 페이지네이션(#162) 적용 후 `getCourseLearningProgress` 반환 타입이 `StudentLearningProgressPage` 로 바뀌었으나 `CourseDetailClient` 가 배열로 받아 발생하던 배포 빌드 타입 오류 수정 (`page.content` 사용)
+  - 수강생 학습 현황 페이지네이션(#162) 적용 후 `getCourseLearningProgress` 반환 타입 변경으로 `CourseDetailClient` 에서 발생하던 배포 빌드 타입 오류 수정
 
 ---
 
