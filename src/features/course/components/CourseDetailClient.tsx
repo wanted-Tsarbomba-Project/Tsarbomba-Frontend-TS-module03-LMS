@@ -8,7 +8,7 @@ import {
   getMyEnrollments,
 } from "@/features/course/enrollmentActions";
 import { getCourseLearningProgress } from "@/features/course/progressActions";
-import { getRecommendedProblemSets } from "@/features/course/recommendActions";
+import { getFinalProblemSetCandidates } from "@/features/course/recommendActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   CourseDetail,
@@ -117,7 +117,15 @@ export default function CourseDetailClient({
   const [recommendLoading, setRecommendLoading] = useState(false);
   const [recommendLoaded, setRecommendLoaded] = useState(false);
   const [recommendError, setRecommendError] = useState(false);
+  const [recommendBlocked, setRecommendBlocked] = useState(false);
   const recommendTitleId = useId();
+
+  // 추천 조회 기준 강의 = 마지막 강의(최고 order). BE 가 "마지막 + 전체 완료" 를 검증.
+  const lastLectureId =
+    lectures.length > 0
+      ? lectures.reduce((a, b) => (b.lectureOrder > a.lectureOrder ? b : a))
+          .lectureId
+      : null;
 
   const [resultModal, setResultModal] = useState<{
     title: string;
@@ -140,14 +148,24 @@ export default function CourseDetailClient({
     if (recommendLoaded) return;
     setRecommendLoading(true);
     setRecommendError(false);
-    try {
-      setRecommendData(await getRecommendedProblemSets(courseId));
-      setRecommendLoaded(true); // 성공했을 때만 — 실패 시 재오픈으로 재시도 가능
-    } catch {
-      setRecommendError(true);
-    } finally {
+    setRecommendBlocked(false);
+
+    if (lastLectureId == null) {
+      setRecommendBlocked(true);
       setRecommendLoading(false);
+      return;
     }
+
+    const result = await getFinalProblemSetCandidates(lastLectureId);
+    if (result.status === "ok") {
+      setRecommendData(result.problemSets);
+      setRecommendLoaded(true); // 성공 시에만 — 미완료/실패 시 재오픈으로 재시도 가능
+    } else if (result.status === "notCompleted") {
+      setRecommendBlocked(true);
+    } else {
+      setRecommendError(true);
+    }
+    setRecommendLoading(false);
   };
 
   const handleLectureClick = (lectureId: number) => {
@@ -496,6 +514,11 @@ export default function CourseDetailClient({
             <div className="overflow-y-auto flex-1 p-4">
               {recommendLoading ? (
                 <LoadingIndicator message="추천 문제를 불러오는 중입니다." />
+              ) : recommendBlocked ? (
+                <p className="text-center text-sm text-gray-500 py-8 leading-relaxed">
+                  강좌의 모든 강의를 수강한 뒤<br />
+                  추천 문제를 받을 수 있어요.
+                </p>
               ) : recommendError ? (
                 <div className="text-center py-8">
                   <p className="text-sm text-red-500 mb-3">
