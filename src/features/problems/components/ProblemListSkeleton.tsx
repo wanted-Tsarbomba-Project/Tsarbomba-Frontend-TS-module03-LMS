@@ -34,12 +34,18 @@ export default function ProblemListSkeleton() {
   return (
     <main
       aria-busy="true"
-      aria-label="문제 목록을 불러오는 중입니다."
       className={problemListSkeletonClasses.container}
     >
+      <p aria-live="polite" className="sr-only" role="status">
+        문제 목록을 불러오는 중입니다.
+      </p>
+
       <h2 className={problemListSkeletonClasses.pageTitle}>문제풀이</h2>
 
-      <div className={problemListSkeletonClasses.scrollArea}>
+      <div
+        aria-hidden="true"
+        className={problemListSkeletonClasses.scrollArea}
+      >
         <table className={problemListSkeletonClasses.table}>
           <thead>
             <tr>
@@ -61,7 +67,7 @@ export default function ProblemListSkeleton() {
         </table>
       </div>
 
-      <div className={problemListSkeletonClasses.pagination}>
+      <div aria-hidden="true" className={problemListSkeletonClasses.pagination}>
         {Array.from({ length: 5 }, (_, index) => (
           <Skeleton
             borderRadius="8px"
