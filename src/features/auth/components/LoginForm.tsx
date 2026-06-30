@@ -1,10 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getGoogleAuthUrl, login } from "@/features/auth/actions";
 import type { LoginResponseData } from "@/features/auth/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
+
+// 구글 콜백 실패 시 BE 가 /auth/login?error=CODE 로 리다이렉트 → 코드별 안내 문구.
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  "AUT-022":
+    "이미 이메일로 가입된 계정이에요.\n이메일과 비밀번호로 로그인해 주세요.",
+};
+
+const getOauthErrorMessage = (code: string): string =>
+  OAUTH_ERROR_MESSAGES[code] ??
+  "구글 로그인 중 문제가 발생했어요.\n잠시 후 다시 시도해 주세요.";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -16,6 +26,19 @@ export default function LoginForm() {
   const [successOpen, setSuccessOpen] = useState(false);
   // 모달 닫을 때 이동할 경로 — role 에 따라 분기
   const [successRedirect, setSuccessRedirect] = useState("/");
+  // 구글 콜백 에러(?error=) 안내 모달
+  const [oauthErrorMsg, setOauthErrorMsg] = useState("");
+
+  // 구글 로그인 실패로 ?error=CODE 가 붙어 돌아오면 모달로 안내하고 URL 에서 파라미터 제거.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("error");
+    if (!code) return;
+    setOauthErrorMsg(getOauthErrorMessage(code));
+    params.delete("error");
+    const qs = params.toString();
+    window.history.replaceState({}, "", `/auth/login${qs ? `?${qs}` : ""}`);
+  }, []);
 
   // 구글 로그인 — BE 가 준 동의 URL 로 이동 (BE 콜백이 신규/기존 분기 처리)
   const handleGoogleLogin = async () => {
@@ -221,6 +244,13 @@ export default function LoginForm() {
         }}
         modalTitle="로그인 완료"
         modalContent="환영합니다!"
+      />
+
+      <OneButtonModal
+        isOpen={!!oauthErrorMsg}
+        onClose={() => setOauthErrorMsg("")}
+        modalTitle="구글 로그인 안내"
+        modalContent={oauthErrorMsg}
       />
     </div>
   );
