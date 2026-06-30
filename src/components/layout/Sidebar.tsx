@@ -309,6 +309,18 @@ export default function Sidebar({
             프로필 정보
           </Link>
         </li>
+        <li>
+          <Link
+            className={
+              pathname === "/user/profile/security"
+                ? itemActiveClass
+                : itemBaseClass
+            }
+            href="/user/profile/security"
+          >
+            보안
+          </Link>
+        </li>
       </ul>
     </div>
   );
