@@ -113,8 +113,12 @@ export default function RootLayout({
   const isFlexBodySection = isMypagePath || isAdminPath || isChatPath;
 
   return (
-    <html lang="ko">
-      <body className="bg-white min-h-screen m-0 p-0 antialiased flex flex-col">
+    <html className={isChatPath ? "scrollbar-invisible" : undefined} lang="ko">
+      <body
+        className={`bg-white min-h-screen m-0 p-0 antialiased flex flex-col ${
+          isChatPath ? "scrollbar-invisible" : ""
+        }`}
+      >
         <div className="flex flex-col min-h-screen w-full bg-white">
           <Header />
 
