@@ -935,6 +935,7 @@ export default function UserProblemDetailClient({
           },
           onRoom: (roomId) => {
             newRoomId = roomId;
+            activeChatRoomIdRef.current = roomId;
             setChatRoomId(roomId);
             void refreshNewChatRoomTitle(roomId);
           },

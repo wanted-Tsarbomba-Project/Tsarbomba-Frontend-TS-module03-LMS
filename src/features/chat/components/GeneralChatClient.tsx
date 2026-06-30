@@ -101,7 +101,9 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const headerActionDisabled = deleting || updatingTitle;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: sending ? "auto" : "smooth",
+    });
   }, [messages, sending]);
 
   useEffect(() => {
