@@ -7,7 +7,10 @@ import type {
 } from "@/features/problems/types";
 
 // 빈값이어도 상대경로(/api/...)로 호출되어 next.config rewrites 가 가로채도록 throw 대신 "" 폴백
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+// 서버 컴포넌트에서도 호출되므로 API_PROXY_TARGET 우선 (없으면 NEXT_PUBLIC_API_URL, 그래도 없으면 상대경로).
+// 빈값이면 서버 런타임에서 상대경로 fetch 가 "Failed to parse URL" 로 실패하므로 서버 전용 절대주소 폴백 필요.
+const API_BASE_URL =
+  process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface ApiResponse<T> {
   data?: T;

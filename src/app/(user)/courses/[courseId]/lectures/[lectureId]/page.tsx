@@ -384,7 +384,7 @@ export default function LectureDetailPage() {
                 <button
                   type="button"
                   onClick={() => setProblemNavTarget(currentLink)}
-                  className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors"
+                  className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors"
                 >
                   문제 풀러 가기
                 </button>
@@ -471,7 +471,7 @@ export default function LectureDetailPage() {
               type="button"
               disabled={!prevLecture}
               onClick={() => prevLecture && goToLecture(prevLecture.lectureId)}
-              className="flex items-center gap-1 text-base font-medium text-gray-800 hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 text-base font-medium text-gray-800 cursor-pointer hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               <svg
                 width="18"
@@ -497,7 +497,7 @@ export default function LectureDetailPage() {
                   ? "현재 강의를 완료하면 다음 강의가 열립니다."
                   : undefined
               }
-              className="flex items-center gap-1 text-base font-medium text-gray-800 hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 text-base font-medium text-gray-800 cursor-pointer hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               다음
               <svg

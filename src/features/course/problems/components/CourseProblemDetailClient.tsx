@@ -32,6 +32,7 @@ import type {
 } from "@/features/problems/types";
 import ProblemChatPanel from "@/features/problems/components/ProblemChatPanel";
 import ProblemResultPanel from "@/features/problems/components/ProblemResultPanel";
+import { useResizableProblemPanel } from "@/features/problems/hooks/useResizableProblemPanel";
 
 // 스타일은 문제풀이 화면과 동일하게 공유하되, 클라이언트 컴포넌트 의존 없이 스타일 파일만 참조함
 import { problemDetailClasses as styles } from "@/features/problems/problemDetailStyles";
@@ -119,6 +120,14 @@ export default function CourseProblemDetailClient({
     () => getInitialProblemState(initialProblemSet, lectureProblemSetId),
     [initialProblemSet, lectureProblemSetId],
   );
+
+  // 좌우 패널 드래그 리사이즈 (문제풀이방과 동일)
+  const {
+    contentAreaRef,
+    isPanelSplitAvailable,
+    problemPanelStyle,
+    handlePanelResizeStart,
+  } = useResizableProblemPanel();
 
   const [problemSet] = useState<ProblemSetDetail>(initialProblemSet);
   const [currentIndex, setCurrentIndex] = useState(initialState.currentIndex);
@@ -457,15 +466,39 @@ export default function CourseProblemDetailClient({
             variant="problem-detail"
           />
 
-          <section className={styles.contentArea}>
-            <article className={styles.problemBox}>
+          <section className={styles.contentArea} ref={contentAreaRef}>
+            <article
+              className={`${styles.problemBox} ${
+                isPanelSplitAvailable
+                  ? styles.problemResizablePane
+                  : styles.problemStackedPane
+              }`}
+              style={isPanelSplitAvailable ? problemPanelStyle : undefined}
+            >
               <h2>문제 내용</h2>
               <div className={styles.problemContent}>
                 {currentProblem?.content}
               </div>
             </article>
 
-            <section className={styles.solveBox}>
+            {isPanelSplitAvailable && (
+              <button
+                aria-label="문제 내용과 문제풀이 영역 너비 조절"
+                aria-orientation="vertical"
+                className={styles.resizeHandle}
+                onPointerDown={handlePanelResizeStart}
+                role="separator"
+                type="button"
+              />
+            )}
+
+            <section
+              className={`${styles.solveBox} ${
+                isPanelSplitAvailable
+                  ? styles.solveResizablePane
+                  : styles.solveStackedPane
+              }`}
+            >
               <div className={styles.editorSection}>
                 <h2>문제풀이 영역</h2>
                 {showHintToast && (

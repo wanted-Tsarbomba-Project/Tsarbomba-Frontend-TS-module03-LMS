@@ -30,7 +30,7 @@ interface CourseDetailClientProps {
 const TEACHER_ROLES = ["INSTRUCTOR", "OPERATOR", "ADMIN"];
 
 const outlineBtn =
-  "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
+  "px-4 py-2 text-sm font-medium bg-white text-blue-900 border border-blue-900 rounded-lg cursor-pointer hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap";
 
 // "이동하기" 는 학생 답안 view-only 화면 — 백엔드 API 확정 전까지 비활성 stub.
 const progressColumns: ListColumn<StudentLearningProgress>[] = [
@@ -330,8 +330,9 @@ export default function CourseDetailClient({
                       삭제하기
                     </button>
                   </>
-                ) : (
+                ) : isEnrolled ? (
                   <>
+                    {/* 추천 문제는 수강 + 전체 강의 완료가 전제 → 수강 중일 때만 노출 */}
                     <button
                       type="button"
                       onClick={handleRecommendClick}
@@ -339,20 +340,18 @@ export default function CourseDetailClient({
                     >
                       추가 문제
                     </button>
-                    {isEnrolled ? (
-                      <span className="px-6 py-2 text-sm font-medium text-blue-900 bg-gray-100 rounded-lg whitespace-nowrap">
-                        수강 중
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleEnrollClick}
-                        className="px-6 py-2 text-sm font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors whitespace-nowrap"
-                      >
-                        수강 신청
-                      </button>
-                    )}
+                    <span className="px-6 py-2 text-sm font-medium text-blue-900 bg-gray-100 rounded-lg whitespace-nowrap">
+                      수강 중
+                    </span>
                   </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleEnrollClick}
+                    className="px-6 py-2 text-sm font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors whitespace-nowrap"
+                  >
+                    수강 신청
+                  </button>
                 )}
               </div>
             </div>
