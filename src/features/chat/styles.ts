@@ -1,5 +1,5 @@
 export const chatClasses = {
-  page: "relative flex h-[66vh] max-h-[720px] min-h-[480px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-120px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
+  page: "relative flex h-[74vh] max-h-[840px] min-h-[540px] w-full flex-col overflow-hidden rounded-base border border-border-light bg-bg-box text-text-primary max-md:h-[calc(100vh-96px)] max-md:max-h-none max-md:min-h-0 max-md:rounded-none",
   header:
     "flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-light bg-bg-box px-6 py-2.5 text-title-lg font-bold text-text-primary max-md:min-h-[52px] max-md:px-5 max-md:text-title-md",
   titleGroup: "flex min-w-0 flex-1 flex-col gap-1",
@@ -18,7 +18,7 @@ export const chatClasses = {
   cancelEditButton:
     "shrink-0 cursor-pointer rounded-base border border-border-light bg-bg-box px-3.5 py-2 text-body font-semibold text-text-primary hover:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-60",
   messageContainer:
-    "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 pb-28 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-md:p-5 max-md:pb-28",
+    "flex flex-1 flex-col gap-4 overflow-y-auto bg-bg-box p-6 pb-28 [scrollbar-color:#cbd5e1_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-track]:bg-transparent max-md:p-5 max-md:pb-28",
   messageWrapper: "flex w-full",
   assistantWrapper: "justify-start",
   userWrapper: "justify-end",
@@ -42,7 +42,7 @@ export const chatClasses = {
 
 export const problemChatClasses = {
   chatPanel:
-    "absolute right-0 top-3.5 z-20 flex h-[calc(100%-28px)] min-h-[560px] w-[min(420px,calc(100%-32px))] flex-col rounded-base border border-border-light bg-bg-box shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition-[opacity,transform] duration-200 ease-in-out max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-[74px] max-md:h-auto max-md:min-h-0 max-md:w-auto",
+    "absolute right-0 top-3.5 z-20 flex h-[calc(100%-28px)] min-h-[620px] w-[min(420px,calc(100%-32px))] flex-col rounded-base border border-border-light bg-bg-box shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition-[opacity,transform] duration-200 ease-in-out max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-[74px] max-md:h-auto max-md:min-h-0 max-md:w-auto",
   closed: "pointer-events-none translate-x-6 opacity-0",
   open: "pointer-events-auto translate-x-0 opacity-100",
   chatHeader:
@@ -58,7 +58,8 @@ export const problemChatClasses = {
     "h-8 shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-bg-box px-2 text-description font-semibold text-text-blue hover:bg-button-blue-bg hover:text-text-white disabled:cursor-not-allowed disabled:opacity-50",
   titleCancelButton:
     "h-8 shrink-0 cursor-pointer rounded-base border border-border-light bg-bg-box px-2 text-description font-semibold text-text-primary hover:bg-bg-box-hover disabled:cursor-not-allowed disabled:opacity-50",
-  chatMessages: "flex-1 overflow-y-auto p-[18px]",
+  chatMessages:
+    "flex-1 overflow-y-auto p-[18px] [scrollbar-color:#cbd5e1_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-track]:bg-transparent",
   chatMessageWrap: "mb-2.5 flex",
   assistantMessageWrap: "justify-start",
   userMessageWrap: "justify-end",
