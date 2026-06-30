@@ -76,6 +76,15 @@ body {
   font-family: "Pretendard", sans-serif;
 }
 
+.scrollbar-invisible {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-invisible::-webkit-scrollbar {
+  display: none;
+}
+
 input,
 textarea,
 select {

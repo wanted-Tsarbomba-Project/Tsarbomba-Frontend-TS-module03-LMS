@@ -69,6 +69,12 @@ function createClientMessageId() {
 
 export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const router = useRouter();
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+  const shouldFollowScrollRef = useRef(true);
+  const userScrollIntentRef = useRef(false);
+  const userScrollIntentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatStreamAbortRef = useRef<AbortController | null>(null);
@@ -100,14 +106,66 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     : "";
   const headerActionDisabled = deleting || updatingTitle;
 
+  const updateShouldFollowScroll = useCallback(() => {
+    const container = messageContainerRef.current;
+
+    if (!container) {
+      shouldFollowScrollRef.current = true;
+      return;
+    }
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    shouldFollowScrollRef.current = distanceFromBottom <= 96;
+  }, []);
+
+  const markUserScrollIntent = useCallback(() => {
+    userScrollIntentRef.current = true;
+
+    if (userScrollIntentTimerRef.current) {
+      clearTimeout(userScrollIntentTimerRef.current);
+    }
+
+    userScrollIntentTimerRef.current = setTimeout(() => {
+      userScrollIntentRef.current = false;
+      userScrollIntentTimerRef.current = null;
+    }, 150);
+  }, []);
+
+  const handleMessageScroll = useCallback(() => {
+    if (!userScrollIntentRef.current) {
+      return;
+    }
+
+    updateShouldFollowScroll();
+  }, [updateShouldFollowScroll]);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: sending ? "auto" : "smooth",
-    });
+    const container = messageContainerRef.current;
+
+    if (!shouldFollowScrollRef.current) {
+      return;
+    }
+
+    if (container) {
+      container.scrollTo({
+        behavior: sending ? "auto" : "smooth",
+        top: container.scrollHeight,
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: sending ? "auto" : "smooth",
+      });
+    }
   }, [messages, sending]);
 
   useEffect(() => {
     return () => {
+      if (userScrollIntentTimerRef.current) {
+        clearTimeout(userScrollIntentTimerRef.current);
+      }
+
       chatStreamAbortRef.current?.abort();
     };
   }, []);
@@ -196,6 +254,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     setInputValue("");
     setSending(true);
     setShowResponsePending(true);
+    shouldFollowScrollRef.current = true;
     chatStreamAbortRef.current?.abort();
     chatStreamAbortRef.current = controller;
 
@@ -483,7 +542,14 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         )}
       </div>
 
-      <div className={chatClasses.messageContainer}>
+      <div
+        className={chatClasses.messageContainer}
+        onPointerDown={markUserScrollIntent}
+        onScroll={handleMessageScroll}
+        onTouchMove={markUserScrollIntent}
+        onWheel={markUserScrollIntent}
+        ref={messageContainerRef}
+      >
         {messages.map((message, index) => {
           if (message.role === "ASSISTANT" && !message.content) {
             return null;
