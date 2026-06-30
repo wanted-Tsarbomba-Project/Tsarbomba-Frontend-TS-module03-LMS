@@ -23,13 +23,10 @@ export const getRecommendedProblemSets = async (
   const courseSet = new Set(courseSetIds);
 
   // 2. 카테고리별 문제세트를 받아 강좌 문제세트가 속한 카테고리를 매칭
+  //    개별 조회 실패는 빈 배열로 숨기지 않고 전파 — UI가 "추천 없음"과 "조회 실패"를 구분하도록.
   const categories = await fetchProblemCategories();
   const groups = await Promise.all(
-    categories.map((c) =>
-      getProblemSets(String(c.categoryId)).catch(
-        () => [] as ProblemSetSummary[],
-      ),
-    ),
+    categories.map((c) => getProblemSets(String(c.categoryId))),
   );
   const matched = groups.find((sets) =>
     sets.some((s) => courseSet.has(s.problemSetId)),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteCourse } from "@/features/course/actions";
 import {
@@ -116,6 +116,8 @@ export default function CourseDetailClient({
   const [recommendData, setRecommendData] = useState<ProblemSetSummary[]>([]);
   const [recommendLoading, setRecommendLoading] = useState(false);
   const [recommendLoaded, setRecommendLoaded] = useState(false);
+  const [recommendError, setRecommendError] = useState(false);
+  const recommendTitleId = useId();
 
   const [resultModal, setResultModal] = useState<{
     title: string;
@@ -123,17 +125,28 @@ export default function CourseDetailClient({
     redirect?: string;
   } | null>(null);
 
+  // 추천 모달 Esc 닫기
+  useEffect(() => {
+    if (!showRecommend) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowRecommend(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showRecommend]);
+
   const handleRecommendClick = async () => {
     setShowRecommend(true);
     if (recommendLoaded) return;
     setRecommendLoading(true);
+    setRecommendError(false);
     try {
       setRecommendData(await getRecommendedProblemSets(courseId));
+      setRecommendLoaded(true); // 성공했을 때만 — 실패 시 재오픈으로 재시도 가능
     } catch {
-      /* ignore — 빈 목록으로 표시 */
+      setRecommendError(true);
     } finally {
       setRecommendLoading(false);
-      setRecommendLoaded(true);
     }
   };
 
@@ -442,10 +455,24 @@ export default function CourseDetailClient({
       )}
 
       {showRecommend && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-screen flex flex-col">
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={() => setShowRecommend(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={recommendTitleId}
+            className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-screen flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">추천 문제</h3>
+              <h3
+                id={recommendTitleId}
+                className="text-lg font-semibold text-gray-800"
+              >
+                추천 문제
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowRecommend(false)}
@@ -469,6 +496,19 @@ export default function CourseDetailClient({
             <div className="overflow-y-auto flex-1 p-4">
               {recommendLoading ? (
                 <LoadingIndicator message="추천 문제를 불러오는 중입니다." />
+              ) : recommendError ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-red-500 mb-3">
+                    추천 문제를 불러오지 못했어요.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRecommendClick}
+                    className="px-4 py-2 text-sm font-medium text-blue-900 border border-blue-900 rounded-lg hover:bg-blue-900 hover:text-white transition-colors cursor-pointer"
+                  >
+                    다시 시도
+                  </button>
+                </div>
               ) : recommendData.length === 0 ? (
                 <p className="text-center text-sm text-gray-400 py-8">
                   추천할 문제가 없어요.
