@@ -347,7 +347,7 @@ export default function LectureDetailPage() {
           <p className="mb-3 text-xs text-blue-900">
             {isProblemLecture
               ? "문제를 모두 풀이해야 다음 강의가 열립니다."
-              : "강의 영상의 90% 이상을 시청해야 다음 강의가 열립니다. 완료 전에는 재생바 이동이 제한됩니다."}
+              : "강의 영상을 끝까지 시청해야 다음 강의가 열립니다. 처음 시청 시에는 재생바 이동과 배속 재생이 제한됩니다."}
           </p>
 
           {isProblemLecture ? (

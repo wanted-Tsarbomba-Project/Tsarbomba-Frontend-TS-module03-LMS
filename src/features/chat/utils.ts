@@ -14,11 +14,13 @@ export function createMessage(
   role: ChatMessage["role"],
   content: string,
   error = false,
+  clientId?: string,
 ) {
   return {
     role,
     content,
     error,
+    clientId,
   };
 }
 

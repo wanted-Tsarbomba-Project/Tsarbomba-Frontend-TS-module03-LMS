@@ -147,7 +147,8 @@ export default function CourseDetailClient({
     if (progressData.length > 0) return;
     setProgressLoading(true);
     try {
-      setProgressData(await getCourseLearningProgress(courseId));
+      const page = await getCourseLearningProgress(courseId);
+      setProgressData(page.content);
     } catch {
       /* ignore */
     } finally {

@@ -250,6 +250,7 @@ export interface ChatMessage {
   role: "USER" | "ASSISTANT";
   content: string;
   error?: boolean;
+  clientId?: string;
 }
 
 export interface ChatResponse {
