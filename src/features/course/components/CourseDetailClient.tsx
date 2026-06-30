@@ -8,12 +8,14 @@ import {
   getMyEnrollments,
 } from "@/features/course/enrollmentActions";
 import { getCourseLearningProgress } from "@/features/course/progressActions";
+import { getRecommendedProblemSets } from "@/features/course/recommendActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   CourseDetail,
   StudentLearningProgress,
   LectureSummary,
 } from "@/features/course/types";
+import type { ProblemSetSummary } from "@/features/problems/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";
@@ -109,11 +111,31 @@ export default function CourseDetailClient({
   const [showEnrollConfirm, setShowEnrollConfirm] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
 
+  // 추가 문제 추천 모달
+  const [showRecommend, setShowRecommend] = useState(false);
+  const [recommendData, setRecommendData] = useState<ProblemSetSummary[]>([]);
+  const [recommendLoading, setRecommendLoading] = useState(false);
+  const [recommendLoaded, setRecommendLoaded] = useState(false);
+
   const [resultModal, setResultModal] = useState<{
     title: string;
     content: string;
     redirect?: string;
   } | null>(null);
+
+  const handleRecommendClick = async () => {
+    setShowRecommend(true);
+    if (recommendLoaded) return;
+    setRecommendLoading(true);
+    try {
+      setRecommendData(await getRecommendedProblemSets(courseId));
+    } catch {
+      /* ignore — 빈 목록으로 표시 */
+    } finally {
+      setRecommendLoading(false);
+      setRecommendLoaded(true);
+    }
+  };
 
   const handleLectureClick = (lectureId: number) => {
     router.push(`/courses/${courseId}/lectures/${lectureId}`);
@@ -277,18 +299,29 @@ export default function CourseDetailClient({
                       삭제하기
                     </button>
                   </>
-                ) : isEnrolled ? (
-                  <span className="px-6 py-2 text-sm font-medium text-blue-900 bg-gray-100 rounded-lg whitespace-nowrap">
-                    수강 중
-                  </span>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleEnrollClick}
-                    className="px-6 py-2 text-sm font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors whitespace-nowrap"
-                  >
-                    수강 신청
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleRecommendClick}
+                      className={outlineBtn}
+                    >
+                      추가 문제
+                    </button>
+                    {isEnrolled ? (
+                      <span className="px-6 py-2 text-sm font-medium text-blue-900 bg-gray-100 rounded-lg whitespace-nowrap">
+                        수강 중
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleEnrollClick}
+                        className="px-6 py-2 text-sm font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors whitespace-nowrap"
+                      >
+                        수강 신청
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -400,6 +433,73 @@ export default function CourseDetailClient({
                 type="button"
                 onClick={() => setShowProgress(false)}
                 className="px-5 py-2.5 text-sm text-white bg-blue-900 rounded-lg hover:bg-blue-950 transition-colors font-medium"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRecommend && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-screen flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">추천 문제</h3>
+              <button
+                type="button"
+                onClick={() => setShowRecommend(false)}
+                aria-label="모달 닫기"
+                className="text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                >
+                  <path d="M15 5L5 15M5 5l10 10" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4">
+              {recommendLoading ? (
+                <LoadingIndicator message="추천 문제를 불러오는 중입니다." />
+              ) : recommendData.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-8">
+                  추천할 문제가 없어요.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {recommendData.map((ps) => (
+                    <li key={ps.problemSetId}>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/problems/${ps.problemSetId}`)}
+                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-blue-900 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <p className="text-sm font-semibold text-gray-800 mb-1">
+                          {ps.title}
+                        </p>
+                        <p className="text-xs text-gray-500 line-clamp-2">
+                          {ps.description}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex justify-end px-6 py-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setShowRecommend(false)}
+                className="px-5 py-2.5 text-sm text-white bg-blue-900 rounded-lg hover:bg-blue-950 transition-colors font-medium cursor-pointer"
               >
                 닫기
               </button>
