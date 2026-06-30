@@ -21,6 +21,7 @@ import {
 } from "../actions";
 import { streamChat } from "../stream";
 import { chatClasses } from "../styles";
+import { createChatTypewriter } from "../typewriter";
 import type { ChatMessage } from "../types";
 import {
   createMessage,
@@ -75,6 +76,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [sending, setSending] = useState(false);
+  const [showResponsePending, setShowResponsePending] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updatingTitle, setUpdatingTitle] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -99,7 +101,9 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const headerActionDisabled = deleting || updatingTitle;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: sending ? "auto" : "smooth",
+    });
   }, [messages, sending]);
 
   useEffect(() => {
@@ -182,7 +186,6 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
 
     const userMessage = inputValue;
     const controller = new AbortController();
-    let assistantContent = "";
     let newRoomId: number | undefined;
     let streamErrorReceived = false;
     const userMessageId = createClientMessageId();
@@ -192,6 +195,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     appendMessage(createMessage("ASSISTANT", "", false, assistantMessageId));
     setInputValue("");
     setSending(true);
+    setShowResponsePending(true);
     chatStreamAbortRef.current?.abort();
     chatStreamAbortRef.current = controller;
 
@@ -215,6 +219,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         return next;
       });
     };
+    const typewriter = createChatTypewriter({
+      onUpdate: setLastAssistant,
+      signal: controller.signal,
+    });
 
     try {
       const path = activeRoomId
@@ -228,19 +236,23 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           : { userMessage, problemSetId: null, problemId: null },
         {
           onToken: (token) => {
-            assistantContent += token;
-            setLastAssistant(assistantContent);
+            setShowResponsePending(false);
+            typewriter.push(token);
           },
           onRoom: (roomId) => {
             newRoomId = roomId;
           },
           onError: (error) => {
             streamErrorReceived = true;
+            setShowResponsePending(false);
+            typewriter.stop();
             setLastAssistant(error.message, true);
           },
         },
         controller.signal,
       );
+
+      await typewriter.flush();
 
       if (streamErrorReceived) {
         return;
@@ -253,13 +265,16 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       }
     } catch (error) {
       if (controller.signal.aborted) {
+        typewriter.stop();
         return;
       }
 
+      typewriter.stop();
       setLastAssistant(
         "AI 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
         true,
       );
+      setShowResponsePending(false);
 
       handleClientError(error, {
         router,
@@ -273,8 +288,11 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         chatStreamAbortRef.current = null;
       }
 
+      typewriter.stop();
+
       if (!controller.signal.aborted) {
         setSending(false);
+        setShowResponsePending(false);
       }
     }
   }, [activeRoomId, appendMessage, inputValue, router, sending]);
@@ -493,7 +511,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           );
         })}
 
-        {sending && (
+        {showResponsePending && (
           <div
             className={`${chatClasses.messageWrapper} ${chatClasses.assistantWrapper}`}
           >
