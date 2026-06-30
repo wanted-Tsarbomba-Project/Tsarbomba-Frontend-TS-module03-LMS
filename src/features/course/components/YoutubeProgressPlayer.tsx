@@ -254,10 +254,16 @@ export default function YoutubeProgressPlayer({
       const watchedDeltaSec = ended
         ? remaining
         : Math.min(rawDelta, remaining);
+      // 미완료 상태에서는 저장 위치를 안전 지점(실제 시청 위치)으로 cap —
+      // seek 차단이 1초 타이머라, 점프 직후 즉시 일시정지/이탈하면 앞선 위치가 저장돼
+      // 이어보기로 안 본 구간을 건너뛸 수 있는 걸 방지.
+      const currentPos = Math.floor(player.getCurrentTime());
       const lastPositionSec =
         ended && durationSec > 0
           ? durationSec
-          : Math.floor(player.getCurrentTime());
+          : completedRef.current
+            ? currentPos
+            : Math.min(currentPos, Math.floor(lastSafePosRef.current));
 
       // 끝까지 봄 → 이후 seek 제한 해제 (완료 확정은 BE 가 누적 100% 로 판정)
       if (ended) completedRef.current = true;
@@ -293,9 +299,10 @@ export default function YoutubeProgressPlayer({
         const p = await getLectureProgress(lectureId);
         existingWatchedSecRef.current = p?.watchedSec ?? 0;
         completedRef.current = !!p?.completed;
-        const last = p?.lastPositionSec ?? 0;
-        const watched = p?.watchedSec ?? 0;
-        initialLastPosition = Math.min(last, watched);
+        // 이어보기는 영상 위치(lastPositionSec) 기준 — watchedSec(시청 시간)을 섞으면
+        // 저장 타이밍/상한 차이로 last > watched 가 되어 되감김이 생김.
+        // 안 본 구간 앞 점프는 재생 중 seek 차단이 막으므로 위치값만 사용해도 안전.
+        initialLastPosition = p?.lastPositionSec ?? 0;
         lastSafePosRef.current = initialLastPosition;
       } catch {
         /* 진도 row 없는 첫 시청 — 0 으로 시작 */

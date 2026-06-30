@@ -19,11 +19,14 @@ async function fetchJson<T>(path: string, fallback: T): Promise<T> {
       headers: { ...authHeader() },
     });
     const json = await res.json();
-    const data = Array.isArray(json?.data)
-      ? json.data
-      : Array.isArray(json)
-        ? json
-        : null;
+    // 페이지네이션 응답(data.content) / 비페이지네이션(data 배열) / 루트 배열 모두 수용
+    const data = Array.isArray(json?.data?.content)
+      ? json.data.content
+      : Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json)
+          ? json
+          : null;
     return (data as T) ?? fallback;
   } catch {
     return fallback;

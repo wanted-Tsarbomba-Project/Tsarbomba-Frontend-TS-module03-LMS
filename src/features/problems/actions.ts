@@ -72,6 +72,12 @@ interface PageResponse<T> {
   totalPages?: number;
 }
 
+interface ProblemSetPage {
+  problemSets: ProblemSetSummary[];
+  totalElements: number;
+  totalPages: number;
+}
+
 type NextRequestInit = RequestInit & {
   next?: {
     revalidate?: number;
@@ -232,9 +238,44 @@ export async function getProblemSets(
   revalidateSeconds?: number,
   init: NextRequestInit = {},
 ) {
-  const path = categoryId
-    ? `/api/v1/problem-sets?categoryId=${encodeURIComponent(categoryId)}`
-    : "/api/v1/problem-sets";
+  const page = await getProblemSetPage({
+    categoryId,
+    revalidateSeconds,
+    init,
+  });
+
+  return page.problemSets;
+}
+
+export async function getProblemSetPage({
+  categoryId,
+  page,
+  size,
+  revalidateSeconds,
+  init = {},
+}: {
+  categoryId?: string | null;
+  page?: number;
+  size?: number;
+  revalidateSeconds?: number;
+  init?: NextRequestInit;
+} = {}): Promise<ProblemSetPage> {
+  const params = new URLSearchParams();
+
+  if (categoryId) {
+    params.set("categoryId", categoryId);
+  }
+
+  if (typeof page === "number") {
+    params.set("page", String(page));
+  }
+
+  if (typeof size === "number") {
+    params.set("size", String(size));
+  }
+
+  const query = params.toString();
+  const path = `/api/v1/problem-sets${query ? `?${query}` : ""}`;
 
   const result = await requestJson<
     ProblemSetSummary[] | PageResponse<ProblemSetSummary>
@@ -247,24 +288,40 @@ export async function getProblemSets(
     },
   );
 
-  return extractProblemSets(result);
+  return extractProblemSetPage(result);
 }
 
-function extractProblemSets(result: unknown): ProblemSetSummary[] {
+function extractProblemSetPage(result: unknown): ProblemSetPage {
   const directList = getProblemSetList(result);
 
   if (directList) {
-    return directList;
+    return {
+      problemSets: directList,
+      totalElements: directList.length,
+      totalPages: 1,
+    };
   }
 
   if (!result || typeof result !== "object") {
-    return [];
+    return {
+      problemSets: [],
+      totalElements: 0,
+      totalPages: 1,
+    };
   }
 
   const payload = result as { data?: unknown };
-  const nestedList = getProblemSetList(payload.data);
+  const nestedPage = getProblemSetPageData(payload.data);
 
-  return nestedList ?? [];
+  if (nestedPage) {
+    return nestedPage;
+  }
+
+  return {
+    problemSets: [],
+    totalElements: 0,
+    totalPages: 1,
+  };
 }
 
 function getProblemSetList(value: unknown): ProblemSetSummary[] | null {
@@ -291,6 +348,22 @@ function getProblemSetList(value: unknown): ProblemSetSummary[] | null {
   }
 
   return null;
+}
+
+function getProblemSetPageData(value: unknown): ProblemSetPage | null {
+  const problemSets = getProblemSetList(value);
+
+  if (!problemSets) {
+    return null;
+  }
+
+  const page = value as PageResponse<ProblemSetSummary>;
+
+  return {
+    problemSets,
+    totalElements: page.totalElements ?? problemSets.length,
+    totalPages: page.totalPages ?? 1,
+  };
 }
 
 export async function getProblemCategories(

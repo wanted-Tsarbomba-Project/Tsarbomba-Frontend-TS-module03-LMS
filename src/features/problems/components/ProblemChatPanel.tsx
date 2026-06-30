@@ -17,6 +17,7 @@ interface ProblemChatPanelProps {
   chatRoomTitleInput?: string;
   chatRoomTitle?: string | null;
   chatSending: boolean;
+  showChatSendingIndicator?: boolean;
   canEditChatRoomTitle?: boolean;
   onChatInputChange: (value: string) => void;
   onChatRoomTitleCancel?: () => void;
@@ -34,6 +35,7 @@ export default function ProblemChatPanel({
   chatRoomTitleInput = "",
   chatRoomTitle,
   chatSending,
+  showChatSendingIndicator = chatSending,
   canEditChatRoomTitle = false,
   onChatInputChange,
   onChatRoomTitleCancel,
@@ -125,27 +127,33 @@ export default function ProblemChatPanel({
       </div>
 
       <div className={problemChatClasses.chatMessages}>
-        {chatMessages.map((message, index) => (
-          <div
-            className={`${problemChatClasses.chatMessageWrap} ${
-              isUserMessage(message)
-                ? problemChatClasses.userMessageWrap
-                : problemChatClasses.assistantMessageWrap
-            }`}
-            key={`${message.role}-${index}`}
-          >
+        {chatMessages.map((message, index) => {
+          if (!isUserMessage(message) && !message.content) {
+            return null;
+          }
+
+          return (
             <div
-              className={`${problemChatClasses.chatMessage} ${
+              className={`${problemChatClasses.chatMessageWrap} ${
                 isUserMessage(message)
-                  ? problemChatClasses.userMessage
-                  : problemChatClasses.assistantMessage
-              } ${message.error ? problemChatClasses.errorMessage : ""}`}
+                  ? problemChatClasses.userMessageWrap
+                  : problemChatClasses.assistantMessageWrap
+              }`}
+              key={message.clientId ?? `${message.role}-${index}`}
             >
-              {message.content}
+              <div
+                className={`${problemChatClasses.chatMessage} ${
+                  isUserMessage(message)
+                    ? problemChatClasses.userMessage
+                    : problemChatClasses.assistantMessage
+                } ${message.error ? problemChatClasses.errorMessage : ""}`}
+              >
+                {message.content}
+              </div>
             </div>
-          </div>
-        ))}
-        {chatSending && (
+          );
+        })}
+        {showChatSendingIndicator && (
           <div
             className={`${problemChatClasses.chatMessageWrap} ${problemChatClasses.assistantMessageWrap}`}
           >

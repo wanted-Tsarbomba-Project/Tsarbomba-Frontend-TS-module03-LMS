@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   List,
   OneButtonModal,
+  Pagination,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
@@ -26,7 +27,10 @@ const userProblemListClasses = {
 
 
 interface UserProblemListClientProps {
+  currentPage: number;
   initialProblemSets: ProblemSetSummary[];
+  pageSize: number;
+  totalPages: number;
 }
 
 function formatDate(value?: string) {
@@ -48,7 +52,10 @@ function formatDate(value?: string) {
 }
 
 export default function UserProblemListClient({
+  currentPage,
   initialProblemSets,
+  pageSize,
+  totalPages,
 }: UserProblemListClientProps) {
   const router = useRouter();
 
@@ -147,7 +154,8 @@ export default function UserProblemListClient({
       {
         key: "problemNumber",
         label: "No.",
-        render: (item, index) => item.problemNumber ?? index + 1,
+        render: (item, index) =>
+          item.problemNumber ?? currentPage * pageSize + index + 1,
       },
       {
         key: "title",
@@ -176,8 +184,21 @@ export default function UserProblemListClient({
         render: (item) => formatDate(item.createdAt),
       },
     ],
-    [],
+    [currentPage, pageSize],
   );
+
+  const handlePageChange = (nextPage: number) => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (nextPage <= 0) {
+      params.delete("page");
+    } else {
+      params.set("page", String(nextPage));
+    }
+
+    const query = params.toString();
+    router.push(`/problems${query ? `?${query}` : ""}`);
+  };
 
   const handleRecommendationSelect = (targetProblemSetId: number) => {
     setRecommendationOpen(false);
@@ -217,6 +238,13 @@ export default function UserProblemListClient({
         data={initialProblemSets}
         emptyMessage="등록된 문제가 없습니다."
         onRowClick={(item) => router.push(`/problems/${item.problemSetId}`)}
+        pagination={
+          <Pagination
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            totalPages={totalPages}
+          />
+        }
         rowKey={(item) => item.problemSetId}
       />
 

@@ -11,10 +11,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
+import { streamChat } from "@/features/chat/stream";
+import { createChatTypewriter } from "@/features/chat/typewriter";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
-  createProblemChatMessage,
   getProblemDatasetDownloadUrl,
   getProblemChatMessages,
   getProblemChatRooms,
@@ -23,7 +24,6 @@ import {
   getProblemSetDetail,
   getProblemSetResult,
   runProblem,
-  sendProblemChatMessage,
   submitProblem,
   updateProblemChatRoomTitle,
 } from "../actions";
@@ -58,6 +58,10 @@ interface UserProblemDetailClientProps {
 
 const updateArrayItem = <T,>(items: T[], index: number, value: T) =>
   items.map((item, itemIndex) => (itemIndex === index ? value : item));
+
+function createClientMessageId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+}
 
 const MIN_PROBLEM_PANEL_WIDTH = 260;
 const MIN_SOLVE_PANEL_WIDTH = 400;
@@ -169,6 +173,10 @@ function findProblemChatRoom(
   );
 }
 
+function findProblemChatRoomById(rooms: ProblemChatRoom[], roomId: number) {
+  return rooms.find((room) => room.roomId === roomId);
+}
+
 export default function UserProblemDetailClient({
   problemSetId,
   initialProblemSet,
@@ -233,6 +241,7 @@ export default function UserProblemDetailClient({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [showChatResponsePending, setShowChatResponsePending] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [problemPanelPercent, setProblemPanelPercent] = useState(
     DEFAULT_PROBLEM_PANEL_PERCENT,
@@ -240,10 +249,17 @@ export default function UserProblemDetailClient({
   const [isPanelSplitAvailable, setIsPanelSplitAvailable] = useState(false);
   const contentAreaRef = useRef<HTMLElement | null>(null);
   const activeChatRoomIdRef = useRef<number | null>(null);
+  const chatStreamAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     activeChatRoomIdRef.current = chatRoomId;
   }, [chatRoomId]);
+
+  useEffect(() => {
+    return () => {
+      chatStreamAbortRef.current?.abort();
+    };
+  }, []);
 
   const userId = useMemo(() => {
     if (typeof window === "undefined") {
@@ -362,6 +378,8 @@ export default function UserProblemDetailClient({
   }, []);
 
   const resetChatState = useCallback(() => {
+    chatStreamAbortRef.current?.abort();
+    chatStreamAbortRef.current = null;
     setChatRoomId(null);
     setChatRoomTitle(null);
     setChatRoomTitleInput("");
@@ -370,6 +388,7 @@ export default function UserProblemDetailClient({
     setChatMessages([]);
     setChatInput("");
     setChatSending(false);
+    setShowChatResponsePending(false);
   }, []);
 
   useEffect(() => {
@@ -831,36 +850,148 @@ export default function UserProblemDetailClient({
     }
 
     const userMessage = chatInput;
-    setChatMessages((prev) => [...prev, { role: "USER", content: userMessage }]);
+    const targetRoomId = chatRoomId;
+    const targetProblemId = currentProblem.problemId;
+    const controller = new AbortController();
+    let newRoomId: number | undefined;
+    let streamErrorReceived = false;
+    const userMessageId = createClientMessageId();
+    const assistantMessageId = createClientMessageId();
+
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "USER", content: userMessage, clientId: userMessageId },
+      { role: "ASSISTANT", content: "", clientId: assistantMessageId },
+    ]);
     setChatInput("");
     setChatSending(true);
+    setShowChatResponsePending(true);
+    chatStreamAbortRef.current?.abort();
+    chatStreamAbortRef.current = controller;
+
+    const setLastAssistant = (content: string, error = false) => {
+      setChatMessages((prev) => {
+        const next = [...prev];
+        const messageIndex = next.findIndex(
+          (message) => message.clientId === assistantMessageId,
+        );
+
+        if (messageIndex < 0) {
+          return prev;
+        }
+
+        next[messageIndex] = {
+          ...next[messageIndex],
+          content,
+          error,
+        };
+
+        return next;
+      });
+    };
+    const refreshNewChatRoomTitle = async (roomId: number) => {
+      try {
+        const rooms = await getProblemChatRooms();
+
+        if (
+          controller.signal.aborted ||
+          activeChatRoomIdRef.current !== roomId
+        ) {
+          return;
+        }
+
+        const room = findProblemChatRoomById(rooms, roomId);
+        const nextTitle = room?.title || null;
+
+        setChatRoomTitle(nextTitle);
+        setChatRoomTitleInput(nextTitle ?? "");
+      } catch {
+        // 채팅방 이름 갱신 실패는 메시지 스트림을 방해하지 않는다.
+      }
+    };
+    const typewriter = createChatTypewriter({
+      onUpdate: setLastAssistant,
+      signal: controller.signal,
+    });
 
     try {
-      const response = chatRoomId
-        ? await sendProblemChatMessage(chatRoomId, userMessage)
-        : await createProblemChatMessage(userMessage, problemSet.id, currentProblem.problemId);
+      const path = targetRoomId
+        ? `/api/v1/chat/${targetRoomId}/messages`
+        : "/api/v1/chat/messages";
 
-      setChatMessages((prev) => [
-        ...prev,
-        { role: "ASSISTANT", content: response?.answer ?? "답변을 받지 못했습니다." },
-      ]);
+      await streamChat(
+        path,
+        targetRoomId
+          ? { userMessage }
+          : {
+              userMessage,
+              problemSetId: problemSet.id,
+              problemId: targetProblemId,
+            },
+        {
+          onToken: (token) => {
+            setShowChatResponsePending(false);
+            typewriter.push(token);
+          },
+          onRoom: (roomId) => {
+            newRoomId = roomId;
+            activeChatRoomIdRef.current = roomId;
+            setChatRoomId(roomId);
+            void refreshNewChatRoomTitle(roomId);
+          },
+          onError: (error) => {
+            streamErrorReceived = true;
+            setShowChatResponsePending(false);
+            typewriter.stop();
+            setLastAssistant(error.message, true);
+          },
+        },
+        controller.signal,
+      );
 
-      if (!chatRoomId && response?.roomId) {
-        setChatRoomId(response.roomId);
+      await typewriter.flush();
+
+      if (streamErrorReceived) {
+        return;
+      }
+
+      if (!targetRoomId && newRoomId) {
+        setChatRoomId(newRoomId);
       }
 
       window.dispatchEvent(new Event("chatRoomUpdated"));
-    } catch {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          role: "ASSISTANT",
-          content: "AI 답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          error: true,
-        },
-      ]);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        typewriter.stop();
+        return;
+      }
+
+      typewriter.stop();
+      setLastAssistant(
+        "AI 답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        true,
+      );
+      setShowChatResponsePending(false);
+
+      handleClientError(error, {
+        router,
+        fallbackTitle: "메시지 전송 실패",
+        fallbackMessage:
+          "메시지를 전송하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
+      });
     } finally {
-      setChatSending(false);
+      if (chatStreamAbortRef.current === controller) {
+        chatStreamAbortRef.current = null;
+      }
+
+      typewriter.stop();
+
+      if (!controller.signal.aborted) {
+        setChatSending(false);
+        setShowChatResponsePending(false);
+      }
     }
   };
 
@@ -957,6 +1088,7 @@ export default function UserProblemDetailClient({
               chatRoomTitleInput={chatRoomTitleInput}
               chatRoomTitle={chatRoomTitle}
               chatSending={chatSending || chatLoading}
+              showChatSendingIndicator={showChatResponsePending}
               onChatInputChange={setChatInput}
               onChatRoomTitleCancel={cancelChatRoomTitleEdit}
               onChatRoomTitleChange={setChatRoomTitleInput}
