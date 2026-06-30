@@ -1,24 +1,6 @@
-# v0.2.2 (2026-06-30)
+# v0.3.0 (2026-06-30)
 
-### 영상 강의 수강
-
-- **Fixed**
-  - 영상 강의 재진입 시 마지막으로 본 위치보다 뒤로 되감기던 문제 수정 — 이어보기 위치를 `Math.min(lastPositionSec, watchedSec)` 에서 `lastPositionSec`(영상 위치) 기준으로 변경 (앞 구간 스킵·배속 차단은 기존 방어 로직 그대로 유지)
-
----
-
-# v0.2.1 (2026-06-29)
-
-### 강좌 학습 현황
-
-- **Fixed**
-  - 수강생 학습 현황 페이지네이션(#162) 적용 후 `getCourseLearningProgress` 반환 타입이 `StudentLearningProgressPage` 로 바뀌었으나 `CourseDetailClient` 가 배열로 받아 발생하던 배포 빌드 타입 오류 수정 (`page.content` 사용)
-
----
-
-# v0.2.0 (2026-06-29)
-
-### AI 채팅 스트리밍 (#N)
+### AI 채팅 스트리밍 (#176)
 
 - **Added**
   - 일반 채팅 및 문제 풀이 채팅에 SSE 기반 스트리밍 응답 처리 추가
@@ -33,6 +15,22 @@
   - 빈 assistant 메시지가 채팅 목록에 노출되지 않도록 렌더링 처리 보완
 
 ---
+
+### 영상 강의 수강
+
+- **Fixed**
+  - 영상 강의 재진입 시 마지막으로 본 위치보다 뒤로 되감기던 문제 수정 — 이어보기 위치를 `Math.min(lastPositionSec, watchedSec)` 에서 `lastPositionSec`(영상 위치) 기준으로 변경 (앞 구간 스킵·배속 차단은 기존 방어 로직 그대로 유지)
+
+---
+
+### 강좌 학습 현황
+
+- **Fixed**
+  - 수강생 학습 현황 페이지네이션(#162) 적용 후 `getCourseLearningProgress` 반환 타입이 `StudentLearningProgressPage` 로 바뀌었으나 `CourseDetailClient` 가 배열로 받아 발생하던 배포 빌드 타입 오류 수정 (`page.content` 사용)
+
+---
+
+# v0.2.0 (2026-06-29)
 
 ## 구글 소셜 로그인 (#167)
 
