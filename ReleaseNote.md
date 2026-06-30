@@ -1,3 +1,13 @@
+# v1.3.1 (2026-06-30)
+
+### AI 채팅 Typewriter (#187)
+
+- **Fixed**
+  - 챗봇 typewriter 유틸의 `timerId` 타입을 `ReturnType<typeof setTimeout>` 기준으로 수정해 브라우저/Node 타이머 타입 불일치로 발생하던 빌드 오류 해결
+  - `window.setTimeout` / `window.clearTimeout` 호출을 `setTimeout` / `clearTimeout`으로 통일
+
+---
+
 # v0.3.0 (2026-06-30)
 
 ### AI 채팅 스트리밍 (#176, #182)
