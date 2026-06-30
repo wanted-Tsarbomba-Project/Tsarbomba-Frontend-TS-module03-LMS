@@ -75,7 +75,18 @@ function resolveRankingApiUrl(path: string) {
 
   if (typeof window === "undefined") {
     if (SERVER_API_BASE_URL) {
-      return `${SERVER_API_BASE_URL}${path}`;
+      try {
+        return new URL(path, SERVER_API_BASE_URL).toString();
+      } catch {
+        throw new ApiClientError(
+          {
+            message:
+              "서버 API 주소는 절대 URL이어야 합니다. API_PROXY_TARGET 또는 NEXT_PUBLIC_API_URL을 확인해 주세요.",
+            path,
+          },
+          DEFAULT_FALLBACK_MESSAGE,
+        );
+      }
     }
 
     throw new ApiClientError(
