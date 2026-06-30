@@ -293,9 +293,10 @@ export default function YoutubeProgressPlayer({
         const p = await getLectureProgress(lectureId);
         existingWatchedSecRef.current = p?.watchedSec ?? 0;
         completedRef.current = !!p?.completed;
-        const last = p?.lastPositionSec ?? 0;
-        const watched = p?.watchedSec ?? 0;
-        initialLastPosition = Math.min(last, watched);
+        // 이어보기는 영상 위치(lastPositionSec) 기준 — watchedSec(시청 시간)을 섞으면
+        // 저장 타이밍/상한 차이로 last > watched 가 되어 되감김이 생김.
+        // 안 본 구간 앞 점프는 재생 중 seek 차단이 막으므로 위치값만 사용해도 안전.
+        initialLastPosition = p?.lastPositionSec ?? 0;
         lastSafePosRef.current = initialLastPosition;
       } catch {
         /* 진도 row 없는 첫 시청 — 0 으로 시작 */
