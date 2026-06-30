@@ -14,13 +14,12 @@ import { getProblemSetDetail } from "@/features/problems/actions";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
-  createGeneralChatMessage,
   deleteChatRoom,
   getChatMessages,
   getChatRooms,
-  sendChatMessage,
   updateChatRoomTitle,
 } from "../actions";
+import { streamChat } from "../stream";
 import { chatClasses } from "../styles";
 import type { ChatMessage } from "../types";
 import {
@@ -63,10 +62,15 @@ async function enrichLinkedProblem(
   }
 }
 
+function createClientMessageId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+}
+
 export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const chatStreamAbortRef = useRef<AbortController | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -97,6 +101,12 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
+
+  useEffect(() => {
+    return () => {
+      chatStreamAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     resizeChatInput(inputRef.current);
@@ -171,34 +181,84 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     }
 
     const userMessage = inputValue;
+    const controller = new AbortController();
+    let assistantContent = "";
+    let newRoomId: number | undefined;
+    let streamErrorReceived = false;
+    const userMessageId = createClientMessageId();
+    const assistantMessageId = createClientMessageId();
 
-    appendMessage(createMessage("USER", userMessage));
+    appendMessage(createMessage("USER", userMessage, false, userMessageId));
+    appendMessage(createMessage("ASSISTANT", "", false, assistantMessageId));
     setInputValue("");
     setSending(true);
+    chatStreamAbortRef.current?.abort();
+    chatStreamAbortRef.current = controller;
+
+    const setLastAssistant = (content: string, error = false) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const messageIndex = next.findIndex(
+          (message) => message.clientId === assistantMessageId,
+        );
+
+        if (messageIndex < 0) {
+          return prev;
+        }
+
+        next[messageIndex] = {
+          ...next[messageIndex],
+          content,
+          error,
+        };
+
+        return next;
+      });
+    };
 
     try {
-      const response = activeRoomId
-        ? await sendChatMessage(activeRoomId, userMessage)
-        : await createGeneralChatMessage(userMessage);
+      const path = activeRoomId
+        ? `/api/v1/chat/${activeRoomId}/messages`
+        : "/api/v1/chat/messages";
 
-      appendMessage(
-        createMessage(
-          "ASSISTANT",
-          response?.answer ?? "응답을 받지 못했습니다.",
-        ),
+      await streamChat(
+        path,
+        activeRoomId
+          ? { userMessage }
+          : { userMessage, problemSetId: null, problemId: null },
+        {
+          onToken: (token) => {
+            assistantContent += token;
+            setLastAssistant(assistantContent);
+          },
+          onRoom: (roomId) => {
+            newRoomId = roomId;
+          },
+          onError: (error) => {
+            streamErrorReceived = true;
+            setLastAssistant(error.message, true);
+          },
+        },
+        controller.signal,
       );
+
+      if (streamErrorReceived) {
+        return;
+      }
+
       window.dispatchEvent(new Event("chatRoomUpdated"));
 
-      if (!activeRoomId && response?.roomId) {
-        router.replace(`/chat/${response.roomId}`);
+      if (!activeRoomId && newRoomId) {
+        router.replace(`/chat/${newRoomId}`);
       }
     } catch (error) {
-      appendMessage(
-        createMessage(
-          "ASSISTANT",
-          "AI 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-          true,
-        ),
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      setLastAssistant(
+        "AI 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        true,
       );
 
       handleClientError(error, {
@@ -209,7 +269,13 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         showModal: (title, content) => setModal({ open: true, title, content }),
       });
     } finally {
-      setSending(false);
+      if (chatStreamAbortRef.current === controller) {
+        chatStreamAbortRef.current = null;
+      }
+
+      if (!controller.signal.aborted) {
+        setSending(false);
+      }
     }
   }, [activeRoomId, appendMessage, inputValue, router, sending]);
 
@@ -400,26 +466,32 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       </div>
 
       <div className={chatClasses.messageContainer}>
-        {messages.map((message, index) => (
-          <div
-            className={`${chatClasses.messageWrapper} ${
-              message.role === "USER"
-                ? chatClasses.userWrapper
-                : chatClasses.assistantWrapper
-            }`}
-            key={`${message.role}-${index}`}
-          >
+        {messages.map((message, index) => {
+          if (message.role === "ASSISTANT" && !message.content) {
+            return null;
+          }
+
+          return (
             <div
-              className={`${chatClasses.message} ${
+              className={`${chatClasses.messageWrapper} ${
                 message.role === "USER"
-                  ? chatClasses.userMessage
-                  : chatClasses.assistantMessage
-              } ${message.error ? chatClasses.errorMessage : ""}`}
+                  ? chatClasses.userWrapper
+                  : chatClasses.assistantWrapper
+              }`}
+              key={message.clientId ?? `${message.role}-${index}`}
             >
-              {message.content}
+              <div
+                className={`${chatClasses.message} ${
+                  message.role === "USER"
+                    ? chatClasses.userMessage
+                    : chatClasses.assistantMessage
+                } ${message.error ? chatClasses.errorMessage : ""}`}
+              >
+                {message.content}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {sending && (
           <div
