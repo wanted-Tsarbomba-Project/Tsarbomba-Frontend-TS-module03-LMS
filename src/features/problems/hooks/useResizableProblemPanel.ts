@@ -23,6 +23,15 @@ export function useResizableProblemPanel() {
   );
   const [isPanelSplitAvailable, setIsPanelSplitAvailable] = useState(false);
   const contentAreaRef = useRef<HTMLElement | null>(null);
+  // 진행 중인 드래그 정리 함수 — 드래그 도중 언마운트 시 리스너/전역 커서 정리용.
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+
+  // 언마운트 시 진행 중 드래그가 있으면 정리 (리스너 누수 + body 커서/선택 잠김 방지).
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+    };
+  }, []);
 
   // 패널 너비를 CSS 변수로 전달 (스타일의 --problem-panel-percent 사용).
   const problemPanelStyle = useMemo(
@@ -96,18 +105,24 @@ export function useResizableProblemPanel() {
       const handlePointerMove = (pointerEvent: PointerEvent) => {
         updatePanelWidth(pointerEvent.clientX);
       };
-      const handlePointerUp = () => {
+      const cleanup = () => {
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", handlePointerUp);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
+        dragCleanupRef.current = null;
       };
+      function handlePointerUp() {
+        cleanup();
+      }
 
       updatePanelWidth(event.clientX);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
       window.addEventListener("pointermove", handlePointerMove);
       window.addEventListener("pointerup", handlePointerUp, { once: true });
+      // 드래그 도중 언마운트되면 unmount effect 가 이 cleanup 을 호출.
+      dragCleanupRef.current = cleanup;
     },
     [isPanelSplitAvailable],
   );

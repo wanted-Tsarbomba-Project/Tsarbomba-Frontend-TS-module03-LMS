@@ -14,6 +14,7 @@
 
 - **Fixed**
   - 배포 환경에서 강좌 문제 페이지 진입 시 서버 컴포넌트 상대경로 fetch 실패(`Failed to parse URL`) 수정 — `API_PROXY_TARGET` 절대주소 폴백
+  - 패널 드래그 도중 페이지 이동(언마운트) 시 전역 커서(col-resize) 잠김 / 포인터 리스너 누수 정리
 
 ### 강좌 상세
 
