@@ -7,13 +7,14 @@ import {
   List,
   LoadingIndicator,
   OneButtonModal,
+  Pagination,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
   DIFFICULTY_MAP,
-  getProblemSets,
+  getProblemSetPage,
 } from "../actions";
 import type { ProblemSetSummary } from "../types";
 
@@ -24,6 +25,7 @@ const problemListClasses = {
   "registerButton": "cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[18px] py-2.5 text-description font-semibold text-text-white hover:bg-button-blue-hover-bg max-md:w-full"
 } as const;
 
+const PROBLEM_SET_PAGE_SIZE = 20;
 
 function formatDate(value?: string) {
   if (!value) {
@@ -47,6 +49,8 @@ export default function ProblemListClient() {
   const router = useRouter();
 
   const [problemSets, setProblemSets] = useState<ProblemSetSummary[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [modal, setModal] = useState({
     open: false,
@@ -59,7 +63,8 @@ export default function ProblemListClient() {
       {
         key: "problemNumber",
         label: "No.",
-        render: (item, index) => item.problemNumber ?? index + 1,
+        render: (item, index) =>
+          item.problemNumber ?? page * PROBLEM_SET_PAGE_SIZE + index + 1,
       },
       {
         key: "title",
@@ -88,23 +93,32 @@ export default function ProblemListClient() {
         render: (item) => formatDate(item.createdAt),
       },
     ],
-    [],
+    [page],
   );
 
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
 
     const fetchProblemSets = async () => {
       setIsLoading(true);
 
       try {
-        const data = await getProblemSets();
+        const data = await getProblemSetPage({
+          page,
+          size: PROBLEM_SET_PAGE_SIZE,
+          init: {
+            signal: controller.signal,
+          },
+        });
 
-        if (isMounted) {
-          setProblemSets(data);
+        if (controller.signal.aborted) {
+          return;
         }
+
+        setProblemSets(data.problemSets);
+        setTotalPages(data.totalPages);
       } catch (error) {
-        if (!isMounted) {
+        if (controller.signal.aborted) {
           return;
         }
 
@@ -117,18 +131,18 @@ export default function ProblemListClient() {
           },
         });
       } finally {
-        if (isMounted) {
+        if (!controller.signal.aborted) {
           setIsLoading(false);
         }
       }
     };
 
-    fetchProblemSets();
+    void fetchProblemSets();
 
     return () => {
-      isMounted = false;
+      controller.abort();
     };
-  }, [router]);
+  }, [page, router]);
 
   return (
     <main className={problemListClasses.container}>
@@ -152,6 +166,14 @@ export default function ProblemListClient() {
           data={problemSets}
           emptyMessage="등록된 문제가 없습니다."
           onRowClick={(item) => router.push(`/admin/problems/${item.problemSetId}/edit`)}
+          pagination={
+            <Pagination
+              currentPage={page}
+              disabled={isLoading}
+              onPageChange={setPage}
+              totalPages={totalPages}
+            />
+          }
           rowKey={(item) => item.problemSetId}
         />
       )}
