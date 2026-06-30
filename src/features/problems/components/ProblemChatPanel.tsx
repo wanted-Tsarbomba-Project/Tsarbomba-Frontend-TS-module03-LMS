@@ -17,6 +17,7 @@ interface ProblemChatPanelProps {
   chatRoomTitleInput?: string;
   chatRoomTitle?: string | null;
   chatSending: boolean;
+  showChatSendingIndicator?: boolean;
   canEditChatRoomTitle?: boolean;
   onChatInputChange: (value: string) => void;
   onChatRoomTitleCancel?: () => void;
@@ -34,6 +35,7 @@ export default function ProblemChatPanel({
   chatRoomTitleInput = "",
   chatRoomTitle,
   chatSending,
+  showChatSendingIndicator = chatSending,
   canEditChatRoomTitle = false,
   onChatInputChange,
   onChatRoomTitleCancel,
@@ -151,7 +153,7 @@ export default function ProblemChatPanel({
             </div>
           );
         })}
-        {chatSending && (
+        {showChatSendingIndicator && (
           <div
             className={`${problemChatClasses.chatMessageWrap} ${problemChatClasses.assistantMessageWrap}`}
           >

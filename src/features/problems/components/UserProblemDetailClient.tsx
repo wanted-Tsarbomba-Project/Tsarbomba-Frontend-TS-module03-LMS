@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
 import { streamChat } from "@/features/chat/stream";
+import { createChatTypewriter } from "@/features/chat/typewriter";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
@@ -172,6 +173,10 @@ function findProblemChatRoom(
   );
 }
 
+function findProblemChatRoomById(rooms: ProblemChatRoom[], roomId: number) {
+  return rooms.find((room) => room.roomId === roomId);
+}
+
 export default function UserProblemDetailClient({
   problemSetId,
   initialProblemSet,
@@ -236,6 +241,7 @@ export default function UserProblemDetailClient({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [showChatResponsePending, setShowChatResponsePending] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [problemPanelPercent, setProblemPanelPercent] = useState(
     DEFAULT_PROBLEM_PANEL_PERCENT,
@@ -382,6 +388,7 @@ export default function UserProblemDetailClient({
     setChatMessages([]);
     setChatInput("");
     setChatSending(false);
+    setShowChatResponsePending(false);
   }, []);
 
   useEffect(() => {
@@ -846,7 +853,6 @@ export default function UserProblemDetailClient({
     const targetRoomId = chatRoomId;
     const targetProblemId = currentProblem.problemId;
     const controller = new AbortController();
-    let assistantContent = "";
     let newRoomId: number | undefined;
     let streamErrorReceived = false;
     const userMessageId = createClientMessageId();
@@ -859,6 +865,7 @@ export default function UserProblemDetailClient({
     ]);
     setChatInput("");
     setChatSending(true);
+    setShowChatResponsePending(true);
     chatStreamAbortRef.current?.abort();
     chatStreamAbortRef.current = controller;
 
@@ -882,6 +889,30 @@ export default function UserProblemDetailClient({
         return next;
       });
     };
+    const refreshNewChatRoomTitle = async (roomId: number) => {
+      try {
+        const rooms = await getProblemChatRooms();
+
+        if (
+          controller.signal.aborted ||
+          activeChatRoomIdRef.current !== roomId
+        ) {
+          return;
+        }
+
+        const room = findProblemChatRoomById(rooms, roomId);
+        const nextTitle = room?.title || null;
+
+        setChatRoomTitle(nextTitle);
+        setChatRoomTitleInput(nextTitle ?? "");
+      } catch {
+        // 채팅방 이름 갱신 실패는 메시지 스트림을 방해하지 않는다.
+      }
+    };
+    const typewriter = createChatTypewriter({
+      onUpdate: setLastAssistant,
+      signal: controller.signal,
+    });
 
     try {
       const path = targetRoomId
@@ -899,20 +930,25 @@ export default function UserProblemDetailClient({
             },
         {
           onToken: (token) => {
-            assistantContent += token;
-            setLastAssistant(assistantContent);
+            setShowChatResponsePending(false);
+            typewriter.push(token);
           },
           onRoom: (roomId) => {
             newRoomId = roomId;
             setChatRoomId(roomId);
+            void refreshNewChatRoomTitle(roomId);
           },
           onError: (error) => {
             streamErrorReceived = true;
+            setShowChatResponsePending(false);
+            typewriter.stop();
             setLastAssistant(error.message, true);
           },
         },
         controller.signal,
       );
+
+      await typewriter.flush();
 
       if (streamErrorReceived) {
         return;
@@ -925,13 +961,16 @@ export default function UserProblemDetailClient({
       window.dispatchEvent(new Event("chatRoomUpdated"));
     } catch (error) {
       if (controller.signal.aborted) {
+        typewriter.stop();
         return;
       }
 
+      typewriter.stop();
       setLastAssistant(
         "AI 답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
         true,
       );
+      setShowChatResponsePending(false);
 
       handleClientError(error, {
         router,
@@ -946,8 +985,11 @@ export default function UserProblemDetailClient({
         chatStreamAbortRef.current = null;
       }
 
+      typewriter.stop();
+
       if (!controller.signal.aborted) {
         setChatSending(false);
+        setShowChatResponsePending(false);
       }
     }
   };
@@ -1045,6 +1087,7 @@ export default function UserProblemDetailClient({
               chatRoomTitleInput={chatRoomTitleInput}
               chatRoomTitle={chatRoomTitle}
               chatSending={chatSending || chatLoading}
+              showChatSendingIndicator={showChatResponsePending}
               onChatInputChange={setChatInput}
               onChatRoomTitleCancel={cancelChatRoomTitleEdit}
               onChatRoomTitleChange={setChatRoomTitleInput}
