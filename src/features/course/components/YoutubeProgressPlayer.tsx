@@ -254,10 +254,16 @@ export default function YoutubeProgressPlayer({
       const watchedDeltaSec = ended
         ? remaining
         : Math.min(rawDelta, remaining);
+      // 미완료 상태에서는 저장 위치를 안전 지점(실제 시청 위치)으로 cap —
+      // seek 차단이 1초 타이머라, 점프 직후 즉시 일시정지/이탈하면 앞선 위치가 저장돼
+      // 이어보기로 안 본 구간을 건너뛸 수 있는 걸 방지.
+      const currentPos = Math.floor(player.getCurrentTime());
       const lastPositionSec =
         ended && durationSec > 0
           ? durationSec
-          : Math.floor(player.getCurrentTime());
+          : completedRef.current
+            ? currentPos
+            : Math.min(currentPos, Math.floor(lastSafePosRef.current));
 
       // 끝까지 봄 → 이후 seek 제한 해제 (완료 확정은 BE 가 누적 100% 로 판정)
       if (ended) completedRef.current = true;
