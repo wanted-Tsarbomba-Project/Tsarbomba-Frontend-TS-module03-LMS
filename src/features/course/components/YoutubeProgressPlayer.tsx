@@ -154,11 +154,15 @@ export default function YoutubeProgressPlayer({
         // 미완료 강의는 앞으로 seek 차단 — 현재 재생 위치가 안전 지점 + 실제 경과보다
         // 의미있게 앞서면 사용자가 점프한 것으로 보고 안전 지점으로 되돌림.
         const currentPos = player.getCurrentTime();
+        // 끝 감지는 "되돌린 뒤의 실제 위치(effectivePos)" 기준 — seek 로 끝까지 땡겨도
+        // effectivePos 는 안전 지점에 머물러 거짓 완료를 막는다.
+        let effectivePos = currentPos;
         if (
           !completedRef.current &&
           currentPos > lastSafePosRef.current + elapsedSec + 2
         ) {
           player.seekTo(lastSafePosRef.current, true);
+          effectivePos = lastSafePosRef.current;
         } else {
           lastSafePosRef.current = currentPos;
         }
@@ -174,7 +178,7 @@ export default function YoutubeProgressPlayer({
           !completedRef.current &&
           !endSaveTriggeredRef.current &&
           duration > 0 &&
-          currentPos >= duration - 1.5
+          effectivePos >= duration - 1.5
         ) {
           endSaveTriggeredRef.current = true;
           void saveProgress(true);
@@ -225,7 +229,8 @@ export default function YoutubeProgressPlayer({
 
     const runSaveProgress = async (ended: boolean) => {
       const player = playerRef.current;
-      if (!player) return;
+      // 플레이어 객체는 생성됐지만 onReady 전이면 메서드가 아직 없음 — 빠른 이탈/언마운트 시 크래시 방지.
+      if (!player || typeof player.getDuration !== "function") return;
 
       const durationSec = Math.floor(player.getDuration());
       const rawDelta = watchedDeltaRef.current;
@@ -302,7 +307,8 @@ export default function YoutubeProgressPlayer({
         // 이어보기는 영상 위치(lastPositionSec) 기준 — watchedSec(시청 시간)을 섞으면
         // 저장 타이밍/상한 차이로 last > watched 가 되어 되감김이 생김.
         // 안 본 구간 앞 점프는 재생 중 seek 차단이 막으므로 위치값만 사용해도 안전.
-        initialLastPosition = p?.lastPositionSec ?? 0;
+        // 단, 완료한 강의는 마지막 위치가 영상 끝(=durationSec)이라 재진입 시 검은 화면이 됨 → 처음부터 재생.
+        initialLastPosition = completedRef.current ? 0 : (p?.lastPositionSec ?? 0);
         lastSafePosRef.current = initialLastPosition;
       } catch {
         /* 진도 row 없는 첫 시청 — 0 으로 시작 */
@@ -344,6 +350,18 @@ export default function YoutubeProgressPlayer({
               playingRef.current = false;
               stopWatchTimer();
               stopAutoSaveTimer();
+              // seek 로 끝까지 땡긴 경우(안전 지점이 끝보다 한참 뒤)는 완료 막고 되돌림 —
+              // 실제로 끝까지 본 경우(lastSafePos 가 끝 근처)만 100% 마감.
+              const endedPlayer = playerRef.current;
+              const endedDuration = endedPlayer?.getDuration() ?? 0;
+              if (
+                !completedRef.current &&
+                endedDuration > 0 &&
+                lastSafePosRef.current < endedDuration - 2
+              ) {
+                endedPlayer?.seekTo(lastSafePosRef.current, true);
+                return;
+              }
               void saveProgress(true); // 끝까지 봄 → 100% 강제 마감
               return;
             }

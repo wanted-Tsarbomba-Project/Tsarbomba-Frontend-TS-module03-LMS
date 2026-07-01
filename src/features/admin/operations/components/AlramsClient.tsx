@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   List,
-  LoadingIndicator,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
   type ListColumn,
@@ -15,6 +15,7 @@ import { handleClientError } from "@/lib/errorHandling";
 import { getOperationAlerts } from "../actions";
 import {
   ALERT_PAGE_SIZE,
+  ALERT_LIST_COLUMN_LABELS,
   alertStatusLabel,
   alertTargetTabs,
 } from "../constants";
@@ -22,11 +23,11 @@ import { adminAlramListClasses } from "../styles";
 import type { AlertStatus, OperationAlertSummary, TargetType } from "../types";
 
 const alertColumns: ListColumn<OperationAlertSummary>[] = [
-  { key: "index", label: "No." },
-  { key: "recommendedAction", label: "알람 내용" },
+  { key: "index", label: ALERT_LIST_COLUMN_LABELS[0] },
+  { key: "recommendedAction", label: ALERT_LIST_COLUMN_LABELS[1] },
   {
     key: "status",
-    label: "처리상태",
+    label: ALERT_LIST_COLUMN_LABELS[2],
     render: (alert) => alertStatusLabel[alert.status] ?? alert.status,
   },
 ];
@@ -123,7 +124,11 @@ export default function AlramsClient() {
         </div>
 
         {loading ? (
-          <LoadingIndicator message="알람 목록을 불러오는 중입니다." />
+          <ListSkeleton
+            columns={[...ALERT_LIST_COLUMN_LABELS]}
+            rowCount={ALERT_PAGE_SIZE}
+            statusMessage="알람 목록을 불러오는 중입니다."
+          />
         ) : (
           <List
             columns={alertColumns}

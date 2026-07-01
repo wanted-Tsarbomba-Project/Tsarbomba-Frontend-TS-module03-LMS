@@ -25,6 +25,7 @@ import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 import ErrorPageView from "@/components/common/ErrorPageView";
+import { ApiClientError } from "@/lib/errorHandling";
 
 const getYoutubeEmbedUrl = (url?: string | null): string | null => {
   if (!url) return null;
@@ -155,13 +156,23 @@ export default function LectureDetailPage() {
           return;
         }
 
-        const [lectureData, lectureList, links, materialList] =
-          await Promise.all([
-            getLecture(lectureId),
-            getCourseLectures(courseId),
-            getCourseProblemSets(courseId).catch(() => []),
-            getLectureMaterials(lectureId).catch(() => []),
-          ]);
+        // 잠긴/미수강 강의는 BE 가 403/404 를 줄 수 있음 — 죽은 404 대신 강좌 페이지로 안내.
+        const lectureData = await getLecture(lectureId).catch((err: unknown) => {
+          const status =
+            err instanceof ApiClientError ? err.status : undefined;
+          if (status === 403 || status === 404) {
+            router.replace(`/courses/${courseId}`);
+            return null;
+          }
+          throw err;
+        });
+        if (!lectureData) return;
+
+        const [lectureList, links, materialList] = await Promise.all([
+          getCourseLectures(courseId),
+          getCourseProblemSets(courseId).catch(() => []),
+          getLectureMaterials(lectureId).catch(() => []),
+        ]);
         setLecture(lectureData);
         setLectures(lectureList);
         setProblemLinks(links);
@@ -384,7 +395,7 @@ export default function LectureDetailPage() {
                 <button
                   type="button"
                   onClick={() => setProblemNavTarget(currentLink)}
-                  className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors"
+                  className="px-6 py-2.5 text-base font-medium bg-blue-900 text-white rounded-lg cursor-pointer hover:bg-blue-950 transition-colors"
                 >
                   문제 풀러 가기
                 </button>
@@ -471,7 +482,7 @@ export default function LectureDetailPage() {
               type="button"
               disabled={!prevLecture}
               onClick={() => prevLecture && goToLecture(prevLecture.lectureId)}
-              className="flex items-center gap-1 text-base font-medium text-gray-800 hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 text-base font-medium text-gray-800 cursor-pointer hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               <svg
                 width="18"
@@ -497,7 +508,7 @@ export default function LectureDetailPage() {
                   ? "현재 강의를 완료하면 다음 강의가 열립니다."
                   : undefined
               }
-              className="flex items-center gap-1 text-base font-medium text-gray-800 hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 text-base font-medium text-gray-800 cursor-pointer hover:text-blue-900 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               다음
               <svg

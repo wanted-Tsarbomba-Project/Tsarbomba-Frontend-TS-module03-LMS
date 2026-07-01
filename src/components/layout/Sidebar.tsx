@@ -10,6 +10,7 @@ import BadgeSelectModal from "@/features/badge/components/BadgeSelectModal";
 import { equipBadge, getMyBadges } from "@/features/badge/actions";
 import type { MyBadge } from "@/features/badge/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
+import { ChatRoomListSkeleton } from "@/features/chat/components/ChatPageSkeleton";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -59,20 +60,20 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const isAdminPath = pathname.startsWith("/admin");
+  const isMypage = pathname.startsWith("/user/profile");
+  const isChatPage =
+    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   const [nickname, setNickname] = useState(propsNickname || "닉네임");
   const [userRole, setUserRole] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [chatRoomsLoading, setChatRoomsLoading] = useState(isChatPage);
   const [myBadges, setMyBadges] = useState<MyBadge[]>([]);
   const [badgeModalOpen, setBadgeModalOpen] = useState(false);
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [badgesFetchFailed, setBadgesFetchFailed] = useState(false);
   const [equipError, setEquipError] = useState("");
-
-  const isAdminPath = pathname.startsWith("/admin");
-  const isMypage = pathname.startsWith("/user/profile");
-  const isChatPage =
-    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   useEffect(() => {
     const updateUserInfo = () => {
@@ -93,17 +94,24 @@ export default function Sidebar({
   useEffect(() => {
     if (!isMypage) return;
 
-    setBadgesLoading(true);
-    setBadgesFetchFailed(false);
-    getMyBadges()
-      .then((badges) => {
+    const fetchBadges = async () => {
+      try {
+        setBadgesLoading(true);
+        setBadgesFetchFailed(false);
+        const badges = await getMyBadges();
+
         setMyBadges(badges);
         const equipped = badges.find((b) => b.isEquipped);
         localStorage.setItem("equippedBadgeUrl", equipped?.imageUrl ?? "");
         window.dispatchEvent(new Event("badgeChanged"));
-      })
-      .catch(() => setBadgesFetchFailed(true))
-      .finally(() => setBadgesLoading(false));
+      } catch {
+        setBadgesFetchFailed(true);
+      } finally {
+        setBadgesLoading(false);
+      }
+    };
+
+    void fetchBadges();
   }, [isMypage]);
 
   useEffect(() => {
@@ -111,6 +119,7 @@ export default function Sidebar({
 
     const fetchChatRooms = async () => {
       try {
+        setChatRoomsLoading(true);
         const response = await fetch(`${BASE_URL}/api/v1/chat/list`, {
           method: "GET",
           credentials: "include",
@@ -132,6 +141,8 @@ export default function Sidebar({
         setChatRooms(sortedRooms);
       } catch (error) {
         console.error(error);
+      } finally {
+        setChatRoomsLoading(false);
       }
     };
 
@@ -369,21 +380,25 @@ export default function Sidebar({
       </button>
       <h3 className="text-sm font-bold text-[#6b7280] px-2 mt-2">기존 대화</h3>
       <ul className="flex flex-col gap-1 max-h-[50vh] overflow-y-auto">
-        {chatRooms.map((room) => (
-          <li key={room.roomId}>
-            <Link
-              className={
-                pathname === `/chat/${room.roomId}` ||
-                pathname === `/user/chat/${room.roomId}`
-                  ? itemActiveClass
-                  : itemBaseClass
-              }
-              href={`/chat/${room.roomId}`}
-            >
-              <span className="block truncate">{room.title}</span>
-            </Link>
-          </li>
-        ))}
+        {chatRoomsLoading ? (
+          <ChatRoomListSkeleton />
+        ) : (
+          chatRooms.map((room) => (
+            <li key={room.roomId}>
+              <Link
+                className={
+                  pathname === `/chat/${room.roomId}` ||
+                  pathname === `/user/chat/${room.roomId}`
+                    ? itemActiveClass
+                    : itemBaseClass
+                }
+                href={`/chat/${room.roomId}`}
+              >
+                <span className="block truncate">{room.title}</span>
+              </Link>
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );

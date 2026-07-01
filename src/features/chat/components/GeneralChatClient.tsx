@@ -32,6 +32,7 @@ import {
   normalizeId,
   resizeChatInput,
 } from "../utils";
+import { ChatMessagesSkeleton } from "./ChatPageSkeleton";
 
 interface GeneralChatClientProps {
   roomId?: string;
@@ -69,11 +70,18 @@ function createClientMessageId() {
 
 export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const router = useRouter();
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+  const shouldFollowScrollRef = useRef(true);
+  const userScrollIntentRef = useRef(false);
+  const userScrollIntentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatStreamAbortRef = useRef<AbortController | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(Boolean(roomId));
   const [inputValue, setInputValue] = useState("");
   const [sending, setSending] = useState(false);
   const [showResponsePending, setShowResponsePending] = useState(false);
@@ -100,14 +108,66 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     : "";
   const headerActionDisabled = deleting || updatingTitle;
 
+  const updateShouldFollowScroll = useCallback(() => {
+    const container = messageContainerRef.current;
+
+    if (!container) {
+      shouldFollowScrollRef.current = true;
+      return;
+    }
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    shouldFollowScrollRef.current = distanceFromBottom <= 96;
+  }, []);
+
+  const markUserScrollIntent = useCallback(() => {
+    userScrollIntentRef.current = true;
+
+    if (userScrollIntentTimerRef.current) {
+      clearTimeout(userScrollIntentTimerRef.current);
+    }
+
+    userScrollIntentTimerRef.current = setTimeout(() => {
+      userScrollIntentRef.current = false;
+      userScrollIntentTimerRef.current = null;
+    }, 150);
+  }, []);
+
+  const handleMessageScroll = useCallback(() => {
+    if (!userScrollIntentRef.current) {
+      return;
+    }
+
+    updateShouldFollowScroll();
+  }, [updateShouldFollowScroll]);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: sending ? "auto" : "smooth",
-    });
+    const container = messageContainerRef.current;
+
+    if (!shouldFollowScrollRef.current) {
+      return;
+    }
+
+    if (container) {
+      container.scrollTo({
+        behavior: sending ? "auto" : "smooth",
+        top: container.scrollHeight,
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: sending ? "auto" : "smooth",
+      });
+    }
   }, [messages, sending]);
 
   useEffect(() => {
     return () => {
+      if (userScrollIntentTimerRef.current) {
+        clearTimeout(userScrollIntentTimerRef.current);
+      }
+
       chatStreamAbortRef.current?.abort();
     };
   }, []);
@@ -118,13 +178,20 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
 
   useEffect(() => {
     if (!activeRoomId) {
-      return undefined;
+      const timeoutId = setTimeout(() => {
+        setMessagesLoading(false);
+      }, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
 
     const controller = new AbortController();
 
     const loadChat = async () => {
       try {
+        setMessagesLoading(true);
         const [rooms, roomMessages] = await Promise.all([
           getChatRooms(controller.signal),
           getChatMessages(activeRoomId, controller.signal),
@@ -165,6 +232,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           showModal: (title, content) =>
             setModal({ open: true, title, content }),
         });
+      } finally {
+        if (!controller.signal.aborted) {
+          setMessagesLoading(false);
+        }
       }
     };
 
@@ -196,6 +267,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     setInputValue("");
     setSending(true);
     setShowResponsePending(true);
+    shouldFollowScrollRef.current = true;
     chatStreamAbortRef.current?.abort();
     chatStreamAbortRef.current = controller;
 
@@ -483,35 +555,51 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         )}
       </div>
 
-      <div className={chatClasses.messageContainer}>
-        {messages.map((message, index) => {
-          if (message.role === "ASSISTANT" && !message.content) {
-            return null;
-          }
+      <div
+        className={chatClasses.messageContainer}
+        onPointerDown={markUserScrollIntent}
+        onScroll={handleMessageScroll}
+        onTouchMove={markUserScrollIntent}
+        onWheel={markUserScrollIntent}
+        ref={messageContainerRef}
+      >
+        {messagesLoading ? (
+          <>
+            <p aria-live="polite" className="sr-only" role="status">
+              채팅 내용을 불러오는 중입니다.
+            </p>
+            <ChatMessagesSkeleton />
+          </>
+        ) : (
+          messages.map((message, index) => {
+            if (message.role === "ASSISTANT" && !message.content) {
+              return null;
+            }
 
-          return (
-            <div
-              className={`${chatClasses.messageWrapper} ${
-                message.role === "USER"
-                  ? chatClasses.userWrapper
-                  : chatClasses.assistantWrapper
-              }`}
-              key={message.clientId ?? `${message.role}-${index}`}
-            >
+            return (
               <div
-                className={`${chatClasses.message} ${
+                className={`${chatClasses.messageWrapper} ${
                   message.role === "USER"
-                    ? chatClasses.userMessage
-                    : chatClasses.assistantMessage
-                } ${message.error ? chatClasses.errorMessage : ""}`}
+                    ? chatClasses.userWrapper
+                    : chatClasses.assistantWrapper
+                }`}
+                key={message.clientId ?? `${message.role}-${index}`}
               >
-                {message.content}
+                <div
+                  className={`${chatClasses.message} ${
+                    message.role === "USER"
+                      ? chatClasses.userMessage
+                      : chatClasses.assistantMessage
+                  } ${message.error ? chatClasses.errorMessage : ""}`}
+                >
+                  {message.content}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
 
-        {showResponsePending && (
+        {!messagesLoading && showResponsePending && (
           <div
             className={`${chatClasses.messageWrapper} ${chatClasses.assistantWrapper}`}
           >

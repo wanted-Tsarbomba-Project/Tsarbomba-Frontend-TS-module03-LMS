@@ -40,6 +40,11 @@ export default async function CourseProblemPage({
     });
   } catch (error) {
     const status = error instanceof ApiClientError ? error.status : undefined;
+    // 미수강·미해금(잠금) 등 접근 권한 문제(404/403)는 죽은 에러 화면 대신 강좌 페이지로 안내.
+    // (수강 신청 버튼·잠금 안내가 있는 곳 — 서버 컴포넌트라 모달을 띄울 수 없어 리다이렉트로 처리)
+    if (status === 404 || status === 403) {
+      redirect(`/courses/${courseId}`);
+    }
     const message =
       error instanceof Error
         ? error.message

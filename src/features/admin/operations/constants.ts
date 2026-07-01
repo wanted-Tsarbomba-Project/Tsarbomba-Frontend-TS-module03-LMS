@@ -1,6 +1,45 @@
 import type { AlertStatus, AutomationRule, TargetType } from "./types";
 
 export const ALERT_PAGE_SIZE = 20;
+export const ADMIN_USER_PAGE_SIZE = 20;
+export const ADMIN_ACCOUNT_PAGE_SIZE = 20;
+
+export const ALERT_LIST_COLUMN_LABELS = [
+  "No.",
+  "알람 내용",
+  "처리상태",
+] as const;
+
+export const ADMIN_USER_LIST_COLUMN_LABELS = [
+  "No.",
+  "이름",
+  "닉네임",
+  "이메일",
+  "가입일",
+  "상태",
+] as const;
+
+export const ADMIN_ACCOUNT_LIST_COLUMN_LABELS = [
+  "No.",
+  "이름",
+  "닉네임",
+  "이메일",
+  "회원 관리 권한",
+  "규칙 관리 권한",
+] as const;
+
+export const USER_DETAIL_COURSE_COLUMN_LABELS = [
+  "No.",
+  "강의명",
+  "등록일",
+] as const;
+
+export const USER_DETAIL_PROBLEM_COLUMN_LABELS = [
+  "No.",
+  "문제명",
+  "결과",
+  "제출일",
+] as const;
 
 export const alertStatusLabel: Record<AlertStatus, string> = {
   OPEN: "미처리",
