@@ -210,31 +210,31 @@ function HeaderInner({ isSimple }: HeaderProps) {
         <div className="flex shrink-0 items-center gap-6">
           {/* 일반 학생 유저 로그인 시 메뉴 */}
           {!isAdminPath && isLoggedIn && !isManagementRole && (
-            <nav className="flex items-center gap-5 text-sm font-semibold text-[#1f2937] whitespace-nowrap max-md:hidden">
-              <span
+            <nav className="flex items-center gap-5 text-sm font-semibold text-[#1f2937] whitespace-nowrap">
+              <Link
+                href="/chat"
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/chat")}
               >
                 챗봇
-              </span>
-              <span
+              </Link>
+              <Link
+                href="/myclassroom"
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/myclassroom")}
               >
                 내 강의실
-              </span>
-              <span
+              </Link>
+              <Link
+                href="/problems"
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/problems")}
               >
                 문제풀이
-              </span>
-              <span
+              </Link>
+              <Link
+                href="/ranking"
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
-                onClick={() => router.push("/ranking")}
               >
                 랭킹
-              </span>
+              </Link>
             </nav>
           )}
 
