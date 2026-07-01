@@ -7,7 +7,21 @@ const apiProxyTarget =
   process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactStrictMode: false,
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "**",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
   async rewrites() {
     if (!apiProxyTarget) return [];
     return [

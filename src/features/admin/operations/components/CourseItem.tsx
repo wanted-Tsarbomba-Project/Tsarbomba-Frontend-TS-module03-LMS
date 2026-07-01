@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { optimizedImageProps } from "@/components/common/imageOptimization";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type { Course } from "@/features/course/types";
 
@@ -13,6 +15,7 @@ function CourseItem({ course }: CourseItemProps) {
 
   const { courseId, title, courseCategoryName, thumbnailUrl, description } =
     course;
+  const resolvedThumbnailUrl = resolveThumbnailUrl(thumbnailUrl);
 
   return (
     <div
@@ -20,14 +23,16 @@ function CourseItem({ course }: CourseItemProps) {
       onClick={() => router.push(`/courses/${courseId}`)}
     >
       {/* 강좌 썸네일 */}
-      <img
-        src={
-          resolveThumbnailUrl(thumbnailUrl) ||
-          "https://placehold.co/640x360?text=No+Image"
-        }
+      <div className="relative h-48 w-full bg-bg-navbar">
+        <Image
+          src={resolvedThumbnailUrl || "/assets/img/bluebomb-Icon.svg"}
         alt={title || "강좌 이미지"}
-        className="w-full h-48 object-cover"
-      />
+          className="object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, 320px"
+          {...optimizedImageProps}
+        />
+      </div>
 
       <div className="p-4">
         {/* 카테고리 태그 */}

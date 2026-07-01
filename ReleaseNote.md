@@ -1,3 +1,22 @@
+# v1.6.1 (2026-07-01)
+
+### Docker 이미지 최적화
+
+- **Changed**
+  - Next Image 원격 이미지 최적화 설정을 추가하고 AVIF/WebP 포맷 출력을 활성화
+  - 공통 blur placeholder와 lazy loading props를 추가해 이미지 로딩 체감 성능을 개선
+  - 헤더/사이드바 장착 뱃지, 관리자 뱃지, 랭킹 뱃지, 강좌/마이페이지 썸네일 이미지를 Next.js `Image` 컴포넌트 기반으로 정리
+  - 문제풀이 결과 패널의 추천 강좌 썸네일을 CSS `backgroundImage` 방식에서 Next.js `Image` 컴포넌트 기반 렌더링으로 변경
+  - 원격 이미지의 직접 loader/unoptimized 처리를 제거해 Next 이미지 최적화 파이프라인을 사용하도록 변경
+  - 관리자 강좌 카드의 외부 placeholder 이미지 직접 로드를 제거하고 로컬 fallback 이미지를 사용하도록 변경
+
+- **Fixed**
+  - 직접 `<img>` 사용 지점을 제거하고 반응형 `sizes`, lazy loading, blur placeholder를 적용해 고해상도 원본 이미지 직접 로드 가능성을 완화
+  - CSS `backgroundImage`로 원본 썸네일을 직접 로드하던 지점을 제거해 이미지 최적화 누락 가능성을 완화
+  - 로컬 파일 미리보기 이미지는 blob/data URL 호환성을 위해 `Image` 컴포넌트를 유지하되 최적화 예외 처리
+
+---
+
 # v1.6.0 (2026-07-01)
 
 ### 반응형 레이아웃 및 모바일 사이드바

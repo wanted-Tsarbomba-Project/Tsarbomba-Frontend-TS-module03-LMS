@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { optimizedImageProps } from "@/components/common/imageOptimization";
 import { cancelEnrollment } from "@/features/course/enrollmentActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type { Enrollment } from "@/features/course/types";
@@ -137,12 +139,15 @@ function CourseCard({
       onClick={onClick}
       className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow cursor-pointer"
     >
-      <div className="w-full h-36 bg-gray-100 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-36 bg-gray-100 flex items-center justify-center overflow-hidden">
         {thumb ? (
-          <img
+          <Image
             src={thumb}
             alt={enrollment.courseTitle ?? "강좌"}
             className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            {...optimizedImageProps}
           />
         ) : (
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
