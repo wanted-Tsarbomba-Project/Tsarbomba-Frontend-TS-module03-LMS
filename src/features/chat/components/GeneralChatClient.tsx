@@ -32,6 +32,7 @@ import {
   normalizeId,
   resizeChatInput,
 } from "../utils";
+import { ChatMessagesSkeleton } from "./ChatPageSkeleton";
 
 interface GeneralChatClientProps {
   roomId?: string;
@@ -80,6 +81,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const chatStreamAbortRef = useRef<AbortController | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(Boolean(roomId));
   const [inputValue, setInputValue] = useState("");
   const [sending, setSending] = useState(false);
   const [showResponsePending, setShowResponsePending] = useState(false);
@@ -176,13 +178,20 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
 
   useEffect(() => {
     if (!activeRoomId) {
-      return undefined;
+      const timeoutId = setTimeout(() => {
+        setMessagesLoading(false);
+      }, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
 
     const controller = new AbortController();
 
     const loadChat = async () => {
       try {
+        setMessagesLoading(true);
         const [rooms, roomMessages] = await Promise.all([
           getChatRooms(controller.signal),
           getChatMessages(activeRoomId, controller.signal),
@@ -223,6 +232,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
           showModal: (title, content) =>
             setModal({ open: true, title, content }),
         });
+      } finally {
+        if (!controller.signal.aborted) {
+          setMessagesLoading(false);
+        }
       }
     };
 
@@ -550,34 +563,43 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         onWheel={markUserScrollIntent}
         ref={messageContainerRef}
       >
-        {messages.map((message, index) => {
-          if (message.role === "ASSISTANT" && !message.content) {
-            return null;
-          }
+        {messagesLoading ? (
+          <>
+            <p aria-live="polite" className="sr-only" role="status">
+              채팅 내용을 불러오는 중입니다.
+            </p>
+            <ChatMessagesSkeleton />
+          </>
+        ) : (
+          messages.map((message, index) => {
+            if (message.role === "ASSISTANT" && !message.content) {
+              return null;
+            }
 
-          return (
-            <div
-              className={`${chatClasses.messageWrapper} ${
-                message.role === "USER"
-                  ? chatClasses.userWrapper
-                  : chatClasses.assistantWrapper
-              }`}
-              key={message.clientId ?? `${message.role}-${index}`}
-            >
+            return (
               <div
-                className={`${chatClasses.message} ${
+                className={`${chatClasses.messageWrapper} ${
                   message.role === "USER"
-                    ? chatClasses.userMessage
-                    : chatClasses.assistantMessage
-                } ${message.error ? chatClasses.errorMessage : ""}`}
+                    ? chatClasses.userWrapper
+                    : chatClasses.assistantWrapper
+                }`}
+                key={message.clientId ?? `${message.role}-${index}`}
               >
-                {message.content}
+                <div
+                  className={`${chatClasses.message} ${
+                    message.role === "USER"
+                      ? chatClasses.userMessage
+                      : chatClasses.assistantMessage
+                  } ${message.error ? chatClasses.errorMessage : ""}`}
+                >
+                  {message.content}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
 
-        {showResponsePending && (
+        {!messagesLoading && showResponsePending && (
           <div
             className={`${chatClasses.messageWrapper} ${chatClasses.assistantWrapper}`}
           >

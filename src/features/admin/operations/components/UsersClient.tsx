@@ -14,34 +14,28 @@ import {
 import { handleClientError } from "@/lib/errorHandling";
 
 import { getAdminUsers, getAllAdminUsers } from "../actions";
+import {
+  ADMIN_USER_LIST_COLUMN_LABELS,
+  ADMIN_USER_PAGE_SIZE,
+} from "../constants";
 import { adminUserListClasses } from "../styles";
 import type { AdminUserSummary } from "../types";
 
 const userColumns: ListColumn<AdminUserSummary>[] = [
-  { key: "index", label: "No." },
-  { key: "name", label: "이름" },
-  { key: "nickname", label: "닉네임" },
-  { key: "email", label: "이메일" },
+  { key: "index", label: ADMIN_USER_LIST_COLUMN_LABELS[0] },
+  { key: "name", label: ADMIN_USER_LIST_COLUMN_LABELS[1] },
+  { key: "nickname", label: ADMIN_USER_LIST_COLUMN_LABELS[2] },
+  { key: "email", label: ADMIN_USER_LIST_COLUMN_LABELS[3] },
   {
     key: "createdAt",
-    label: "가입일",
+    label: ADMIN_USER_LIST_COLUMN_LABELS[4],
     render: (user) => formatDate(user.createdAt),
   },
   {
     key: "isLocked",
-    label: "상태",
+    label: ADMIN_USER_LIST_COLUMN_LABELS[5],
     render: (user) => (user.isLocked ? "비활성" : "활성"),
   },
-];
-
-const USER_PAGE_SIZE = 20;
-const userListSkeletonColumns = [
-  "No.",
-  "이름",
-  "닉네임",
-  "이메일",
-  "가입일",
-  "상태",
 ];
 
 function matchesUserName(user: AdminUserSummary, keyword: string) {
@@ -83,7 +77,7 @@ export default function UsersClient() {
         setLoading(true);
         const result = await getAdminUsers(
           page,
-          USER_PAGE_SIZE,
+          ADMIN_USER_PAGE_SIZE,
           controller.signal,
         );
 
@@ -140,7 +134,7 @@ export default function UsersClient() {
         setSearchUsers([]);
         setTotalPages(1);
         const allUsers = await getAllAdminUsers(
-          USER_PAGE_SIZE,
+          ADMIN_USER_PAGE_SIZE,
           controller.signal,
         );
 
@@ -154,7 +148,7 @@ export default function UsersClient() {
 
         setSearchUsers(filteredUsers);
         setTotalPages(
-          Math.max(Math.ceil(filteredUsers.length / USER_PAGE_SIZE), 1),
+          Math.max(Math.ceil(filteredUsers.length / ADMIN_USER_PAGE_SIZE), 1),
         );
       } catch (error) {
         if (controller.signal.aborted) {
@@ -194,9 +188,9 @@ export default function UsersClient() {
       return users;
     }
 
-    const start = page * USER_PAGE_SIZE;
+    const start = page * ADMIN_USER_PAGE_SIZE;
 
-    return (searchUsers ?? []).slice(start, start + USER_PAGE_SIZE);
+    return (searchUsers ?? []).slice(start, start + ADMIN_USER_PAGE_SIZE);
   }, [keyword, page, searchUsers, users]);
 
   const handleSearch = (nextKeyword: string) => {
@@ -223,7 +217,8 @@ export default function UsersClient() {
 
         {loading ? (
           <ListSkeleton
-            columns={userListSkeletonColumns}
+            columns={[...ADMIN_USER_LIST_COLUMN_LABELS]}
+            rowCount={ADMIN_USER_PAGE_SIZE}
             statusMessage="회원 목록을 불러오는 중입니다."
           />
         ) : (

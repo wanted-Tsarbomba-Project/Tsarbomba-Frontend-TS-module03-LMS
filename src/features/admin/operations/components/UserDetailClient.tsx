@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
   List,
   ListSkeleton,
-  LoadingIndicator,
   OneButtonModal,
   TwoButtonModal,
   type ListColumn,
@@ -19,12 +18,17 @@ import {
   getUserProblemList,
   toggleUserLock,
 } from "../actions";
+import {
+  USER_DETAIL_COURSE_COLUMN_LABELS,
+  USER_DETAIL_PROBLEM_COLUMN_LABELS,
+} from "../constants";
 import type {
   AdminUserDetail,
   UserCourseRow,
   UserDetailTab,
   UserProblemSubmission,
 } from "../types";
+import UserDetailSkeleton from "./UserDetailSkeleton";
 
 const userDetailClasses = {
   "container": "box-border min-h-screen p-6 text-text-primary",
@@ -56,29 +60,26 @@ const initialNoticeModal: NoticeModalState = {
 };
 
 const courseColumns: ListColumn<UserCourseRow>[] = [
-  { key: "index", label: "No." },
-  { key: "title", label: "강의명" },
+  { key: "index", label: USER_DETAIL_COURSE_COLUMN_LABELS[0] },
+  { key: "title", label: USER_DETAIL_COURSE_COLUMN_LABELS[1] },
   // 진행률은 수강 목록 API 응답에 포함되지 않아 표시하지 않습니다.
   {
     key: "date",
-    label: "등록일",
+    label: USER_DETAIL_COURSE_COLUMN_LABELS[2],
     render: (course) => formatDate(course.date),
   },
 ];
 
 const problemColumns: ListColumn<UserProblemSubmission>[] = [
-  { key: "index", label: "No." },
-  { key: "problemTitle", label: "문제명" },
-  { key: "submissionStatus", label: "결과" },
+  { key: "index", label: USER_DETAIL_PROBLEM_COLUMN_LABELS[0] },
+  { key: "problemTitle", label: USER_DETAIL_PROBLEM_COLUMN_LABELS[1] },
+  { key: "submissionStatus", label: USER_DETAIL_PROBLEM_COLUMN_LABELS[2] },
   {
     key: "submittedAt",
-    label: "제출일",
+    label: USER_DETAIL_PROBLEM_COLUMN_LABELS[3],
     render: (problem) => formatDate(problem.submittedAt),
   },
 ];
-const courseListSkeletonColumns = ["No.", "강의명", "등록일"];
-const problemListSkeletonColumns = ["No.", "문제명", "결과", "제출일"];
-
 export default function UserDetailClient() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -196,11 +197,7 @@ export default function UserDetailClient() {
   };
 
   if (userLoading || !user) {
-    return (
-      <div className={userDetailClasses.container}>
-        <LoadingIndicator message="회원 정보를 불러오는 중입니다." />
-      </div>
-    );
+    return <UserDetailSkeleton />;
   }
 
   const nextLockLabel = user.isLocked ? "잠금해제" : "계정잠금";
@@ -276,8 +273,8 @@ export default function UserDetailClient() {
             <ListSkeleton
               columns={
                 tab === "COURSE"
-                  ? courseListSkeletonColumns
-                  : problemListSkeletonColumns
+                  ? [...USER_DETAIL_COURSE_COLUMN_LABELS]
+                  : [...USER_DETAIL_PROBLEM_COLUMN_LABELS]
               }
               statusMessage="목록을 불러오는 중입니다."
               withPagination={false}

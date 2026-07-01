@@ -16,6 +16,10 @@ import {
   DIFFICULTY_MAP,
   getProblemSetPage,
 } from "../actions";
+import {
+  PROBLEM_LIST_COLUMN_LABELS,
+  PROBLEM_SET_PAGE_SIZE,
+} from "../constants";
 import type { ProblemSetSummary } from "../types";
 
 const problemListClasses = {
@@ -24,16 +28,6 @@ const problemListClasses = {
   "pageTitle": "m-0 text-title-lg font-bold text-text-primary",
   "registerButton": "cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[18px] py-2.5 text-description font-semibold text-text-white hover:bg-button-blue-hover-bg max-md:w-full"
 } as const;
-
-const PROBLEM_SET_PAGE_SIZE = 20;
-const problemListSkeletonColumns = [
-  "No.",
-  "문제명",
-  "문제 설명",
-  "난이도",
-  "정답률",
-  "등록일",
-];
 
 function formatDate(value?: string) {
   if (!value) {
@@ -70,34 +64,34 @@ export default function ProblemListClient() {
     () => [
       {
         key: "problemNumber",
-        label: "No.",
+        label: PROBLEM_LIST_COLUMN_LABELS[0],
         render: (item, index) =>
           item.problemNumber ?? page * PROBLEM_SET_PAGE_SIZE + index + 1,
       },
       {
         key: "title",
-        label: "문제명",
+        label: PROBLEM_LIST_COLUMN_LABELS[1],
       },
       {
         key: "description",
-        label: "문제 설명",
+        label: PROBLEM_LIST_COLUMN_LABELS[2],
       },
       {
         key: "difficulty",
-        label: "난이도",
+        label: PROBLEM_LIST_COLUMN_LABELS[3],
         render: (item) =>
           DIFFICULTY_MAP[item.difficulty as keyof typeof DIFFICULTY_MAP] ??
           item.difficulty,
       },
       {
         key: "accuracyRate",
-        label: "정답률",
+        label: PROBLEM_LIST_COLUMN_LABELS[4],
         render: (item) =>
           typeof item.accuracyRate === "number" ? `${item.accuracyRate}%` : "-",
       },
       {
         key: "createdAt",
-        label: "등록일",
+        label: PROBLEM_LIST_COLUMN_LABELS[5],
         render: (item) => formatDate(item.createdAt),
       },
     ],
@@ -168,7 +162,8 @@ export default function ProblemListClient() {
 
       {isLoading ? (
         <ListSkeleton
-          columns={problemListSkeletonColumns}
+          columns={[...PROBLEM_LIST_COLUMN_LABELS]}
+          rowCount={PROBLEM_SET_PAGE_SIZE}
           statusMessage="문제 목록을 불러오는 중입니다."
         />
       ) : (

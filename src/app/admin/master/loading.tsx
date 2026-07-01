@@ -1,13 +1,8 @@
 import { ListSkeleton } from "@/components/common";
-
-const adminAccountListSkeletonColumns = [
-  "No.",
-  "이름",
-  "닉네임",
-  "이메일",
-  "회원 관리 권한",
-  "규칙 관리 권한",
-];
+import {
+  ADMIN_ACCOUNT_LIST_COLUMN_LABELS,
+  ADMIN_ACCOUNT_PAGE_SIZE,
+} from "@/features/admin/operations/constants";
 
 export default function AdminMasterLoading() {
   return (
@@ -17,7 +12,8 @@ export default function AdminMasterLoading() {
       </div>
 
       <ListSkeleton
-        columns={adminAccountListSkeletonColumns}
+        columns={[...ADMIN_ACCOUNT_LIST_COLUMN_LABELS]}
+        rowCount={ADMIN_ACCOUNT_PAGE_SIZE}
         statusMessage="관리자 계정을 불러오는 중입니다."
       />
     </section>

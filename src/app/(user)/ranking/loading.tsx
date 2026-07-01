@@ -1,12 +1,8 @@
 import { ListSkeleton } from "@/components/common";
-
-const rankingListSkeletonColumns = [
-  "No.",
-  "뱃지",
-  "이름",
-  "주간 포인트",
-  "누적 포인트",
-];
+import {
+  RANKING_LIST_COLUMN_LABELS,
+  RANKING_PAGE_SIZE,
+} from "@/features/ranking/constants";
 
 export default function RankingLoading() {
   return (
@@ -22,7 +18,8 @@ export default function RankingLoading() {
 
       <div className="overflow-hidden rounded-base border border-border-light bg-bg-box [&_tbody_td]:h-[86px] [&_thead_th]:h-[52px]">
         <ListSkeleton
-          columns={rankingListSkeletonColumns}
+          columns={[...RANKING_LIST_COLUMN_LABELS]}
+          rowCount={RANKING_PAGE_SIZE}
           statusMessage="랭킹을 불러오는 중입니다."
         />
       </div>
