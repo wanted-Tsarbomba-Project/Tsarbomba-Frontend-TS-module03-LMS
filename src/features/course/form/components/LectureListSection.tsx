@@ -67,7 +67,7 @@ export default function LectureListSection({
           <button
             type="button"
             onClick={() => setShowAddMenu((prev) => !prev)}
-            className="text-sm text-blue-900 font-medium hover:opacity-70 transition-opacity flex items-center gap-1"
+            className="text-sm text-blue-900 font-medium hover:opacity-70 transition-opacity flex items-center gap-1 cursor-pointer"
           >
             <span className="text-lg leading-none">+</span>
             추가
@@ -80,7 +80,7 @@ export default function LectureListSection({
                   setShowAddMenu(false);
                   onAddVideo();
                 }}
-                className="block w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-100 transition-colors"
+                className="block w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 영상
               </button>
@@ -90,7 +90,7 @@ export default function LectureListSection({
                   setShowAddMenu(false);
                   onAddProblem();
                 }}
-                className="block w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-100 transition-colors"
+                className="block w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 문제
               </button>

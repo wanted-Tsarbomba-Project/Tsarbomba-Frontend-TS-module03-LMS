@@ -453,6 +453,7 @@ export default function CourseEditPage() {
               selectedProblemSetIds={selectedProblemSetIds}
               assignedProblemSetIds={assignedProblemSetIds}
               onToggleProblemSet={toggleProblemSet}
+              categoryLocked={assignedProblemSetIds.size > 0}
             />
           </div>
         </section>
@@ -476,14 +477,14 @@ export default function CourseEditPage() {
             type="button"
             onClick={handleSaveClick}
             disabled={isSubmitting}
-            className="px-8 py-2.5 bg-blue-900 text-white text-base font-medium rounded-lg hover:bg-blue-950 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="px-8 py-2.5 bg-blue-900 text-white text-base font-medium rounded-lg cursor-pointer hover:bg-blue-950 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "저장 중..." : "수정 완료"}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-8 py-2.5 bg-white text-gray-500 text-base font-medium rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+            className="px-8 py-2.5 bg-white text-gray-500 text-base font-medium rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
           >
             취소
           </button>

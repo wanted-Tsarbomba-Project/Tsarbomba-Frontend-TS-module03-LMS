@@ -30,7 +30,7 @@ export function RemoveButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-gray-400 hover:text-red-500 transition-colors p-0.5"
+      className="text-gray-400 hover:text-red-500 transition-colors p-0.5 cursor-pointer"
       aria-label="삭제"
     >
       <svg
@@ -174,7 +174,7 @@ export function VideoLectureCard({
                         item.files.filter((_, i) => i !== idx),
                       )
                     }
-                    className="text-text-placeholder hover:text-text-red transition-colors shrink-0"
+                    className="text-text-placeholder hover:text-text-red transition-colors shrink-0 cursor-pointer"
                     aria-label="첨부 삭제"
                   >
                     <svg
@@ -284,7 +284,7 @@ export function ProblemLectureCard({
           <button
             type="button"
             onClick={onToggleDropdown}
-            className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-md border border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap"
+            className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-md border border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-colors whitespace-nowrap cursor-pointer"
           >
             <svg
               width="12"
@@ -316,7 +316,7 @@ export function ProblemLectureCard({
                   type="button"
                   onClick={() => onSelectProblem(ps.problemSetId)}
                   className={[
-                    "block w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 transition-colors",
+                    "block w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 transition-colors cursor-pointer",
                     item.problemSetId === ps.problemSetId
                       ? "text-blue-900 font-semibold bg-gray-100"
                       : "text-gray-800",

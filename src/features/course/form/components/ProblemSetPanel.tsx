@@ -12,6 +12,8 @@ interface ProblemSetPanelProps {
   selectedProblemSetIds: Set<number>;
   assignedProblemSetIds: Set<number>;
   onToggleProblemSet: (id: number) => void;
+  // 이미 배정된 문제가 있으면 카테고리 변경 잠금 — 한 강좌엔 한 카테고리 문제만 (추천 기준 일관성)
+  categoryLocked?: boolean;
 }
 
 export default function ProblemSetPanel({
@@ -22,6 +24,7 @@ export default function ProblemSetPanel({
   selectedProblemSetIds,
   assignedProblemSetIds,
   onToggleProblemSet,
+  categoryLocked = false,
 }: ProblemSetPanelProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -32,7 +35,8 @@ export default function ProblemSetPanel({
         <select
           value={selectedCategoryId}
           onChange={(e) => onSelectCategory(e.target.value)}
-          className="w-full h-11 px-4 border border-gray-200 rounded-lg text-base text-gray-800 outline-none focus:border-blue-900 bg-white transition-colors cursor-pointer"
+          disabled={categoryLocked}
+          className="w-full h-11 px-4 border border-gray-200 rounded-lg text-base text-gray-800 outline-none focus:border-blue-900 bg-white transition-colors cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           <option value="">카테고리 선택</option>
           {problemCategories.map((c) => (
@@ -41,6 +45,12 @@ export default function ProblemSetPanel({
             </option>
           ))}
         </select>
+        {categoryLocked && (
+          <p className="mt-1.5 text-xs text-gray-500">
+            한 강좌에는 하나의 문제 카테고리만 사용할 수 있어요. 카테고리를
+            바꾸려면 배정된 문제 강의를 먼저 삭제해주세요.
+          </p>
+        )}
       </div>
 
       <div className="flex-1">
