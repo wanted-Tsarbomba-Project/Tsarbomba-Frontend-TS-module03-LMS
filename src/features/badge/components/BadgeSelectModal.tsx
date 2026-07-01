@@ -10,7 +10,9 @@ interface BadgeSelectModalProps {
   badges: MyBadge[];
   loading?: boolean;
   fetchFailed?: boolean;
+  syncing?: boolean;
   onSelect: (badge: MyBadge) => void;
+  onSync: () => void;
   onClose: () => void;
 }
 
@@ -18,7 +20,9 @@ export default function BadgeSelectModal({
   badges,
   loading = false,
   fetchFailed = false,
+  syncing = false,
   onSelect,
+  onSync,
   onClose,
 }: BadgeSelectModalProps) {
   const titleId = useId();
@@ -48,14 +52,25 @@ export default function BadgeSelectModal({
           <h2 className="text-lg font-bold text-text-primary" id={titleId}>
             뱃지 선택
           </h2>
-          <button
-            aria-label="모달 닫기"
-            className="text-text-secondary hover:text-text-primary text-xl cursor-pointer"
-            onClick={onClose}
-            type="button"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {/* 자동 등록이 안 되는 경우를 대비한 수동 동기화 — 새로 획득한 뱃지를 서버에서 재계산 */}
+            <button
+              className="text-xs font-semibold text-text-blue border border-text-blue rounded-md px-2.5 py-1 hover:bg-bg-navbar transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={onSync}
+              disabled={syncing}
+              type="button"
+            >
+              {syncing ? "동기화 중..." : "동기화"}
+            </button>
+            <button
+              aria-label="모달 닫기"
+              className="text-text-secondary hover:text-text-primary text-xl cursor-pointer"
+              onClick={onClose}
+              type="button"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {loading ? (
