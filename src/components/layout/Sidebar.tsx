@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import BadgeSelectModal from "@/features/badge/components/BadgeSelectModal";
-import { equipBadge, getMyBadges } from "@/features/badge/actions";
+import { equipBadge, getMyBadges, syncMyBadges } from "@/features/badge/actions";
 import type { MyBadge } from "@/features/badge/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import { ChatRoomListSkeleton } from "@/features/chat/components/ChatPageSkeleton";
@@ -74,6 +74,7 @@ export default function Sidebar({
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [badgesFetchFailed, setBadgesFetchFailed] = useState(false);
   const [equipError, setEquipError] = useState("");
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const updateUserInfo = () => {
@@ -173,6 +174,24 @@ export default function Sidebar({
       setBadgeModalOpen(false);
     } catch {
       setEquipError("뱃지 장착에 실패했어요. 다시 시도해 주세요.");
+    }
+  };
+
+  // 수동 동기화 — 서버에서 뱃지 재계산 후 최신 목록 재조회 (자동 등록 누락 대비)
+  const handleBadgeSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await syncMyBadges();
+      const badges = await getMyBadges();
+      setMyBadges(badges);
+      const equipped = badges.find((b) => b.isEquipped);
+      localStorage.setItem("equippedBadgeUrl", equipped?.imageUrl ?? "");
+      window.dispatchEvent(new Event("badgeChanged"));
+    } catch {
+      setEquipError("뱃지 동기화에 실패했어요. 다시 시도해 주세요.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -434,13 +453,15 @@ export default function Sidebar({
           badges={myBadges}
           fetchFailed={badgesFetchFailed}
           loading={badgesLoading}
+          syncing={syncing}
           onClose={() => setBadgeModalOpen(false)}
           onSelect={handleBadgeSelect}
+          onSync={handleBadgeSync}
         />
       )}
       <OneButtonModal
         isOpen={!!equipError}
-        modalTitle="뱃지 장착 실패"
+        modalTitle="뱃지 알림"
         modalContent={equipError}
         onClose={() => setEquipError("")}
       />
