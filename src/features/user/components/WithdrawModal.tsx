@@ -6,33 +6,46 @@ import { withdrawUser } from "../actions";
 import { toUserMessage } from "../validation";
 import { fieldBase } from "./styles";
 
-// 회원 탈퇴
+// 소셜(구글) 계정 탈퇴 확인 문구 — 정확히 일치해야 탈퇴 가능
+const WITHDRAW_CONFIRM_TEXT = "탈퇴하겠습니다";
+
+// 회원 탈퇴 — LOCAL: 비밀번호 / GOOGLE: 확인 문구 입력으로 분기
 export default function WithdrawModal({
   open,
   onClose,
+  provider,
 }: {
   open: boolean;
   onClose: () => void;
+  provider: string;
 }) {
-  const [pw, setPw] = useState("");
+  const isSocial = provider === "GOOGLE";
+  const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const canSubmit = isSocial
+    ? value.trim() === WITHDRAW_CONFIRM_TEXT
+    : !!value.trim();
+
   const close = () => {
     if (loading) return;
-    setPw("");
+    setValue("");
     setError("");
     onClose();
   };
 
   const handleConfirm = async () => {
-    if (!pw.trim() || loading) return;
+    if (!canSubmit || loading) return;
     setLoading(true);
     setError("");
     try {
-      await withdrawUser(pw);
+      // 소셜은 확인 문구, LOCAL 은 비밀번호를 전송
+      await withdrawUser(
+        isSocial ? { confirmText: value.trim() } : { password: value },
+      );
 
-      // 세션 정리
+      // 세션 정리 후 홈으로 (탈퇴 성공 시 서버가 쿠키 만료)
       if (typeof window !== "undefined") {
         localStorage.clear();
         sessionStorage.clear();
@@ -75,21 +88,23 @@ export default function WithdrawModal({
           탈퇴하시겠습니까?
         </h2>
         <p className="mt-3 whitespace-pre-line text-center text-body leading-6 text-text-secondary">
-          {"이 작업은 되돌릴 수 없습니다.\n계속하려면 비밀번호를 입력해주세요."}
+          {isSocial
+            ? `이 작업은 되돌릴 수 없습니다.\n계속하려면 아래에 '${WITHDRAW_CONFIRM_TEXT}' 를 입력해주세요.`
+            : "이 작업은 되돌릴 수 없습니다.\n계속하려면 비밀번호를 입력해주세요."}
         </p>
 
         <input
-          type="password"
-          value={pw}
+          type={isSocial ? "text" : "password"}
+          value={value}
           onChange={(e) => {
-            setPw(e.target.value);
+            setValue(e.target.value);
             setError("");
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleConfirm();
           }}
-          placeholder="비밀번호를 입력하세요"
-          aria-label="비밀번호"
+          placeholder={isSocial ? WITHDRAW_CONFIRM_TEXT : "비밀번호를 입력하세요"}
+          aria-label={isSocial ? "탈퇴 확인 문구" : "비밀번호"}
           autoFocus
           className={`${fieldBase} mt-6 ${error ? "border-text-red" : ""}`}
         />
@@ -99,7 +114,7 @@ export default function WithdrawModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!pw.trim() || loading}
+            disabled={!canSubmit || loading}
             className="h-12 w-32 rounded-[10px] bg-button-red-bg text-text-white text-body font-medium transition-all duration-200 hover:not-disabled:bg-button-red-hover-bg disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "처리 중" : "탈퇴"}
