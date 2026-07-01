@@ -194,7 +194,8 @@ function HeaderInner({ isSimple }: HeaderProps) {
           </span>
         </Link>
 
-        {(!isManagementRole || !isAdminPath) && (
+        {/* 검색바는 홈(강좌 목록)에서만 노출 */}
+        {pathname === "/" && (
           <div className="flex-1 min-w-0 max-w-md mx-8 hidden sm:block">
             <Searchbar
               defaultValue={courseKeyword}
