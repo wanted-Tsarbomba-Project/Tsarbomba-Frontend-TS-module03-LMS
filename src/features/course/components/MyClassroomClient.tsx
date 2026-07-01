@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { optimizedImageProps } from "@/components/common/imageOptimization";
 import { cancelEnrollment } from "@/features/course/enrollmentActions";
@@ -27,10 +28,6 @@ export default function MyClassroomClient({
   const inProgress = initialEnrollments.filter((e) => !isCompleted(e.status));
   const completed = initialEnrollments.filter((e) => isCompleted(e.status));
 
-  const goToCourse = (courseId?: number) => {
-    if (courseId) router.push(`/courses/${courseId}`);
-  };
-
   const handleCancelConfirm = async () => {
     if (cancelTarget?.enrollmentId == null) return;
     setIsCancelling(true);
@@ -52,7 +49,6 @@ export default function MyClassroomClient({
         count={inProgress.length}
         emptyText="진행 중인 강의가 없습니다."
         items={inProgress}
-        onClick={goToCourse}
         onCancel={setCancelTarget}
       />
 
@@ -61,7 +57,6 @@ export default function MyClassroomClient({
         count={completed.length}
         emptyText="완료한 강의가 없습니다."
         items={completed}
-        onClick={goToCourse}
         onCancel={setCancelTarget}
       />
 
@@ -82,7 +77,6 @@ interface SectionProps {
   count: number;
   emptyText: string;
   items: Enrollment[];
-  onClick: (courseId?: number) => void;
   onCancel: (enrollment: Enrollment) => void;
 }
 
@@ -91,7 +85,6 @@ function Section({
   count,
   emptyText,
   items,
-  onClick,
   onCancel,
 }: SectionProps) {
   return (
@@ -113,7 +106,6 @@ function Section({
             <CourseCard
               key={e.enrollmentId ?? e.courseId}
               enrollment={e}
-              onClick={() => onClick(e.courseId)}
               onCancel={() => onCancel(e)}
             />
           ))}
@@ -125,21 +117,22 @@ function Section({
 
 function CourseCard({
   enrollment,
-  onClick,
   onCancel,
 }: {
   enrollment: Enrollment;
-  onClick: () => void;
   onCancel: () => void;
 }) {
   const thumb = resolveThumbnailUrl(enrollment.courseThumbnailUrl);
+  const courseHref = enrollment.courseId
+    ? `/courses/${enrollment.courseId}`
+    : undefined;
 
   return (
-    <div
-      onClick={onClick}
-      className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow cursor-pointer"
-    >
-      <div className="relative w-full h-36 bg-gray-100 flex items-center justify-center overflow-hidden">
+    <article className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow">
+      <CourseCardLink
+        className="relative flex w-full h-36 bg-gray-100 items-center justify-center overflow-hidden"
+        href={courseHref}
+      >
         {thumb ? (
           <Image
             src={thumb}
@@ -161,7 +154,7 @@ function CourseCard({
             <path d="M20 10v20" stroke="#9CA3AF" strokeWidth="2" />
           </svg>
         )}
-      </div>
+      </CourseCardLink>
 
       <div className="p-4">
         {enrollment.courseCategoryName && (
@@ -169,12 +162,17 @@ function CourseCard({
             {enrollment.courseCategoryName}
           </span>
         )}
-        <h3 className="text-base font-semibold text-gray-800 line-clamp-1">
-          {enrollment.courseTitle ?? "제목 없음"}
-        </h3>
-        <p className="text-sm text-gray-500 mt-1 line-clamp-2 min-h-9">
-          {enrollment.courseDescription ?? ""}
-        </p>
+        <CourseCardLink
+          className="block text-inherit no-underline"
+          href={courseHref}
+        >
+          <h3 className="text-base font-semibold text-gray-800 line-clamp-1">
+            {enrollment.courseTitle ?? "제목 없음"}
+          </h3>
+          <p className="text-sm text-gray-500 mt-1 line-clamp-2 min-h-9">
+            {enrollment.courseDescription ?? ""}
+          </p>
+        </CourseCardLink>
         {enrollment.instructorName && (
           <p className="text-xs text-gray-500 mt-3">
             {enrollment.instructorName} 강사
@@ -183,8 +181,7 @@ function CourseCard({
 
         <button
           type="button"
-          onClick={(ev) => {
-            ev.stopPropagation();
+          onClick={() => {
             onCancel();
           }}
           className="mt-3 w-full py-2 text-sm font-medium text-red-500 border border-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
@@ -192,6 +189,26 @@ function CourseCard({
           수강 취소
         </button>
       </div>
-    </div>
+    </article>
+  );
+}
+
+function CourseCardLink({
+  children,
+  className,
+  href,
+}: {
+  children: ReactNode;
+  className: string;
+  href?: string;
+}) {
+  if (!href) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <Link className={className} href={href}>
+      {children}
+    </Link>
   );
 }

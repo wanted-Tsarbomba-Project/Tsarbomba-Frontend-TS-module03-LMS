@@ -3,6 +3,7 @@
 // CSR - 관리자 배지 목록: 운영자가 등록 직후 목록을 갱신하고 등록 화면으로 이동하는 관리 화면임
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { optimizedImageProps } from "@/components/common/imageOptimization";
@@ -112,13 +113,12 @@ export default function AdminBadgeListClient() {
     <main className={badgeListClasses.page}>
       <div className={badgeListClasses.header}>
         <h1 className={badgeListClasses.title}>뱃지 관리</h1>
-        <button
+        <Link
           className={badgeListClasses.registerButton}
-          onClick={() => router.push("/admin/badges/new")}
-          type="button"
+          href="/admin/badges/new"
         >
           등록하기
-        </button>
+        </Link>
       </div>
 
       {loading ? (
@@ -131,13 +131,12 @@ export default function AdminBadgeListClient() {
             const isActive = badge.status === "ACTIVE";
 
             return (
-              <article
-                className={badgeListClasses.card}
+              <Link
+                className="block text-inherit no-underline"
+                href={`/admin/badges/${badge.badgeId}/edit`}
                 key={badge.badgeId}
-                onClick={() =>
-                  router.push(`/admin/badges/${badge.badgeId}/edit`)
-                }
               >
+                <article className={badgeListClasses.card}>
                 <div className={badgeListClasses.imageWrap}>
                   {badge.imageUrl ? (
                     <Image
@@ -179,7 +178,8 @@ export default function AdminBadgeListClient() {
                     등록일 {formatDate(badge.createdAt)}
                   </p>
                 </div>
-              </article>
+                </article>
+              </Link>
             );
           })}
         </div>

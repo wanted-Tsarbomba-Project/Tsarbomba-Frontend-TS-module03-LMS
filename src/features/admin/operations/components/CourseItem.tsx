@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { optimizedImageProps } from "@/components/common/imageOptimization";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type { Course } from "@/features/course/types";
@@ -11,16 +11,14 @@ interface CourseItemProps {
 }
 
 function CourseItem({ course }: CourseItemProps) {
-  const router = useRouter();
-
   const { courseId, title, courseCategoryName, thumbnailUrl, description } =
     course;
   const resolvedThumbnailUrl = resolveThumbnailUrl(thumbnailUrl);
 
   return (
-    <div
+    <Link
       className="border border-[#e8e8e8] rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition cursor-pointer"
-      onClick={() => router.push(`/courses/${courseId}`)}
+      href={`/courses/${courseId}`}
     >
       {/* 강좌 썸네일 */}
       <div className="relative h-48 w-full bg-bg-navbar">
@@ -50,7 +48,7 @@ function CourseItem({ course }: CourseItemProps) {
           {description || "등록된 강좌 설명이 없습니다."}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 

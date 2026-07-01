@@ -1,5 +1,24 @@
 # v1.6.1 (2026-07-01)
 
+### SEO 및 구조화 데이터
+- **Added**
+  - 문제풀이 목록, 문제 상세, 랭킹 페이지에 Schema.org JSON-LD(`BreadcrumbList`, `ItemList`) 추가
+  - `robots.txt` 추가 및 `/admin`, `/api` 경로 크롤링 차단 처리
+  - `sitemap.xml` 추가 및 공개 검색 대상 라우트 명시
+- **Changed**
+  - `(user)` 라우트 그룹에 기본 `metadataBase`, title template, authors/publisher, 기본 Open Graph/Twitter 메타 추가
+  - 문제풀이 목록/상세, 랭킹, 챗봇, 에러, 관리자 주요 화면에 title, description, canonical, Open Graph, Twitter, robots meta 적용
+  - 개인화/운영 성격의 챗봇, 에러, 관리자 화면은 `noindex`로 검색 노출 대상에서 제외
+  - 문제 목록 row, 문제 카테고리 사이드바, 관리자 뱃지/강의 카드 이동을 실제 anchor 기반 `Link`로 보완
+  - 챗봇 화면 제목을 `h1`로 조정하고 로딩/관리자 화면의 semantic container 구조 보완
+- **Fixed**
+  - `next.config.ts`의 `reactStrictMode: false` 설정 제거
+  - 원격 이미지 허용 범위를 전체 도메인(`hostname: "**"`)에서 https 기반 allowlist(`NEXT_IMAGE_REMOTE_PATTERNS`, `NEXT_PUBLIC_API_URL`, `API_PROXY_TARGET`)로 제한
+  - 공통 이미지 최적화 유틸에서 `loading: "lazy"` 고정을 제거해 호출부별 로딩 전략 선택 가능성을 보장
+  - 카드형 이동 UI의 `div onClick` 사용을 줄여 키보드/스크린리더 접근성 보완
+
+---
+
 ### Docker 이미지 최적화
 
 - **Changed**
