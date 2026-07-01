@@ -1,3 +1,41 @@
+# v1.6.1 (2026-07-01)
+
+### SEO 및 구조화 데이터
+- **Added**
+  - 문제풀이 목록, 문제 상세, 랭킹 페이지에 Schema.org JSON-LD(`BreadcrumbList`, `ItemList`) 추가
+  - `robots.txt` 추가 및 `/admin`, `/api` 경로 크롤링 차단 처리
+  - `sitemap.xml` 추가 및 공개 검색 대상 라우트 명시
+- **Changed**
+  - `(user)` 라우트 그룹에 기본 `metadataBase`, title template, authors/publisher, 기본 Open Graph/Twitter 메타 추가
+  - 문제풀이 목록/상세, 랭킹, 챗봇, 에러, 관리자 주요 화면에 title, description, canonical, Open Graph, Twitter, robots meta 적용
+  - 개인화/운영 성격의 챗봇, 에러, 관리자 화면은 `noindex`로 검색 노출 대상에서 제외
+  - 문제 목록 row, 문제 카테고리 사이드바, 관리자 뱃지/강의 카드 이동을 실제 anchor 기반 `Link`로 보완
+  - 챗봇 화면 제목을 `h1`로 조정하고 로딩/관리자 화면의 semantic container 구조 보완
+- **Fixed**
+  - `next.config.ts`의 `reactStrictMode: false` 설정 제거
+  - 원격 이미지 허용 범위를 전체 도메인(`hostname: "**"`)에서 https 기반 allowlist(`NEXT_IMAGE_REMOTE_PATTERNS`, `NEXT_PUBLIC_API_URL`, `API_PROXY_TARGET`)로 제한
+  - 공통 이미지 최적화 유틸에서 `loading: "lazy"` 고정을 제거해 호출부별 로딩 전략 선택 가능성을 보장
+  - 카드형 이동 UI의 `div onClick` 사용을 줄여 키보드/스크린리더 접근성 보완
+
+---
+
+### Docker 이미지 최적화
+
+- **Changed**
+  - Next Image 원격 이미지 최적화 설정을 추가하고 AVIF/WebP 포맷 출력을 활성화
+  - 공통 blur placeholder와 lazy loading props를 추가해 이미지 로딩 체감 성능을 개선
+  - 헤더/사이드바 장착 뱃지, 관리자 뱃지, 랭킹 뱃지, 강좌/마이페이지 썸네일 이미지를 Next.js `Image` 컴포넌트 기반으로 정리
+  - 문제풀이 결과 패널의 추천 강좌 썸네일을 CSS `backgroundImage` 방식에서 Next.js `Image` 컴포넌트 기반 렌더링으로 변경
+  - 원격 이미지의 직접 loader/unoptimized 처리를 제거해 Next 이미지 최적화 파이프라인을 사용하도록 변경
+  - 관리자 강좌 카드의 외부 placeholder 이미지 직접 로드를 제거하고 로컬 fallback 이미지를 사용하도록 변경
+
+- **Fixed**
+  - 직접 `<img>` 사용 지점을 제거하고 반응형 `sizes`, lazy loading, blur placeholder를 적용해 고해상도 원본 이미지 직접 로드 가능성을 완화
+  - CSS `backgroundImage`로 원본 썸네일을 직접 로드하던 지점을 제거해 이미지 최적화 누락 가능성을 완화
+  - 로컬 파일 미리보기 이미지는 blob/data URL 호환성을 위해 `Image` 컴포넌트를 유지하되 최적화 예외 처리
+
+---
+
 # v1.6.0 (2026-07-01)
 
 ### 반응형 레이아웃 및 모바일 사이드바
