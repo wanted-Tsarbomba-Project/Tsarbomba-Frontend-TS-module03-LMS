@@ -159,7 +159,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
         <div className="flex h-16 items-center justify-between px-6 max-w-300 mx-auto">
           <Link
             href={logoTargetHref}
-            className="flex items-center gap-2 cursor-pointer select-none"
+            className="flex shrink-0 items-center gap-2 cursor-pointer select-none"
           >
             <Image
               src={Logo}
@@ -167,7 +167,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
               alt="로고"
               priority
             />
-            <span className="text-xl font-bold text-[#1a237e] tracking-tight">
+            <span className="text-xl font-bold text-[#1a237e] tracking-tight whitespace-nowrap">
               codebomba
             </span>
           </Link>
@@ -181,7 +181,7 @@ function HeaderInner({ isSimple }: HeaderProps) {
       <div className="flex h-16 items-center justify-between px-6 max-w-300 mx-auto">
         <Link
           href={logoTargetHref}
-          className="flex items-center gap-2 cursor-pointer select-none"
+          className="flex shrink-0 items-center gap-2 cursor-pointer select-none"
         >
           <Image
             src={Logo}
@@ -189,13 +189,13 @@ function HeaderInner({ isSimple }: HeaderProps) {
             alt="로고"
             priority
           />
-          <span className="text-xl font-bold text-[#1a237e] tracking-tight">
+          <span className="text-xl font-bold text-[#1a237e] tracking-tight whitespace-nowrap">
             {isManagementRole && isAdminPath ? "관리자 페이지" : "codebomba"}
           </span>
         </Link>
 
         {(!isManagementRole || !isAdminPath) && (
-          <div className="flex-1 max-w-md mx-8 hidden sm:block">
+          <div className="flex-1 min-w-0 max-w-md mx-8 hidden sm:block">
             <Searchbar
               defaultValue={courseKeyword}
               key={courseKeyword}
@@ -206,10 +206,10 @@ function HeaderInner({ isSimple }: HeaderProps) {
         )}
 
         {/* 우측 네비게이션 및 프로필 영역 */}
-        <div className="flex items-center gap-6">
+        <div className="flex shrink-0 items-center gap-6">
           {/* 일반 학생 유저 로그인 시 메뉴 */}
           {!isAdminPath && isLoggedIn && !isManagementRole && (
-            <nav className="flex items-center gap-5 text-sm font-semibold text-[#1f2937]">
+            <nav className="flex items-center gap-5 text-sm font-semibold text-[#1f2937] whitespace-nowrap max-md:hidden">
               <span
                 className="cursor-pointer hover:text-[#1a237e] transition-colors"
                 onClick={() => router.push("/chat")}
