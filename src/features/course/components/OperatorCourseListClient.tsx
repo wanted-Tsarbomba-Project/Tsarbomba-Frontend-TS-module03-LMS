@@ -8,6 +8,7 @@ import List, { type ListColumn } from "@/components/common/List";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import { updateCourseStatus } from "@/features/course/actions";
+import { ADMIN_COURSE_LIST_COLUMN_LABELS } from "@/features/course/constants";
 import { filterCourses } from "@/features/course/search";
 import type { Course, CourseStatusFilter } from "@/features/course/types";
 
@@ -77,15 +78,15 @@ export default function OperatorCourseListClient({
   };
 
   const courseColumns: ListColumn<Course>[] = [
-    { key: "index", label: "No." },
+    { key: "index", label: ADMIN_COURSE_LIST_COLUMN_LABELS[0] },
     {
       key: "title",
-      label: "제목",
+      label: ADMIN_COURSE_LIST_COLUMN_LABELS[1],
       render: (course) => course.title || "제목 없는 강좌",
     },
     {
       key: "status",
-      label: "상태",
+      label: ADMIN_COURSE_LIST_COLUMN_LABELS[2],
       render: (course) => (
         <button
           className={`inline-block cursor-pointer rounded-md border px-3 py-1 text-xs font-semibold transition ${

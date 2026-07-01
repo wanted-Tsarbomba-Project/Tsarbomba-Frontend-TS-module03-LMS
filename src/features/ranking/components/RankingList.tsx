@@ -4,6 +4,7 @@ import { List } from "@/components/common";
 import type { ListColumn } from "@/components/common";
 
 import { MY_RANKING_ROW_CLASS, rankingClasses } from "../styles";
+import { RANKING_LIST_COLUMN_LABELS } from "../constants";
 import type { RankingUser } from "../types";
 import {
   formatPoint,
@@ -22,26 +23,26 @@ interface RankingListProps {
 const rankingColumns: ListColumn<RankingUser>[] = [
   {
     key: "rank",
-    label: "No.",
+    label: RANKING_LIST_COLUMN_LABELS.rank,
     render: (item) => (
       <span className={rankingClasses.rank}>{formatRank(item.rank)}</span>
     ),
   },
   {
     key: "badgeImageUrl",
-    label: "뱃지",
+    label: RANKING_LIST_COLUMN_LABELS.badge,
     render: (item) => <RankingBadgeImage user={item} />,
   },
   {
     key: "nickname",
-    label: "이름",
+    label: RANKING_LIST_COLUMN_LABELS.nickname,
     render: (item) => (
       <span className={rankingClasses.userName}>{getDisplayName(item)}</span>
     ),
   },
   {
     key: "weeklyPoint",
-    label: "주간 포인트",
+    label: RANKING_LIST_COLUMN_LABELS.weeklyPoint,
     render: (item) => (
       <span className={rankingClasses.point}>
         {formatPoint(item.weeklyPoint)}
@@ -50,7 +51,7 @@ const rankingColumns: ListColumn<RankingUser>[] = [
   },
   {
     key: "totalPoint",
-    label: "누적 포인트",
+    label: RANKING_LIST_COLUMN_LABELS.totalPoint,
     render: (item) => (
       <span className={rankingClasses.point}>
         {formatPoint(item.totalPoint)}

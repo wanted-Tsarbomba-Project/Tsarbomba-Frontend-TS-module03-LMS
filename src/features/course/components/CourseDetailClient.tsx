@@ -7,6 +7,7 @@ import {
   enrollCourse,
   getMyEnrollments,
 } from "@/features/course/enrollmentActions";
+import { COURSE_PROGRESS_COLUMN_LABELS } from "@/features/course/constants";
 import { getCourseLearningProgress } from "@/features/course/progressActions";
 import { getFinalProblemSetCandidates } from "@/features/course/recommendActions";
 import { resolveThumbnailUrl } from "@/features/course/http";
@@ -19,6 +20,7 @@ import type { ProblemSetSummary } from "@/features/problems/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";
+import ListSkeleton from "@/components/common/ListSkeleton";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 
 interface CourseDetailClientProps {
@@ -34,23 +36,23 @@ const outlineBtn =
 
 // "이동하기" 는 학생 답안 view-only 화면 — 백엔드 API 확정 전까지 비활성 stub.
 const progressColumns: ListColumn<StudentLearningProgress>[] = [
-  { key: "index", label: "No." },
-  { key: "studentName", label: "이름" },
+  { key: "index", label: COURSE_PROGRESS_COLUMN_LABELS[0] },
+  { key: "studentName", label: COURSE_PROGRESS_COLUMN_LABELS[1] },
   {
     key: "lecture",
-    label: "강의 수강률",
+    label: COURSE_PROGRESS_COLUMN_LABELS[2],
     render: (item) =>
       `${item.completedLectureCount}/${item.totalLectureCount} ${item.lectureProgressRate}%`,
   },
   {
     key: "problem",
-    label: "문제 풀이 현황",
+    label: COURSE_PROGRESS_COLUMN_LABELS[3],
     render: (item) =>
       `${item.completedProblemCount}/${item.totalProblemCount} 개`,
   },
   {
     key: "action",
-    label: "문제 풀이",
+    label: COURSE_PROGRESS_COLUMN_LABELS[4],
     render: () => (
       <button
         type="button"
@@ -447,7 +449,12 @@ export default function CourseDetailClient({
 
             <div className="overflow-y-auto flex-1 p-4">
               {progressLoading ? (
-                <LoadingIndicator message="학습 현황을 불러오는 중입니다." />
+                <ListSkeleton
+                  columns={[...COURSE_PROGRESS_COLUMN_LABELS]}
+                  rowCount={5}
+                  statusMessage="학습 현황을 불러오는 중입니다."
+                  withPagination={false}
+                />
               ) : (
                 <List
                   data={progressData}
