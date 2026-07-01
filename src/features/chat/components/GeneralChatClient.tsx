@@ -79,7 +79,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatStreamAbortRef = useRef<AbortController | null>(null);
+  const skipNextRoomLoadRef = useRef<string | null>(null);
+  const activeRoomIdRef = useRef<string | undefined>(roomId);
 
+  const [currentRoomId, setCurrentRoomId] = useState(roomId);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(Boolean(roomId));
   const [inputValue, setInputValue] = useState("");
@@ -101,12 +104,16 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     content: "",
   });
 
-  const activeRoomId = roomId;
+  const activeRoomId = currentRoomId;
   const linkedProblem = activeRoomId ? linkedProblemState : null;
   const linkedProblemLabel = linkedProblem
     ? getLinkedProblemLabel(linkedProblem)
     : "";
   const headerActionDisabled = deleting || updatingTitle;
+
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
 
   const updateShouldFollowScroll = useCallback(() => {
     const container = messageContainerRef.current;
@@ -176,6 +183,34 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
     resizeChatInput(inputRef.current);
   }, [inputValue]);
 
+  const refreshChatRoomMeta = useCallback(async (targetRoomId: string) => {
+    try {
+      const rooms = await getChatRooms();
+      const currentRoom = rooms.find(
+        (room) => String(room.roomId) === targetRoomId,
+      );
+
+      if (activeRoomIdRef.current !== targetRoomId) {
+        return;
+      }
+
+      const nextTitle = currentRoom?.title || DEFAULT_CHAT_TITLE;
+      const enrichedLinkedProblem = await enrichLinkedProblem(
+        getLinkedProblem(currentRoom),
+      );
+
+      if (activeRoomIdRef.current !== targetRoomId) {
+        return;
+      }
+
+      setChatTitle(nextTitle);
+      setTitleInputValue(nextTitle);
+      setLinkedProblemState(enrichedLinkedProblem);
+    } catch {
+      // 새 채팅방 제목 조회 실패는 현재 메시지 표시를 방해하지 않는다.
+    }
+  }, []);
+
   useEffect(() => {
     if (!activeRoomId) {
       const timeoutId = setTimeout(() => {
@@ -185,6 +220,12 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       return () => {
         clearTimeout(timeoutId);
       };
+    }
+
+    if (skipNextRoomLoadRef.current === activeRoomId) {
+      skipNextRoomLoadRef.current = null;
+      setMessagesLoading(false);
+      return undefined;
     }
 
     const controller = new AbortController();
@@ -333,7 +374,13 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       window.dispatchEvent(new Event("chatRoomUpdated"));
 
       if (!activeRoomId && newRoomId) {
-        router.replace(`/chat/${newRoomId}`);
+        const nextRoomId = String(newRoomId);
+
+        skipNextRoomLoadRef.current = nextRoomId;
+        activeRoomIdRef.current = nextRoomId;
+        setCurrentRoomId(nextRoomId);
+        window.history.replaceState(null, "", `/chat/${nextRoomId}`);
+        void refreshChatRoomMeta(nextRoomId);
       }
     } catch (error) {
       if (controller.signal.aborted) {
@@ -367,7 +414,14 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
         setShowResponsePending(false);
       }
     }
-  }, [activeRoomId, appendMessage, inputValue, router, sending]);
+  }, [
+    activeRoomId,
+    appendMessage,
+    inputValue,
+    refreshChatRoomMeta,
+    router,
+    sending,
+  ]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
