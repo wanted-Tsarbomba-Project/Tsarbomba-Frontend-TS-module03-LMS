@@ -60,21 +60,20 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const isAdminPath = pathname.startsWith("/admin");
+  const isMypage = pathname.startsWith("/user/profile");
+  const isChatPage =
+    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   const [nickname, setNickname] = useState(propsNickname || "닉네임");
   const [userRole, setUserRole] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [chatRoomsLoading, setChatRoomsLoading] = useState(false);
+  const [chatRoomsLoading, setChatRoomsLoading] = useState(isChatPage);
   const [myBadges, setMyBadges] = useState<MyBadge[]>([]);
   const [badgeModalOpen, setBadgeModalOpen] = useState(false);
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [badgesFetchFailed, setBadgesFetchFailed] = useState(false);
   const [equipError, setEquipError] = useState("");
-
-  const isAdminPath = pathname.startsWith("/admin");
-  const isMypage = pathname.startsWith("/user/profile");
-  const isChatPage =
-    pathname.startsWith("/chat") || pathname.startsWith("/user/chat");
 
   useEffect(() => {
     const updateUserInfo = () => {

@@ -13,7 +13,7 @@ import { handleClientError } from "@/lib/errorHandling";
 
 import { getMyPointRankingByMode, getPointRankingsByMode } from "../actions";
 import {
-  RANKING_LIST_COLUMN_LABELS,
+  RANKING_LIST_SKELETON_COLUMNS,
   RANKING_PAGE_SIZE,
 } from "../constants";
 import { rankingClasses } from "../styles";
@@ -106,7 +106,7 @@ export default function RankingClient({
       <div className={rankingClasses.listShell}>
         {loading ? (
           <ListSkeleton
-            columns={[...RANKING_LIST_COLUMN_LABELS]}
+            columns={[...RANKING_LIST_SKELETON_COLUMNS]}
             rowCount={RANKING_PAGE_SIZE}
             statusMessage="랭킹을 불러오는 중입니다."
           />

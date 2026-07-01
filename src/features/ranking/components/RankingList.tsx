@@ -23,26 +23,26 @@ interface RankingListProps {
 const rankingColumns: ListColumn<RankingUser>[] = [
   {
     key: "rank",
-    label: RANKING_LIST_COLUMN_LABELS[0],
+    label: RANKING_LIST_COLUMN_LABELS.rank,
     render: (item) => (
       <span className={rankingClasses.rank}>{formatRank(item.rank)}</span>
     ),
   },
   {
     key: "badgeImageUrl",
-    label: RANKING_LIST_COLUMN_LABELS[1],
+    label: RANKING_LIST_COLUMN_LABELS.badge,
     render: (item) => <RankingBadgeImage user={item} />,
   },
   {
     key: "nickname",
-    label: RANKING_LIST_COLUMN_LABELS[2],
+    label: RANKING_LIST_COLUMN_LABELS.nickname,
     render: (item) => (
       <span className={rankingClasses.userName}>{getDisplayName(item)}</span>
     ),
   },
   {
     key: "weeklyPoint",
-    label: RANKING_LIST_COLUMN_LABELS[3],
+    label: RANKING_LIST_COLUMN_LABELS.weeklyPoint,
     render: (item) => (
       <span className={rankingClasses.point}>
         {formatPoint(item.weeklyPoint)}
@@ -51,7 +51,7 @@ const rankingColumns: ListColumn<RankingUser>[] = [
   },
   {
     key: "totalPoint",
-    label: RANKING_LIST_COLUMN_LABELS[4],
+    label: RANKING_LIST_COLUMN_LABELS.totalPoint,
     render: (item) => (
       <span className={rankingClasses.point}>
         {formatPoint(item.totalPoint)}
