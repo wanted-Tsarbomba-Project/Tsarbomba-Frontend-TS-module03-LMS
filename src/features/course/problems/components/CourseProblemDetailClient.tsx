@@ -166,6 +166,7 @@ export default function CourseProblemDetailClient({
   });
   const [isDatasetDownloading, setIsDatasetDownloading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -288,6 +289,7 @@ export default function CourseProblemDetailClient({
     setExecutionResult(null);
     setSubmissionResult(null);
     resetChat();
+    setMobileSidebarOpen(false);
   };
 
   const handleCodeChange = (nextCode: string) => {
@@ -501,7 +503,10 @@ export default function CourseProblemDetailClient({
           isRunning={isRunning}
           onBack={() => setWarningModalOpen(true)}
           onRun={handleRun}
-          onToggleProblemChat={() => setChatOpen((prev) => !prev)}
+          onToggleProblemChat={() => {
+            setMobileSidebarOpen(false);
+            setChatOpen((prev) => !prev);
+          }}
           variant="problem-detail"
         />
 
@@ -510,11 +515,37 @@ export default function CourseProblemDetailClient({
             canMoveProblem={canMoveProblem}
             currentIndex={currentIndex}
             getProblemButtonClass={getProblemButtonClass}
+            isOpen={mobileSidebarOpen}
             moveProblem={moveProblem}
             problemSet={problemSet}
             problemStates={problemStates}
             variant="problem-detail"
           />
+
+          {!chatOpen && (
+            <button
+              aria-label={mobileSidebarOpen ? "문제 목록 닫기" : "문제 목록 열기"}
+              aria-pressed={mobileSidebarOpen}
+              className={styles.mobileSidebarToggle}
+              onClick={() => setMobileSidebarOpen((prev) => !prev)}
+              type="button"
+            >
+              <Image
+                alt=""
+                className={styles.mobileSidebarIcon}
+                height={56}
+                src="/assets/img/sidebar.svg"
+                width={56}
+              />
+            </button>
+          )}
+
+          {mobileSidebarOpen && !chatOpen && (
+            <div
+              className="fixed inset-0 z-[900] bg-[#000000]/40 min-[1024px]:hidden"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+          )}
 
           <section className={styles.contentArea} ref={contentAreaRef}>
             <article
@@ -633,6 +664,7 @@ export default function CourseProblemDetailClient({
             chatOpen={chatOpen}
             chatSending={chatSending}
             onChatInputChange={setChatInput}
+            onClose={() => setChatOpen(false)}
             onSendChat={sendChat}
           />
         </div>

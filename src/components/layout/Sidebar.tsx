@@ -431,10 +431,10 @@ export default function Sidebar({
   if (variant === "problem-detail") {
     return (
       <aside
-        className={`w-65 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 transition-all duration-300 max-lg:w-full max-lg:static ${
+        className={`w-65 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 transition-all duration-300 ${
           isOpen
-            ? "max-lg:block max-lg:fixed max-lg:left-0 max-lg:z-999 max-lg:h-[calc(100vh-80px)]"
-            : ""
+            ? "max-[1023px]:fixed max-[1023px]:left-1/2 max-[1023px]:top-1/2 max-[1023px]:z-[1000] max-[1023px]:block max-[1023px]:max-h-[min(76dvh,560px)] max-[1023px]:w-[min(340px,calc(100dvw-32px))] max-[1023px]:-translate-x-1/2 max-[1023px]:-translate-y-1/2 max-[1023px]:overflow-y-auto max-[1023px]:shadow-[0_20px_50px_rgba(15,23,42,0.24)]"
+            : "max-[1023px]:hidden"
         }`}
       >
         {problemDetailMenu}
@@ -466,10 +466,10 @@ export default function Sidebar({
         onClose={() => setEquipError("")}
       />
       <aside
-        className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300 ${
+        className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 transition-all duration-300 ${
           isOpen
-            ? "max-lg:block max-lg:fixed max-lg:left-5 max-lg:top-24 max-lg:z-999 max-lg:shadow-xl"
-            : ""
+            ? "max-[1023px]:fixed max-[1023px]:left-1/2 max-[1023px]:top-1/2 max-[1023px]:z-[1000] max-[1023px]:block max-[1023px]:max-h-[min(76dvh,560px)] max-[1023px]:w-[min(340px,calc(100dvw-32px))] max-[1023px]:-translate-x-1/2 max-[1023px]:-translate-y-1/2 max-[1023px]:overflow-y-auto max-[1023px]:shadow-[0_20px_50px_rgba(15,23,42,0.24)]"
+            : "max-[1023px]:hidden"
         }`}
       >
         {isAdminPath && adminMenu}

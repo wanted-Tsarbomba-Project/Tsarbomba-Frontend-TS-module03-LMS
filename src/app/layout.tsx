@@ -6,6 +6,7 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
@@ -136,12 +137,32 @@ export default function RootLayout({
                 <Sidebar isOpen={isOpen} />
               )}
 
+              {(isMypagePath ||
+                isChatPath ||
+                (isAdminPath && canAccessCurrentAdmin)) && (
+                <button
+                  aria-label={isOpen ? "사이드바 닫기" : "사이드바 열기"}
+                  aria-pressed={isOpen}
+                  className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-4 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-[#1a237e] bg-bg-box p-0 shadow-[0_8px_24px_rgba(15,23,42,0.22)] min-[1024px]:hidden"
+                  onClick={() => setIsOpen((prev) => !prev)}
+                  type="button"
+                >
+                  <Image
+                    alt=""
+                    className="h-14 w-14"
+                    height={56}
+                    src="/assets/img/sidebar.svg"
+                    width={56}
+                  />
+                </button>
+              )}
+
               {isOpen &&
                 (isMypagePath ||
                   isChatPath ||
                   (isAdminPath && canAccessCurrentAdmin)) && (
                   <div
-                    className="fixed inset-0 bg-[#000000]/40 z-998 lg:hidden"
+                    className="fixed inset-0 z-[900] bg-[#000000]/40 min-[1024px]:hidden"
                     onClick={() => setIsOpen(false)}
                   />
                 )}

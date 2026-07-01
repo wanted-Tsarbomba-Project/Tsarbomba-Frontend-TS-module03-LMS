@@ -31,7 +31,8 @@ const problemListClasses = {
   header:
     "mb-5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
   pageTitle: "m-0 text-title-lg font-bold text-text-primary",
-  headerActions: "flex flex-wrap items-center justify-end gap-3",
+  headerActions:
+    "flex flex-wrap items-center justify-end gap-3 max-md:justify-start",
   registerButton:
     "cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[18px] py-2.5 text-description font-semibold text-text-white hover:bg-button-blue-hover-bg max-md:w-full",
 } as const;

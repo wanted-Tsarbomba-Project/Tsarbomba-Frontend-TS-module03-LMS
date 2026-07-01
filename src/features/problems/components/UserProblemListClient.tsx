@@ -33,7 +33,7 @@ const userProblemListClasses = {
   header:
     "mb-5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
   pageTitle: "m-0 text-title-lg font-bold text-text-primary",
-  searchWrap: "flex flex-wrap items-center justify-end gap-3",
+  searchWrap: "flex flex-wrap items-center justify-end gap-3 max-md:justify-start",
 } as const;
 
 interface UserProblemListClientProps {

@@ -1,7 +1,7 @@
 export const problemDetailClasses = {
-  container: "min-h-[80vh] w-full bg-bg-main",
+  container: "min-h-[80vh] w-full min-w-0 bg-bg-main",
   mainArea:
-    "relative flex min-h-[calc(80vh-80px)] gap-4 overflow-hidden py-3.5 max-lg:flex-col",
+    "relative flex min-h-[calc(80vh-80px)] min-w-0 gap-4 overflow-hidden py-3.5 max-lg:flex-col max-md:gap-3 max-md:py-3",
   contentArea:
     "flex min-w-0 flex-1 items-stretch gap-3 max-[1180px]:flex-col",
   contentAreaStacked: "flex-col",
@@ -13,12 +13,13 @@ export const problemDetailClasses = {
   solveResizablePane: "flex-1 min-w-[400px] max-[1180px]:min-w-0",
   solveStackedPane: "min-w-0 flex-auto",
   problemBox:
-    "min-w-0 rounded-base border border-border-light bg-bg-box p-4 [&_h2]:m-0 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary",
-  problemHeader: "mb-2.5 flex items-center justify-between gap-3",
+    "min-w-0 rounded-base border border-border-light bg-bg-box p-4 max-md:p-3 [&_h2]:m-0 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary max-md:[&_h2]:text-title-md",
+  problemHeader:
+    "mb-2.5 flex items-center justify-between gap-3 max-[560px]:flex-wrap",
   datasetDownloadButton:
     "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-base border border-border-light bg-bg-box transition hover:bg-bg-hover-gray disabled:cursor-not-allowed disabled:opacity-50",
   solveBox:
-    "min-w-0 rounded-base border border-border-light bg-bg-box p-4 [&_h2]:mt-0 [&_h2]:mb-2.5 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary",
+    "min-w-0 rounded-base border border-border-light bg-bg-box p-4 max-md:p-3 [&_h2]:mt-0 [&_h2]:mb-2.5 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary max-md:[&_h2]:text-title-md",
   problemContent:
     "whitespace-pre-wrap break-words text-body leading-normal text-text-primary",
   editorSection: "relative",
@@ -26,7 +27,7 @@ export const problemDetailClasses = {
     "min-h-[220px] w-full resize-y rounded-base border border-border-light p-3 font-mono text-body text-text-primary",
   hintToast:
     "absolute left-1/2 top-[42px] z-10 -translate-x-1/2 whitespace-nowrap rounded-base bg-button-blue-bg px-[18px] py-3 text-body font-semibold text-text-white",
-  tabs: "mt-3 mb-2 grid min-w-0 grid-cols-4 gap-2 [&_button]:min-w-0 [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-2.5 [&_button]:py-[9px] [&_button]:text-[15px] [&_button]:text-text-primary [&_button:disabled]:cursor-not-allowed [&_button:disabled]:bg-bg-navbar [&_button:disabled]:text-[#9ca3af] max-[560px]:gap-1.5 max-[560px]:[&_button]:px-1.5 max-[560px]:[&_button]:text-description",
+  tabs: "mt-3 mb-2 grid min-w-0 grid-cols-4 gap-2 overflow-x-auto [&_button]:min-w-0 [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:rounded-base [&_button]:border [&_button]:border-border-light [&_button]:bg-bg-box [&_button]:px-2.5 [&_button]:py-[9px] [&_button]:text-[15px] [&_button]:text-text-primary [&_button:disabled]:cursor-not-allowed [&_button:disabled]:bg-bg-navbar [&_button:disabled]:text-[#9ca3af] max-[560px]:flex max-[560px]:grid-cols-none max-[560px]:gap-1.5 max-[560px]:[&_button]:min-w-[88px] max-[560px]:[&_button]:px-1.5 max-[560px]:[&_button]:text-description",
   activeTab: "bg-bg-navbar! text-text-blue!",
   bottomPanel:
     "h-[180px] w-full max-w-full overflow-y-auto rounded-base border border-border-light p-3 text-body text-text-primary",
@@ -35,9 +36,9 @@ export const problemDetailClasses = {
   emptyRecommendedCourse: "m-0 text-body text-text-secondary",
   recommendedCourseWrap: "flex h-full flex-col gap-3",
   recommendedCourseCard:
-    "flex min-h-[112px] min-w-0 w-full cursor-pointer gap-3 overflow-hidden rounded-base border border-border-light bg-bg-box p-3 text-left [font:inherit] no-underline transition hover:bg-bg-navbar",
+    "flex min-h-[112px] w-full min-w-0 cursor-pointer gap-3 overflow-hidden rounded-base border border-border-light bg-bg-box p-3 text-left [font:inherit] no-underline transition hover:bg-bg-navbar max-[560px]:flex-col",
   recommendedCourseThumb:
-    "h-[88px] w-[132px] shrink-0 rounded-base bg-bg-navbar bg-cover bg-center",
+    "h-[88px] w-[132px] shrink-0 rounded-base bg-bg-navbar bg-cover bg-center max-[560px]:h-[120px] max-[560px]:w-full",
   recommendedCourseText:
     "flex min-w-0 flex-1 flex-col gap-1 overflow-hidden [&_strong]:truncate [&_strong]:text-body [&_strong]:text-text-primary [&_span]:line-clamp-2 [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:break-words [&_span]:text-description [&_span]:text-text-secondary",
   recommendedCourseControls:
@@ -45,8 +46,11 @@ export const problemDetailClasses = {
   submitWrap: "mt-3 flex min-w-0 justify-end overflow-visible",
   submitButton:
     "h-11 min-w-[120px] shrink-0 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-4 text-body font-semibold text-text-white hover:not-disabled:bg-button-blue-hover-bg disabled:cursor-not-allowed disabled:opacity-60",
+  mobileSidebarToggle:
+    "fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-4 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-[#1a237e] bg-bg-box p-0 shadow-[0_8px_24px_rgba(15,23,42,0.22)] min-[1024px]:hidden",
+  mobileSidebarIcon: "h-14 w-14",
   chatPanel:
-    "pointer-events-none absolute right-0 top-3.5 z-20 flex h-[calc(100%-28px)] min-h-[560px] w-[min(420px,calc(100%-32px))] translate-x-6 flex-col rounded-base border border-border-light bg-bg-box opacity-0 shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition-[opacity,transform] duration-200 ease-in-out max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-[74px] max-md:h-auto max-md:min-h-0 max-md:w-auto",
+    "pointer-events-none absolute right-0 top-3.5 z-20 flex h-[calc(100%-28px)] min-h-[560px] w-[min(420px,calc(100%-32px))] translate-x-6 flex-col rounded-base border border-border-light bg-bg-box opacity-0 shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition-[opacity,transform] duration-200 ease-in-out max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-[74px] max-md:h-auto max-md:min-h-0 max-md:w-auto max-[380px]:inset-x-2",
   open: "pointer-events-auto translate-x-0 opacity-100",
   chatHeader:
     "flex min-h-[58px] items-center justify-between border-b border-border-light px-5 text-title-md font-bold text-text-primary [&_button]:inline-flex [&_button]:h-[34px] [&_button]:w-[34px] [&_button]:cursor-pointer [&_button]:items-center [&_button]:justify-center [&_button]:rounded-base [&_button]:border [&_button]:border-text-primary [&_button]:bg-bg-box [&_button]:p-0 [&_button]:text-2xl [&_button]:leading-none [&_button]:text-text-primary",
@@ -63,9 +67,9 @@ export const problemDetailClasses = {
   recommendationOverlay:
     "fixed inset-0 z-[900] flex h-dvh w-dvw items-center justify-center bg-black/25 px-4 py-5",
   recommendationModal:
-    "w-[min(560px,100%)] rounded-base border border-border-light bg-bg-box p-5 shadow-[0_16px_42px_rgba(15,23,42,0.18)]",
+    "max-h-[calc(100dvh-40px)] w-[min(560px,100%)] overflow-y-auto rounded-base border border-border-light bg-bg-box p-5 shadow-[0_16px_42px_rgba(15,23,42,0.18)] max-[560px]:p-4",
   recommendationHeader:
-    "mb-4 flex items-start justify-between gap-4 [&_p]:m-0 [&_p]:text-description [&_p]:font-semibold [&_p]:text-text-blue [&_h2]:m-0 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary",
+    "mb-4 flex items-start justify-between gap-4 max-[560px]:gap-2 [&_p]:m-0 [&_p]:text-description [&_p]:font-semibold [&_p]:text-text-blue [&_h2]:m-0 [&_h2]:text-title-lg [&_h2]:font-bold [&_h2]:text-text-primary max-[560px]:[&_h2]:text-title-md",
   recommendationCloseButton:
     "flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-base border border-border-light bg-bg-box text-2xl leading-none text-text-secondary hover:bg-bg-hover-gray",
   recommendationCard:
