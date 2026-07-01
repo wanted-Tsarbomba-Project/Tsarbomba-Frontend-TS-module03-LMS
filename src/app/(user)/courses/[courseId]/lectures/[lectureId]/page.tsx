@@ -25,6 +25,7 @@ import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 import ErrorPageView from "@/components/common/ErrorPageView";
+import { ApiClientError } from "@/lib/errorHandling";
 
 const getYoutubeEmbedUrl = (url?: string | null): string | null => {
   if (!url) return null;
@@ -155,13 +156,23 @@ export default function LectureDetailPage() {
           return;
         }
 
-        const [lectureData, lectureList, links, materialList] =
-          await Promise.all([
-            getLecture(lectureId),
-            getCourseLectures(courseId),
-            getCourseProblemSets(courseId).catch(() => []),
-            getLectureMaterials(lectureId).catch(() => []),
-          ]);
+        // 잠긴/미수강 강의는 BE 가 403/404 를 줄 수 있음 — 죽은 404 대신 강좌 페이지로 안내.
+        const lectureData = await getLecture(lectureId).catch((err: unknown) => {
+          const status =
+            err instanceof ApiClientError ? err.status : undefined;
+          if (status === 403 || status === 404) {
+            router.replace(`/courses/${courseId}`);
+            return null;
+          }
+          throw err;
+        });
+        if (!lectureData) return;
+
+        const [lectureList, links, materialList] = await Promise.all([
+          getCourseLectures(courseId),
+          getCourseProblemSets(courseId).catch(() => []),
+          getLectureMaterials(lectureId).catch(() => []),
+        ]);
         setLecture(lectureData);
         setLectures(lectureList);
         setProblemLinks(links);
