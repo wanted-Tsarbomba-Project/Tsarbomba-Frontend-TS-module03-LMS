@@ -10,6 +10,7 @@ export interface ListColumn<T extends ListItem> {
   key: keyof T | "index" | string;
   label: ReactNode;
   cellClassName?: string | ((item: T, index: number) => string);
+  isRowNumber?: boolean;
   title?: (item: T, index: number) => string | undefined;
   width?: string;
   render?: (item: T, index: number) => ReactNode;
@@ -45,6 +46,10 @@ const listClasses = {
 };
 
 const INDEX_COLUMN_WIDTH = "clamp(48px, 6ch, 72px)";
+
+export const listCellClasses = {
+  twoLine: "line-clamp-2 whitespace-normal! break-words leading-5",
+} as const;
 
 export default function List<T extends ListItem>({
   data,
@@ -216,7 +221,7 @@ function getColumnWidth<T extends ListItem>(column: ListColumn<T>) {
     return column.width;
   }
 
-  if (isNumberColumn(column)) {
+  if (isRowNumberColumn(column)) {
     return INDEX_COLUMN_WIDTH;
   }
 
@@ -260,7 +265,7 @@ function getCellTitle<T extends ListItem>(
   index: number,
   cellContent: ReactNode,
 ) {
-  if (isNumberColumn(column)) {
+  if (isRowNumberColumn(column)) {
     return undefined;
   }
 
@@ -281,12 +286,8 @@ function getCellTitle<T extends ListItem>(
   return undefined;
 }
 
-function isNumberColumn<T extends ListItem>(column: ListColumn<T>) {
-  return column.key === "index" || getLabelText(column.label) === "No.";
-}
-
-function getLabelText(label: ReactNode) {
-  return typeof label === "string" ? label.trim() : undefined;
+function isRowNumberColumn<T extends ListItem>(column: ListColumn<T>) {
+  return column.key === "index" || column.isRowNumber === true;
 }
 
 function isTitleValue(value: unknown): value is string | number | boolean {

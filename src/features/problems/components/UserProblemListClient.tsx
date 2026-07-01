@@ -8,6 +8,7 @@ import {
   List,
   OneButtonModal,
   Pagination,
+  listCellClasses,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
@@ -23,8 +24,7 @@ import ProblemRecommendationModal from "./ProblemRecommendationModal";
 
 const userProblemListClasses = {
   "container": "min-h-screen bg-bg-main py-[30px] max-md:py-6",
-  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary",
-  "twoLineCell": "line-clamp-2 !whitespace-normal break-words leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary"
 } as const;
 
 
@@ -155,6 +155,7 @@ export default function UserProblemListClient({
     () => [
       {
         key: "problemNumber",
+        isRowNumber: true,
         label: PROBLEM_LIST_COLUMN_LABELS[0],
         render: (item, index) =>
           item.problemNumber ?? currentPage * pageSize + index + 1,
@@ -162,12 +163,12 @@ export default function UserProblemListClient({
       {
         key: "title",
         label: PROBLEM_LIST_COLUMN_LABELS[1],
-        cellClassName: userProblemListClasses.twoLineCell,
+        cellClassName: listCellClasses.twoLine,
       },
       {
         key: "description",
         label: PROBLEM_LIST_COLUMN_LABELS[2],
-        cellClassName: userProblemListClasses.twoLineCell,
+        cellClassName: listCellClasses.twoLine,
       },
       {
         key: "difficulty",
