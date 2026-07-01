@@ -117,9 +117,12 @@ export default function Sidebar({
   useEffect(() => {
     if (!isChatPage) return;
 
-    const fetchChatRooms = async () => {
+    const fetchChatRooms = async (showLoading: boolean) => {
       try {
-        setChatRoomsLoading(true);
+        if (showLoading) {
+          setChatRoomsLoading(true);
+        }
+
         const response = await fetch(`${BASE_URL}/api/v1/chat/list`, {
           method: "GET",
           credentials: "include",
@@ -145,12 +148,15 @@ export default function Sidebar({
         setChatRoomsLoading(false);
       }
     };
+    const refreshChatRooms = () => {
+      void fetchChatRooms(false);
+    };
 
-    fetchChatRooms();
-    window.addEventListener("chatRoomUpdated", fetchChatRooms);
+    void fetchChatRooms(true);
+    window.addEventListener("chatRoomUpdated", refreshChatRooms);
 
     return () => {
-      window.removeEventListener("chatRoomUpdated", fetchChatRooms);
+      window.removeEventListener("chatRoomUpdated", refreshChatRooms);
     };
   }, [isChatPage]);
 
