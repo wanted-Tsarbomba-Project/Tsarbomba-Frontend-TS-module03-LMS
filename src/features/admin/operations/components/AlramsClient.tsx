@@ -145,6 +145,7 @@ export default function AlramsClient() {
                 totalPages={totalPages}
               />
             }
+            rowNumberOffset={page * ALERT_PAGE_SIZE}
             rowKey={(alert) => alert.operationAlertId}
           />
         )}

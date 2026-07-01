@@ -239,6 +239,7 @@ export default function UsersClient() {
                 totalPages={totalPages}
               />
             }
+            rowNumberOffset={page * ADMIN_USER_PAGE_SIZE}
             rowKey={(user) => user.userId}
           />
         )}

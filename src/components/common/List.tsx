@@ -16,6 +16,7 @@ interface ListProps<T extends ListItem> {
   onRowClick?: (item: T) => void;
   rowKey?: (item: T, index: number) => Key;
   rowClassName?: string | ((item: T, index: number) => string);
+  rowNumberOffset?: number;
   scrollable?: boolean;
   pagination?: ReactNode;
   emptyMessage?: ReactNode;
@@ -37,6 +38,7 @@ export default function List<T extends ListItem>({
   onRowClick,
   rowKey,
   rowClassName,
+  rowNumberOffset = 0,
   scrollable = true,
   pagination = null,
   emptyMessage = "조회된 데이터가 없습니다.",
@@ -62,7 +64,7 @@ export default function List<T extends ListItem>({
               {columns.map((column) => (
                 <td key={String(column.key)}>
                   <div className={listClasses.cellContent}>
-                    {getCellContent(item, column, index)}
+                    {getCellContent(item, column, index, rowNumberOffset)}
                   </div>
                 </td>
               ))}
@@ -104,9 +106,10 @@ function getCellContent<T extends ListItem>(
   item: T,
   column: ListColumn<T>,
   index: number,
+  rowNumberOffset = 0,
 ): ReactNode {
   if (column.key === "index") {
-    return index + 1;
+    return rowNumberOffset + index + 1;
   }
 
   if (column.render) {
