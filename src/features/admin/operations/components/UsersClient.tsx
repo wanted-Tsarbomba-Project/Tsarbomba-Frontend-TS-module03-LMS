@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   List,
-  LoadingIndicator,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
   Searchbar,
@@ -35,6 +35,14 @@ const userColumns: ListColumn<AdminUserSummary>[] = [
 ];
 
 const USER_PAGE_SIZE = 20;
+const userListSkeletonColumns = [
+  "No.",
+  "이름",
+  "닉네임",
+  "이메일",
+  "가입일",
+  "상태",
+];
 
 function matchesUserName(user: AdminUserSummary, keyword: string) {
   const normalizedKeyword = keyword.trim().toLowerCase();
@@ -214,7 +222,10 @@ export default function UsersClient() {
         </div>
 
         {loading ? (
-          <LoadingIndicator message="회원 목록을 불러오는 중입니다." />
+          <ListSkeleton
+            columns={userListSkeletonColumns}
+            statusMessage="회원 목록을 불러오는 중입니다."
+          />
         ) : (
           <List
             columns={userColumns}

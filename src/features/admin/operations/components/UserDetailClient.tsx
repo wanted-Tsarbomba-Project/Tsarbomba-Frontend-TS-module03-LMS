@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import {
   List,
+  ListSkeleton,
   LoadingIndicator,
   OneButtonModal,
   TwoButtonModal,
@@ -75,6 +76,8 @@ const problemColumns: ListColumn<UserProblemSubmission>[] = [
     render: (problem) => formatDate(problem.submittedAt),
   },
 ];
+const courseListSkeletonColumns = ["No.", "강의명", "등록일"];
+const problemListSkeletonColumns = ["No.", "문제명", "결과", "제출일"];
 
 export default function UserDetailClient() {
   const params = useParams<{ id: string }>();
@@ -270,7 +273,15 @@ export default function UserDetailClient() {
 
         <div className={userDetailClasses.listSection}>
           {listLoading ? (
-            <LoadingIndicator message="목록을 불러오는 중입니다." />
+            <ListSkeleton
+              columns={
+                tab === "COURSE"
+                  ? courseListSkeletonColumns
+                  : problemListSkeletonColumns
+              }
+              statusMessage="목록을 불러오는 중입니다."
+              withPagination={false}
+            />
           ) : tab === "COURSE" ? (
             <List
               columns={courseColumns}

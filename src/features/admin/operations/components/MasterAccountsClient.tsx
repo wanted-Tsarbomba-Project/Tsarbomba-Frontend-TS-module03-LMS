@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   List,
-  LoadingIndicator,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
   TwoButtonModal,
@@ -18,6 +18,14 @@ import { adminMasterClasses } from "../styles";
 import type { AdminAccountSummary, AdminPermissionType } from "../types";
 
 const ADMIN_ACCOUNT_PAGE_SIZE = 20;
+const adminAccountListSkeletonColumns = [
+  "No.",
+  "이름",
+  "닉네임",
+  "이메일",
+  "회원 관리 권한",
+  "규칙 관리 권한",
+];
 
 const permissionLabels: Record<AdminPermissionType, string> = {
   userManagement: "회원 관리",
@@ -226,7 +234,10 @@ export default function MasterAccountsClient() {
         </div>
 
         {loading ? (
-          <LoadingIndicator message="관리자 계정을 불러오는 중입니다." />
+          <ListSkeleton
+            columns={adminAccountListSkeletonColumns}
+            statusMessage="관리자 계정을 불러오는 중입니다."
+          />
         ) : (
           <List
             columns={accountColumns}
