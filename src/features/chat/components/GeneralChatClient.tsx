@@ -298,6 +298,7 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
 
     const userMessage = inputValue;
     const controller = new AbortController();
+    const roomIdAtRequestStart = activeRoomIdRef.current;
     let newRoomId: number | undefined;
     let streamErrorReceived = false;
     const userMessageId = createClientMessageId();
@@ -374,6 +375,10 @@ export default function GeneralChatClient({ roomId }: GeneralChatClientProps) {
       window.dispatchEvent(new Event("chatRoomUpdated"));
 
       if (!activeRoomId && newRoomId) {
+        if (activeRoomIdRef.current !== roomIdAtRequestStart) {
+          return;
+        }
+
         const nextRoomId = String(newRoomId);
 
         skipNextRoomLoadRef.current = nextRoomId;
