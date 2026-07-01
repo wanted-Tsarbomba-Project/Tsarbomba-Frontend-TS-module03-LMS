@@ -4,9 +4,11 @@
 // 데이터는 lecture-problem-sets 계열 URL(강좌 전용 actions)로 처리한다.
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
 import { OneButtonModal, WarningModal } from "@/components/common";
 import { ApiClientError, handleClientError } from "@/lib/errorHandling";
 
@@ -17,6 +19,7 @@ import { getCourseProblemSets } from "@/features/course/problemSetActions";
 // 공통 재사용: 실행/힌트/챗봇
 import {
   createProblemChatMessage,
+  getProblemDatasetDownloadUrl,
   getProblemHints,
   runProblem,
   sendProblemChatMessage,
@@ -162,7 +165,9 @@ export default function CourseProblemDetailClient({
     title: "",
     content: "",
   });
+  const [isDatasetDownloading, setIsDatasetDownloading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -206,6 +211,53 @@ export default function CourseProblemDetailClient({
   const currentProblem = problemSet.problems[currentIndex];
   const currentHints = hints[currentIndex] ?? [];
 
+  // 데이터셋(CSV) 다운로드 — 문제세트 단위 (문제풀이방과 동일). 서버가 서명 URL 발급.
+  const handleDatasetDownload = async () => {
+    if (isDatasetDownloading) return;
+    // 데이터셋은 문제세트 단위 — problemSetId(선택값) 없으면 정규화된 id 사용.
+    // lectureProblemSetId(강의-문제세트 연결 ID)로 fallback 하면 안 됨.
+    const datasetKey = String(problemSet.problemSetId ?? problemSet.id);
+    setIsDatasetDownloading(true);
+    try {
+      const dataset = await getProblemDatasetDownloadUrl(datasetKey);
+      if (!dataset?.downloadUrl) {
+        setAlertModal({
+          open: true,
+          title: "CSV 다운로드 실패",
+          content: "다운로드할 데이터셋을 찾지 못했습니다.",
+        });
+        return;
+      }
+      const parsedUrl = new URL(dataset.downloadUrl, window.location.origin);
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        setAlertModal({
+          open: true,
+          title: "CSV 다운로드 실패",
+          content: "유효하지 않은 다운로드 주소입니다.",
+        });
+        return;
+      }
+      const link = document.createElement("a");
+      link.href = parsedUrl.toString();
+      link.download = dataset.fileName || "dataset.csv";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      handleClientError(error, {
+        router,
+        fallbackTitle: "CSV 다운로드 실패",
+        fallbackMessage:
+          "CSV 다운로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        showModal: (title, content) =>
+          setAlertModal({ open: true, title, content }),
+      });
+    } finally {
+      setIsDatasetDownloading(false);
+    }
+  };
+
   const canMoveProblem = (index: number) => problemStates[index] !== "LOCKED";
 
   const getProblemButtonClass = (
@@ -238,6 +290,7 @@ export default function CourseProblemDetailClient({
     setExecutionResult(null);
     setSubmissionResult(null);
     resetChat();
+    setMobileSidebarOpen(false);
   };
 
   const handleCodeChange = (nextCode: string) => {
@@ -451,7 +504,10 @@ export default function CourseProblemDetailClient({
           isRunning={isRunning}
           onBack={() => setWarningModalOpen(true)}
           onRun={handleRun}
-          onToggleProblemChat={() => setChatOpen((prev) => !prev)}
+          onToggleProblemChat={() => {
+            setMobileSidebarOpen(false);
+            setChatOpen((prev) => !prev);
+          }}
           variant="problem-detail"
         />
 
@@ -460,11 +516,39 @@ export default function CourseProblemDetailClient({
             canMoveProblem={canMoveProblem}
             currentIndex={currentIndex}
             getProblemButtonClass={getProblemButtonClass}
+            isOpen={mobileSidebarOpen}
             moveProblem={moveProblem}
             problemSet={problemSet}
             problemStates={problemStates}
             variant="problem-detail"
           />
+
+          {!chatOpen && (
+            <button
+              aria-label={mobileSidebarOpen ? "문제 목록 닫기" : "문제 목록 열기"}
+              aria-pressed={mobileSidebarOpen}
+              className={styles.mobileSidebarToggle}
+              onClick={() => setMobileSidebarOpen((prev) => !prev)}
+              type="button"
+            >
+              <Image
+                alt=""
+                className={styles.mobileSidebarIcon}
+                height={56}
+                src="/assets/img/sidebar.svg"
+                width={56}
+              />
+            </button>
+          )}
+
+          {mobileSidebarOpen && !chatOpen && (
+            <button
+              aria-label="문제 목록 닫기"
+              className={mobileSidebarClasses.backdrop}
+              onClick={() => setMobileSidebarOpen(false)}
+              type="button"
+            />
+          )}
 
           <section className={styles.contentArea} ref={contentAreaRef}>
             <article
@@ -475,7 +559,24 @@ export default function CourseProblemDetailClient({
               }`}
               style={isPanelSplitAvailable ? problemPanelStyle : undefined}
             >
-              <h2>문제 내용</h2>
+              <div className={styles.problemHeader}>
+                <h2>문제 내용</h2>
+                <button
+                  aria-label="CSV 다운로드"
+                  className={styles.datasetDownloadButton}
+                  disabled={isDatasetDownloading}
+                  onClick={handleDatasetDownload}
+                  title="CSV 다운로드"
+                  type="button"
+                >
+                  <Image
+                    alt=""
+                    height={18}
+                    src="/assets/img/download-Icon.svg"
+                    width={18}
+                  />
+                </button>
+              </div>
               <div className={styles.problemContent}>
                 {currentProblem?.content}
               </div>
@@ -566,6 +667,7 @@ export default function CourseProblemDetailClient({
             chatOpen={chatOpen}
             chatSending={chatSending}
             onChatInputChange={setChatInput}
+            onClose={() => setChatOpen(false)}
             onSendChat={sendChat}
           />
         </div>

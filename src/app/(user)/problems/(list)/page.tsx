@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { getProblemSetPage } from "@/features/problems/actions";
 import UserProblemListClient from "@/features/problems/components/UserProblemListClient";
+import { PROBLEM_SET_PAGE_SIZE } from "@/features/problems/constants";
 
 interface ProblemsPageProps {
   searchParams: Promise<{
@@ -10,8 +11,6 @@ interface ProblemsPageProps {
     page?: string;
   }>;
 }
-
-const PROBLEM_SET_PAGE_SIZE = 20;
 
 export default async function ProblemsPage({ searchParams }: ProblemsPageProps) {
   const { categoryId, page } = await searchParams;
@@ -29,6 +28,7 @@ export default async function ProblemsPage({ searchParams }: ProblemsPageProps) 
 
   return (
     <UserProblemListClient
+      categoryId={categoryId}
       currentPage={currentPage}
       initialProblemSets={problemSetPage.problemSets}
       pageSize={PROBLEM_SET_PAGE_SIZE}

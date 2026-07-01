@@ -11,15 +11,16 @@ import { getAdminBadges } from "../actions";
 import type { AdminBadge } from "../types";
 
 const badgeListClasses = {
-  page: "min-h-screen w-full bg-bg-main p-8",
-  header: "mb-6 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start",
+  page: "box-border min-h-screen w-full bg-bg-main p-8 max-md:p-4",
+  header:
+    "mb-6 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
   title: "m-0 text-2xl font-bold text-text-primary",
   registerButton:
-    "cursor-pointer rounded-lg bg-button-blue-bg px-4 py-2 text-sm font-medium text-text-white shadow-sm transition hover:bg-button-blue-hover-bg",
+    "cursor-pointer rounded-lg bg-button-blue-bg px-4 py-2 text-sm font-medium text-text-white shadow-sm transition hover:bg-button-blue-hover-bg max-md:w-full",
   grid: "grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4",
   card:
     "cursor-pointer overflow-hidden rounded-xl border border-border-light bg-bg-box shadow-sm transition hover:shadow-md",
-  imageWrap: "flex h-48 items-center justify-center bg-bg-navbar",
+  imageWrap: "flex aspect-[4/3] min-h-40 items-center justify-center bg-bg-navbar",
   image: "h-full w-full object-cover",
   fallbackImage:
     "flex h-24 w-24 items-center justify-center rounded-full border border-border-light bg-bg-box text-description text-text-secondary",
@@ -34,7 +35,7 @@ const badgeListClasses = {
   description: "m-0 line-clamp-2 text-sm leading-5 text-text-secondary",
   date: "mt-3 text-xs text-text-placeholder",
   empty:
-    "rounded-base border border-border-light bg-bg-box py-24 text-center text-description text-text-placeholder",
+    "rounded-base border border-border-light bg-bg-box px-4 py-24 text-center text-description text-text-placeholder max-md:py-16",
 } as const;
 
 const modalInitialState = { open: false, title: "", content: "" };

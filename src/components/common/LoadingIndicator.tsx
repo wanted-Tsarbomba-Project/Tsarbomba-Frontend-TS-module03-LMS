@@ -9,7 +9,7 @@ export default function LoadingIndicator({
     <div
       aria-busy="true"
       aria-live="polite"
-      className="box-border flex min-h-[72px] w-full items-center justify-center gap-3 rounded-base border border-border-light bg-bg-box p-6 text-body text-text-secondary"
+      className="box-border flex min-h-[72px] w-full flex-wrap items-center justify-center gap-3 rounded-base border border-border-light bg-bg-box p-6 text-center text-body text-text-secondary max-[560px]:p-4"
       role="status"
     >
       <span

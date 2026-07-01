@@ -19,14 +19,15 @@ interface ErrorPageViewProps {
 
 const errorPageClasses = {
   wrapper:
-    "flex min-h-screen items-start justify-center bg-bg-main p-6 text-text-primary",
+    "box-border flex min-h-dvh items-start justify-center bg-bg-main p-6 text-text-primary max-[560px]:p-4",
   panel:
     "w-[min(100%,680px)] rounded-base border border-border-light bg-bg-box p-6 max-[560px]:p-5",
   imageWrap: "mb-5 flex justify-center",
-  image: "h-[132px] w-[132px]",
+  image: "h-[clamp(96px,28vw,132px)] w-[clamp(96px,28vw,132px)]",
   status:
     "mt-0 mb-2 text-title-md font-semibold leading-[26px] text-text-blue",
-  title: "mt-0 mb-3 text-title-lg font-semibold leading-7 text-text-primary",
+  title:
+    "mt-0 mb-3 text-title-lg font-semibold leading-7 text-text-primary max-[560px]:text-title-md",
   message: "mt-0 mb-5 text-body leading-6 text-text-primary",
   guide: "mt-0 mb-6 text-description leading-[22px] text-text-secondary",
   actions: "flex flex-wrap gap-2.5 max-[560px]:flex-col",

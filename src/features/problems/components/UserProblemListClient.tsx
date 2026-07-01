@@ -1,32 +1,43 @@
 "use client";
 
-// CSR - 회원 문제 목록 테이블: 서버에서 받은 목록 props를 그대로 렌더링하고 행 클릭 라우팅만 클라이언트에서 처리함
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
   List,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
+  Searchbar,
+  listCellClasses,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
 
 import {
   DIFFICULTY_MAP,
+  getAllProblemSets,
   getMyProblemSetRecommendations,
   hideProblemSetRecommendationsToday,
 } from "../actions";
+import {
+  PROBLEM_LIST_COLUMN_LABELS,
+  PROBLEM_SET_PAGE_SIZE,
+} from "../constants";
+import { matchesProblemSetKeyword } from "../search";
 import type { ProblemSetRecommendation, ProblemSetSummary } from "../types";
 import ProblemRecommendationModal from "./ProblemRecommendationModal";
 
 const userProblemListClasses = {
-  "container": "min-h-screen bg-bg-main py-[30px] max-md:py-6",
-  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary"
+  container: "min-h-screen bg-bg-main py-[30px] max-md:py-6",
+  header:
+    "mb-5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
+  pageTitle: "m-0 text-title-lg font-bold text-text-primary",
+  searchWrap: "flex flex-wrap items-center justify-end gap-3 max-md:justify-start",
 } as const;
 
-
 interface UserProblemListClientProps {
+  categoryId?: string;
   currentPage: number;
   initialProblemSets: ProblemSetSummary[];
   pageSize: number;
@@ -52,6 +63,7 @@ function formatDate(value?: string) {
 }
 
 export default function UserProblemListClient({
+  categoryId,
   currentPage,
   initialProblemSets,
   pageSize,
@@ -70,6 +82,16 @@ export default function UserProblemListClient({
   const [recommendationOpen, setRecommendationOpen] = useState(false);
   const [recommendationHidingToday, setRecommendationHidingToday] =
     useState(false);
+  const [searchProblemSets, setSearchProblemSets] = useState<
+    ProblemSetSummary[] | null
+  >(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [searchPage, setSearchPage] = useState(0);
+  const [searchTotalPages, setSearchTotalPages] = useState(1);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const isSearchMode = keyword.trim().length > 0;
+  const activePage = isSearchMode ? searchPage : currentPage;
 
   useEffect(() => {
     let isMounted = true;
@@ -153,39 +175,121 @@ export default function UserProblemListClient({
     () => [
       {
         key: "problemNumber",
-        label: "No.",
+        isRowNumber: true,
+        label: PROBLEM_LIST_COLUMN_LABELS[0],
         render: (item, index) =>
-          item.problemNumber ?? currentPage * pageSize + index + 1,
+          item.problemNumber ?? activePage * pageSize + index + 1,
       },
       {
         key: "title",
-        label: "문제명",
+        label: PROBLEM_LIST_COLUMN_LABELS[1],
+        cellClassName: listCellClasses.twoLine,
       },
       {
         key: "description",
-        label: "문제 설명",
+        label: PROBLEM_LIST_COLUMN_LABELS[2],
+        cellClassName: listCellClasses.twoLine,
       },
       {
         key: "difficulty",
-        label: "난이도",
+        label: PROBLEM_LIST_COLUMN_LABELS[3],
         render: (item) =>
           DIFFICULTY_MAP[item.difficulty as keyof typeof DIFFICULTY_MAP] ??
           item.difficulty,
       },
       {
         key: "accuracyRate",
-        label: "정답률",
+        label: PROBLEM_LIST_COLUMN_LABELS[4],
         render: (item) =>
           typeof item.accuracyRate === "number" ? `${item.accuracyRate}%` : "-",
       },
       {
         key: "createdAt",
-        label: "등록일",
+        label: PROBLEM_LIST_COLUMN_LABELS[5],
         render: (item) => formatDate(item.createdAt),
       },
     ],
-    [currentPage, pageSize],
+    [activePage, pageSize],
   );
+
+  useEffect(() => {
+    const normalizedKeyword = keyword.trim();
+
+    if (!normalizedKeyword) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchProblemSets = async () => {
+      setSearchLoading(true);
+      setSearchProblemSets([]);
+      setSearchTotalPages(1);
+
+      try {
+        const allProblemSets = await getAllProblemSets({
+          categoryId,
+          size: PROBLEM_SET_PAGE_SIZE,
+          init: {
+            signal: controller.signal,
+          },
+        });
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const filteredProblemSets = allProblemSets.filter((problemSet) =>
+          matchesProblemSetKeyword(problemSet, normalizedKeyword),
+        );
+
+        setSearchProblemSets(filteredProblemSets);
+        setSearchTotalPages(
+          Math.max(Math.ceil(filteredProblemSets.length / pageSize), 1),
+        );
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setSearchProblemSets([]);
+        setSearchTotalPages(1);
+        handleClientError(error, {
+          router,
+          fallbackTitle: "문제 목록 조회 실패",
+          fallbackMessage:
+            "문제 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          showModal: (title, content) => setModal({ open: true, title, content }),
+        });
+      } finally {
+        if (!controller.signal.aborted) {
+          setSearchLoading(false);
+        }
+      }
+    };
+
+    void fetchProblemSets();
+
+    return () => {
+      controller.abort();
+    };
+  }, [categoryId, keyword, pageSize, router]);
+
+  const visibleProblemSets = useMemo(() => {
+    if (!isSearchMode) {
+      return initialProblemSets;
+    }
+
+    const start = searchPage * pageSize;
+
+    return (searchProblemSets ?? []).slice(start, start + pageSize);
+  }, [
+    initialProblemSets,
+    isSearchMode,
+    pageSize,
+    searchPage,
+    searchProblemSets,
+  ]);
 
   const handlePageChange = (nextPage: number) => {
     const params = new URLSearchParams(window.location.search);
@@ -198,6 +302,19 @@ export default function UserProblemListClient({
 
     const query = params.toString();
     router.push(`/problems${query ? `?${query}` : ""}`);
+  };
+
+  const handleSearch = (nextKeyword: string) => {
+    const normalizedKeyword = nextKeyword.trim();
+
+    setSearchPage(0);
+    setKeyword(normalizedKeyword);
+
+    if (!normalizedKeyword) {
+      setSearchProblemSets(null);
+      setSearchTotalPages(1);
+      setSearchLoading(false);
+    }
   };
 
   const handleRecommendationSelect = (targetProblemSetId: number) => {
@@ -231,22 +348,46 @@ export default function UserProblemListClient({
 
   return (
     <main className={userProblemListClasses.container}>
-      <h2 className={userProblemListClasses.pageTitle}>문제풀이</h2>
+      <div className={userProblemListClasses.header}>
+        <h2 className={userProblemListClasses.pageTitle}>문제풀이</h2>
 
-      <List
-        columns={columns}
-        data={initialProblemSets}
-        emptyMessage="등록된 문제가 없습니다."
-        onRowClick={(item) => router.push(`/problems/${item.problemSetId}`)}
-        pagination={
-          <Pagination
-            currentPage={currentPage}
-            onPageChange={handlePageChange}
-            totalPages={totalPages}
+        <div className={userProblemListClasses.searchWrap}>
+          <Searchbar
+            className="max-w-[260px]"
+            onChange={setSearchInput}
+            onSearch={handleSearch}
+            placeholder="문제 제목 검색"
+            value={searchInput}
           />
-        }
-        rowKey={(item) => item.problemSetId}
-      />
+        </div>
+      </div>
+
+      {searchLoading ? (
+        <ListSkeleton
+          columns={[...PROBLEM_LIST_COLUMN_LABELS]}
+          rowCount={PROBLEM_SET_PAGE_SIZE}
+          statusMessage="문제 목록을 불러오는 중입니다."
+        />
+      ) : (
+        <List
+          columns={columns}
+          data={visibleProblemSets}
+          emptyMessage={
+            isSearchMode
+              ? "검색 조건에 맞는 문제가 없습니다."
+              : "등록된 문제가 없습니다."
+          }
+          onRowClick={(item) => router.push(`/problems/${item.problemSetId}`)}
+          pagination={
+            <Pagination
+              currentPage={isSearchMode ? searchPage : currentPage}
+              onPageChange={isSearchMode ? setSearchPage : handlePageChange}
+              totalPages={isSearchMode ? searchTotalPages : totalPages}
+            />
+          }
+          rowKey={(item) => item.problemSetId}
+        />
+      )}
 
       <OneButtonModal
         isOpen={modal.open}

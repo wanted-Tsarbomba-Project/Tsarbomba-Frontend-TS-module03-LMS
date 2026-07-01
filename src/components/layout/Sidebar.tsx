@@ -7,10 +7,11 @@ import { usePathname, useRouter } from "next/navigation";
 
 import BluebombLogo from "../../../public/assets/img/bluebomb-Icon.svg";
 import BadgeSelectModal from "@/features/badge/components/BadgeSelectModal";
-import { equipBadge, getMyBadges } from "@/features/badge/actions";
+import { equipBadge, getMyBadges, syncMyBadges } from "@/features/badge/actions";
 import type { MyBadge } from "@/features/badge/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import { ChatRoomListSkeleton } from "@/features/chat/components/ChatPageSkeleton";
+import { mobileSidebarClasses } from "./mobileSidebarClasses";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -74,6 +75,7 @@ export default function Sidebar({
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [badgesFetchFailed, setBadgesFetchFailed] = useState(false);
   const [equipError, setEquipError] = useState("");
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const updateUserInfo = () => {
@@ -117,9 +119,12 @@ export default function Sidebar({
   useEffect(() => {
     if (!isChatPage) return;
 
-    const fetchChatRooms = async () => {
+    const fetchChatRooms = async (showLoading: boolean) => {
       try {
-        setChatRoomsLoading(true);
+        if (showLoading) {
+          setChatRoomsLoading(true);
+        }
+
         const response = await fetch(`${BASE_URL}/api/v1/chat/list`, {
           method: "GET",
           credentials: "include",
@@ -145,12 +150,15 @@ export default function Sidebar({
         setChatRoomsLoading(false);
       }
     };
+    const refreshChatRooms = () => {
+      void fetchChatRooms(false);
+    };
 
-    fetchChatRooms();
-    window.addEventListener("chatRoomUpdated", fetchChatRooms);
+    void fetchChatRooms(true);
+    window.addEventListener("chatRoomUpdated", refreshChatRooms);
 
     return () => {
-      window.removeEventListener("chatRoomUpdated", fetchChatRooms);
+      window.removeEventListener("chatRoomUpdated", refreshChatRooms);
     };
   }, [isChatPage]);
 
@@ -167,6 +175,24 @@ export default function Sidebar({
       setBadgeModalOpen(false);
     } catch {
       setEquipError("뱃지 장착에 실패했어요. 다시 시도해 주세요.");
+    }
+  };
+
+  // 수동 동기화 — 서버에서 뱃지 재계산 후 최신 목록 재조회 (자동 등록 누락 대비)
+  const handleBadgeSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await syncMyBadges();
+      const badges = await getMyBadges();
+      setMyBadges(badges);
+      const equipped = badges.find((b) => b.isEquipped);
+      localStorage.setItem("equippedBadgeUrl", equipped?.imageUrl ?? "");
+      window.dispatchEvent(new Event("badgeChanged"));
+    } catch {
+      setEquipError("뱃지 동기화에 실패했어요. 다시 시도해 주세요.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -194,7 +220,7 @@ export default function Sidebar({
                 }
                 href="/admin/courses"
               >
-                강의 관리
+                강좌 관리
               </Link>
             </li>
             <li>
@@ -406,10 +432,10 @@ export default function Sidebar({
   if (variant === "problem-detail") {
     return (
       <aside
-        className={`w-65 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 transition-all duration-300 max-lg:w-full max-lg:static ${
+        className={`w-65 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 transition-all duration-300 ${
           isOpen
-            ? "max-lg:block max-lg:fixed max-lg:left-0 max-lg:z-999 max-lg:h-[calc(100vh-80px)]"
-            : ""
+            ? mobileSidebarClasses.overlayAsideOpen
+            : mobileSidebarClasses.overlayAsideClosed
         }`}
       >
         {problemDetailMenu}
@@ -428,21 +454,23 @@ export default function Sidebar({
           badges={myBadges}
           fetchFailed={badgesFetchFailed}
           loading={badgesLoading}
+          syncing={syncing}
           onClose={() => setBadgeModalOpen(false)}
           onSelect={handleBadgeSelect}
+          onSync={handleBadgeSync}
         />
       )}
       <OneButtonModal
         isOpen={!!equipError}
-        modalTitle="뱃지 장착 실패"
+        modalTitle="뱃지 알림"
         modalContent={equipError}
         onClose={() => setEquipError("")}
       />
       <aside
-        className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300 ${
+        className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 transition-all duration-300 ${
           isOpen
-            ? "max-lg:block max-lg:fixed max-lg:left-5 max-lg:top-24 max-lg:z-999 max-lg:shadow-xl"
-            : ""
+            ? mobileSidebarClasses.overlayAsideOpen
+            : mobileSidebarClasses.overlayAsideClosed
         }`}
       >
         {isAdminPath && adminMenu}

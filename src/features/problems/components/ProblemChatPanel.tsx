@@ -24,6 +24,7 @@ interface ProblemChatPanelProps {
   onChatRoomTitleChange?: (value: string) => void;
   onChatRoomTitleEdit?: () => void;
   onChatRoomTitleSubmit?: () => void;
+  onClose: () => void;
   onSendChat: () => void;
 }
 
@@ -42,6 +43,7 @@ export default function ProblemChatPanel({
   onChatRoomTitleChange,
   onChatRoomTitleEdit,
   onChatRoomTitleSubmit,
+  onClose,
   onSendChat,
 }: ProblemChatPanelProps) {
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
@@ -62,6 +64,14 @@ export default function ProblemChatPanel({
         <span className={problemChatClasses.chatHeaderTitle}>
           문제풀이 챗봇
         </span>
+        <button
+          aria-label="채팅창 닫기"
+          className={problemChatClasses.closeButton}
+          onClick={onClose}
+          type="button"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
         {chatRoomTitle && (
           <span className={problemChatClasses.chatRoomTitleRow}>
             {chatRoomTitleEditing ? (

@@ -7,10 +7,12 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
 import { streamChat } from "@/features/chat/stream";
 import { createChatTypewriter } from "@/features/chat/typewriter";
 import { handleClientError } from "@/lib/errorHandling";
@@ -231,6 +233,7 @@ export default function UserProblemDetailClient({
     content: "",
   });
   const [chatOpen, setChatOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [hasOpenedChatPanel, setHasOpenedChatPanel] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<number | null>(null);
   const [chatRoomTitle, setChatRoomTitle] = useState<string | null>(null);
@@ -374,6 +377,7 @@ export default function UserProblemDetailClient({
 
   const toggleProblemChat = useCallback(() => {
     setHasOpenedChatPanel(true);
+    setMobileSidebarOpen(false);
     setChatOpen((prev) => !prev);
   }, []);
 
@@ -582,6 +586,7 @@ export default function UserProblemDetailClient({
     setExecutionResult(null);
     setSubmissionResult(submissionResults[index] ?? null);
     resetChatState();
+    setMobileSidebarOpen(false);
   };
 
   const handleCodeChange = (nextCode: string) => {
@@ -1012,11 +1017,39 @@ export default function UserProblemDetailClient({
             canMoveProblem={canMoveProblem}
             currentIndex={currentIndex}
             getProblemButtonClass={getProblemButtonClass}
+            isOpen={mobileSidebarOpen}
             moveProblem={moveProblem}
             problemSet={problemSet}
             problemStates={problemStates}
             variant="problem-detail"
           />
+
+          {!chatOpen && (
+            <button
+              aria-label={mobileSidebarOpen ? "문제 목록 닫기" : "문제 목록 열기"}
+              aria-pressed={mobileSidebarOpen}
+              className={problemDetailClasses.mobileSidebarToggle}
+              onClick={() => setMobileSidebarOpen((prev) => !prev)}
+              type="button"
+            >
+              <Image
+                alt=""
+                className={problemDetailClasses.mobileSidebarIcon}
+                height={56}
+                src="/assets/img/sidebar.svg"
+                width={56}
+              />
+            </button>
+          )}
+
+          {mobileSidebarOpen && !chatOpen && (
+            <button
+              aria-label="문제 목록 닫기"
+              className={mobileSidebarClasses.backdrop}
+              onClick={() => setMobileSidebarOpen(false)}
+              type="button"
+            />
+          )}
 
           <section
             className={`${problemDetailClasses.contentArea} ${
@@ -1094,6 +1127,7 @@ export default function UserProblemDetailClient({
               onChatRoomTitleChange={setChatRoomTitleInput}
               onChatRoomTitleEdit={startChatRoomTitleEdit}
               onChatRoomTitleSubmit={requestChatRoomTitleUpdate}
+              onClose={() => setChatOpen(false)}
               onSendChat={sendChat}
             />
           )}

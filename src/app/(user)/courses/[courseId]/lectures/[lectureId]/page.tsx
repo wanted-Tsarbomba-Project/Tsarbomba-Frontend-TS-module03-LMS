@@ -58,6 +58,14 @@ export default function LectureDetailPage() {
   const [materials, setMaterials] = useState<LectureMaterial[]>([]);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  // 운영/관리 역할은 미수강·잠금 무관하게 열람·이동 가능 (마운트 후 클라에서 확정 — hydration 안전)
+  const [isOperator, setIsOperator] = useState(false);
+  useEffect(() => {
+    const role = localStorage.getItem("userRole") ?? "";
+    setIsOperator(
+      ["OPERATOR", "ADMIN", "MASTER", "INSTRUCTOR"].includes(role),
+    );
+  }, []);
 
   const [panelOpen, setPanelOpen] = useState(true);
   const [problemNavTarget, setProblemNavTarget] =
@@ -143,17 +151,28 @@ export default function LectureDetailPage() {
   useEffect(() => {
     if (!courseId || !lectureId) return;
 
+    // 운영/관리 역할은 미수강·잠금 관계없이 강의 열람 가능 (강좌 관리·미리보기 목적)
+    const userRole =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("userRole") ?? "")
+        : "";
+    const isOperator = ["OPERATOR", "ADMIN", "MASTER", "INSTRUCTOR"].includes(
+      userRole,
+    );
+
     const load = async () => {
       setLoading(true);
       try {
-        // 수강 여부 먼저 확인 — 강의 데이터 fetch 전에 가드
-        const enrollments = await getMyEnrollments().catch(() => []);
-        const enrolled = enrollments.some(
-          (e) => String(e.courseId) === String(courseId),
-        );
-        if (!enrolled) {
-          setNotEnrolledOpen(true);
-          return;
+        // 수강 여부 먼저 확인 — 강의 데이터 fetch 전에 가드 (운영자는 스킵)
+        if (!isOperator) {
+          const enrollments = await getMyEnrollments().catch(() => []);
+          const enrolled = enrollments.some(
+            (e) => String(e.courseId) === String(courseId),
+          );
+          if (!enrolled) {
+            setNotEnrolledOpen(true);
+            return;
+          }
         }
 
         // 잠긴/미수강 강의는 BE 가 403/404 를 줄 수 있음 — 죽은 404 대신 강좌 페이지로 안내.
@@ -189,7 +208,12 @@ export default function LectureDetailPage() {
         const firstUncompletedIdx = sortedList.findIndex(
           (l) => !completedMap.get(l.lectureId),
         );
-        if (firstUncompletedIdx >= 0 && curIdx > firstUncompletedIdx) {
+        // 운영자는 순서 잠금 무시하고 열람 가능
+        if (
+          !isOperator &&
+          firstUncompletedIdx >= 0 &&
+          curIdx > firstUncompletedIdx
+        ) {
           setLockedRedirectTarget(sortedList[firstUncompletedIdx]);
           setLockedAccessOpen(true);
         }
@@ -228,7 +252,9 @@ export default function LectureDetailPage() {
       unlockedIds.add(lectures[i].lectureId);
     }
   }
-  const isLocked = (l: LectureSummary) => !unlockedIds.has(l.lectureId);
+  // 운영자는 모든 강의 잠금 해제 → nextLocked·목록 클릭 가드까지 일괄 예외 적용
+  const isLocked = (l: LectureSummary) =>
+    !isOperator && !unlockedIds.has(l.lectureId);
   const nextLocked = nextLecture ? isLocked(nextLecture) : true;
 
   const goToLecture = (id: number) => {

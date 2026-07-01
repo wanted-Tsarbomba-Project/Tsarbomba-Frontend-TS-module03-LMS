@@ -14,7 +14,7 @@ interface SearchbarProps {
 
 const searchClasses = {
   searchBar:
-    "relative box-border flex h-[clamp(40px,3.7vh,56px)] w-[clamp(320px,35vw,672px)] items-center rounded-[clamp(6px,0.4vw,8px)] border border-border-light bg-bg-box py-[clamp(6px,0.7vh,8px)] pr-[clamp(32px,2vw,40px)] pl-[clamp(12px,0.8vw,16px)]",
+    "relative box-border flex h-[clamp(40px,3.7vh,56px)] w-[min(100%,clamp(280px,35vw,672px))] items-center rounded-[clamp(6px,0.4vw,8px)] border border-border-light bg-bg-box py-[clamp(6px,0.7vh,8px)] pr-[clamp(32px,2vw,40px)] pl-[clamp(12px,0.8vw,16px)]",
   searchButton:
     "absolute right-[clamp(12px,0.8vw,16px)] flex cursor-pointer items-center justify-center border-0 bg-transparent p-0",
   searchInput:

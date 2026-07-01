@@ -75,7 +75,6 @@ export default function RankingList({
         isMyRankingItem(item, myRanking) ? MY_RANKING_ROW_CLASS : ""
       }
       rowKey={(item) => item.userId}
-      scrollable={false}
     />
   );
 }
