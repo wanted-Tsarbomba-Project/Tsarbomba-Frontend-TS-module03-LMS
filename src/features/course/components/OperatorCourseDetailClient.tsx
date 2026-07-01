@@ -355,8 +355,12 @@ export default function OperatorCourseDetailClient({
                 <List
                   data={progressPage?.content ?? []}
                   columns={progressColumns}
-                  rowKey={(item) => item.userId}
                   emptyMessage="수강생 데이터가 없습니다."
+                  rowKey={(item) => item.userId}
+                  rowNumberOffset={
+                    (progressPage?.page ?? currentPage) *
+                    (progressPage?.size ?? 0)
+                  }
                 />
               )}
             </div>

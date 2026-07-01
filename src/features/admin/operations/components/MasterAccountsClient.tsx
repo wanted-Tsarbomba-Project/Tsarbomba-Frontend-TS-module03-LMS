@@ -179,9 +179,8 @@ export default function MasterAccountsClient() {
   const accountColumns = useMemo<ListColumn<AdminAccountSummary>[]>(
     () => [
       {
-        key: "rowNumber",
+        key: "index",
         label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[0],
-        render: (_account, index) => page * ADMIN_ACCOUNT_PAGE_SIZE + index + 1,
       },
       { key: "name", label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[1] },
       { key: "nickname", label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[2] },
@@ -211,7 +210,7 @@ export default function MasterAccountsClient() {
         ),
       },
     ],
-    [page, updating],
+    [updating],
   );
 
   const permissionChangeMessage = pendingChange
@@ -246,6 +245,7 @@ export default function MasterAccountsClient() {
                 totalPages={totalPages}
               />
             }
+            rowNumberOffset={page * ADMIN_ACCOUNT_PAGE_SIZE}
             rowKey={(account) => account.userId}
           />
         )}
