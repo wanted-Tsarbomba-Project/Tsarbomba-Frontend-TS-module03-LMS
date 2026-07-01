@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   List,
-  LoadingIndicator,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
   type ListColumn,
@@ -30,6 +30,7 @@ const alertColumns: ListColumn<OperationAlertSummary>[] = [
     render: (alert) => alertStatusLabel[alert.status] ?? alert.status,
   },
 ];
+const alertListSkeletonColumns = ["No.", "알람 내용", "처리상태"];
 
 export default function AlramsClient() {
   const router = useRouter();
@@ -123,7 +124,10 @@ export default function AlramsClient() {
         </div>
 
         {loading ? (
-          <LoadingIndicator message="알람 목록을 불러오는 중입니다." />
+          <ListSkeleton
+            columns={alertListSkeletonColumns}
+            statusMessage="알람 목록을 불러오는 중입니다."
+          />
         ) : (
           <List
             columns={alertColumns}

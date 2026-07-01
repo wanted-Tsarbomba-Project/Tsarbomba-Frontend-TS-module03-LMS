@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
-  LoadingIndicator,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
 } from "@/components/common";
@@ -24,6 +24,13 @@ interface RankingClientProps {
 }
 
 const RANKING_PAGE_SIZE = 20;
+const rankingListSkeletonColumns = [
+  "No.",
+  "뱃지",
+  "이름",
+  "주간 포인트",
+  "누적 포인트",
+];
 
 export default function RankingClient({
   initialMyRanking,
@@ -103,7 +110,10 @@ export default function RankingClient({
 
       <div className={rankingClasses.listShell}>
         {loading ? (
-          <LoadingIndicator message="랭킹을 불러오는 중입니다." />
+          <ListSkeleton
+            columns={rankingListSkeletonColumns}
+            statusMessage="랭킹을 불러오는 중입니다."
+          />
         ) : (
           <RankingList
             myRanking={myRanking}

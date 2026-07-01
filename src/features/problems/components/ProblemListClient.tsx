@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   List,
-  LoadingIndicator,
+  ListSkeleton,
   OneButtonModal,
   Pagination,
   type ListColumn,
@@ -26,6 +26,14 @@ const problemListClasses = {
 } as const;
 
 const PROBLEM_SET_PAGE_SIZE = 20;
+const problemListSkeletonColumns = [
+  "No.",
+  "문제명",
+  "문제 설명",
+  "난이도",
+  "정답률",
+  "등록일",
+];
 
 function formatDate(value?: string) {
   if (!value) {
@@ -159,7 +167,10 @@ export default function ProblemListClient() {
       </div>
 
       {isLoading ? (
-        <LoadingIndicator message="문제 목록을 불러오는 중입니다." />
+        <ListSkeleton
+          columns={problemListSkeletonColumns}
+          statusMessage="문제 목록을 불러오는 중입니다."
+        />
       ) : (
         <List
           columns={columns}

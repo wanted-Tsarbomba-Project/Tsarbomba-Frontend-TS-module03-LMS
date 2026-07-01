@@ -19,6 +19,7 @@ import type { ProblemSetSummary } from "@/features/problems/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";
+import ListSkeleton from "@/components/common/ListSkeleton";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 
 interface CourseDetailClientProps {
@@ -62,6 +63,13 @@ const progressColumns: ListColumn<StudentLearningProgress>[] = [
       </button>
     ),
   },
+];
+const progressListSkeletonColumns = [
+  "No.",
+  "이름",
+  "강의 수강률",
+  "문제 풀이 현황",
+  "문제 풀이",
 ];
 
 export default function CourseDetailClient({
@@ -447,7 +455,12 @@ export default function CourseDetailClient({
 
             <div className="overflow-y-auto flex-1 p-4">
               {progressLoading ? (
-                <LoadingIndicator message="학습 현황을 불러오는 중입니다." />
+                <ListSkeleton
+                  columns={progressListSkeletonColumns}
+                  rowCount={5}
+                  statusMessage="학습 현황을 불러오는 중입니다."
+                  withPagination={false}
+                />
               ) : (
                 <List
                   data={progressData}

@@ -19,6 +19,7 @@ import type {
 import OneButtonModal from "@/components/common/OneButtonModal";
 import TwoButtonModal from "@/components/common/TwoButtonModal";
 import List, { type ListColumn } from "@/components/common/List";
+import ListSkeleton from "@/components/common/ListSkeleton";
 import LoadingIndicator from "@/components/common/LoadingIndicator";
 import Pagination from "@/components/common/Pagination";
 
@@ -36,6 +37,13 @@ const STATUS_LABEL: Record<string, string> = {
   WRONG: "오답",
   UNSOLVED: "미제출",
 };
+const progressListSkeletonColumns = [
+  "No.",
+  "닉네임",
+  "강의 수강률",
+  "문제 풀이 현황",
+  "문제 풀이",
+];
 
 export default function OperatorCourseDetailClient({
   courseId,
@@ -344,7 +352,11 @@ export default function OperatorCourseDetailClient({
 
             <div className="overflow-y-auto flex-1 p-4">
               {progressLoading ? (
-                <LoadingIndicator message="학습 현황을 불러오는 중입니다." />
+                <ListSkeleton
+                  columns={progressListSkeletonColumns}
+                  rowCount={5}
+                  statusMessage="학습 현황을 불러오는 중입니다."
+                />
               ) : (
                 <List
                   data={progressPage?.content ?? []}
