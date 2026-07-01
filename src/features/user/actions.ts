@@ -125,11 +125,16 @@ export const changeMyPassword = async (
   );
 };
 
-/** 회원 탈퇴 — DELETE /api/v1/users/me { password } */
-export const withdrawUser = async (password: string): Promise<void> => {
+/**
+ * 회원 탈퇴 — DELETE /api/v1/users/me
+ * LOCAL 계정은 { password }, GOOGLE(소셜) 계정은 { confirmText: "탈퇴하겠습니다" } 를 전송.
+ */
+export const withdrawUser = async (
+  body: { password: string } | { confirmText: string },
+): Promise<void> => {
   await request(
     "/api/v1/users/me",
-    { method: "DELETE", body: JSON.stringify({ password }) },
+    { method: "DELETE", body: JSON.stringify(body) },
     "회원 탈퇴에 실패했습니다.",
   );
 };
