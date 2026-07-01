@@ -26,7 +26,8 @@ const problemListClasses = {
   "container": "min-h-screen bg-bg-main p-[30px]",
   "header": "mb-5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-stretch",
   "pageTitle": "m-0 text-title-lg font-bold text-text-primary",
-  "registerButton": "cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[18px] py-2.5 text-description font-semibold text-text-white hover:bg-button-blue-hover-bg max-md:w-full"
+  "registerButton": "cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-[18px] py-2.5 text-description font-semibold text-text-white hover:bg-button-blue-hover-bg max-md:w-full",
+  "twoLineCell": "line-clamp-2 !whitespace-normal break-words leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
 } as const;
 
 function formatDate(value?: string) {
@@ -71,10 +72,12 @@ export default function ProblemListClient() {
       {
         key: "title",
         label: PROBLEM_LIST_COLUMN_LABELS[1],
+        cellClassName: problemListClasses.twoLineCell,
       },
       {
         key: "description",
         label: PROBLEM_LIST_COLUMN_LABELS[2],
+        cellClassName: problemListClasses.twoLineCell,
       },
       {
         key: "difficulty",

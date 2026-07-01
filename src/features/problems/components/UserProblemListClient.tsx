@@ -23,7 +23,8 @@ import ProblemRecommendationModal from "./ProblemRecommendationModal";
 
 const userProblemListClasses = {
   "container": "min-h-screen bg-bg-main py-[30px] max-md:py-6",
-  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary"
+  "pageTitle": "mt-0 mb-5 text-title-lg font-bold text-text-primary",
+  "twoLineCell": "line-clamp-2 !whitespace-normal break-words leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
 } as const;
 
 
@@ -161,10 +162,12 @@ export default function UserProblemListClient({
       {
         key: "title",
         label: PROBLEM_LIST_COLUMN_LABELS[1],
+        cellClassName: userProblemListClasses.twoLineCell,
       },
       {
         key: "description",
         label: PROBLEM_LIST_COLUMN_LABELS[2],
+        cellClassName: userProblemListClasses.twoLineCell,
       },
       {
         key: "difficulty",
