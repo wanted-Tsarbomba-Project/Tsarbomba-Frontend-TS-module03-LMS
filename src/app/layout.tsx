@@ -13,6 +13,7 @@ import Sidebar from "../components/layout/Sidebar";
 import Footer from "../components/layout/Footer";
 import CategoryNav from "../components/layout/CategoryNav";
 import OneButtonModal from "../components/common/OneButtonModal";
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -140,16 +141,16 @@ export default function RootLayout({
               {(isMypagePath ||
                 isChatPath ||
                 (isAdminPath && canAccessCurrentAdmin)) && (
-                <button
-                  aria-label={isOpen ? "사이드바 닫기" : "사이드바 열기"}
-                  aria-pressed={isOpen}
-                  className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-4 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-[#1a237e] bg-bg-box p-0 shadow-[0_8px_24px_rgba(15,23,42,0.22)] min-[1024px]:hidden"
-                  onClick={() => setIsOpen((prev) => !prev)}
-                  type="button"
-                >
-                  <Image
-                    alt=""
-                    className="h-14 w-14"
+                  <button
+                    aria-label={isOpen ? "사이드바 닫기" : "사이드바 열기"}
+                    aria-pressed={isOpen}
+                    className={mobileSidebarClasses.toggleButton}
+                    onClick={() => setIsOpen((prev) => !prev)}
+                    type="button"
+                  >
+                    <Image
+                      alt=""
+                      className={mobileSidebarClasses.toggleIcon}
                     height={56}
                     src="/assets/img/sidebar.svg"
                     width={56}
@@ -161,9 +162,11 @@ export default function RootLayout({
                 (isMypagePath ||
                   isChatPath ||
                   (isAdminPath && canAccessCurrentAdmin)) && (
-                  <div
-                    className="fixed inset-0 z-[900] bg-[#000000]/40 min-[1024px]:hidden"
+                  <button
+                    aria-label="사이드바 닫기"
+                    className={mobileSidebarClasses.backdrop}
                     onClick={() => setIsOpen(false)}
+                    type="button"
                   />
                 )}
 

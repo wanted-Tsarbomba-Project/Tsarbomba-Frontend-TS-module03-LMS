@@ -14,7 +14,7 @@ interface WarningModalProps {
 
 const modalClasses = {
   overlay:
-    "fixed inset-0 z-[999] flex h-dvh w-dvw items-center justify-center overflow-y-auto bg-[rgba(16,24,40,0.45)] px-4 py-6",
+    "fixed inset-0 z-[999] flex h-dvh w-dvw items-center justify-center bg-[rgba(16,24,40,0.45)] px-4 py-6",
   container:
     "relative flex max-h-[calc(100dvh-48px)] min-h-[min(348px,calc(100dvh-48px))] w-[min(480px,100%)] flex-col overflow-y-auto rounded-2xl bg-bg-box",
   iconWrap: "mt-12 flex items-center justify-center max-[560px]:mt-8",

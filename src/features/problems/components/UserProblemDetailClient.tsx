@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import CategoryNav from "@/components/layout/CategoryNav";
 import Sidebar from "@/components/layout/Sidebar";
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
 import { streamChat } from "@/features/chat/stream";
 import { createChatTypewriter } from "@/features/chat/typewriter";
 import { handleClientError } from "@/lib/errorHandling";
@@ -1042,9 +1043,11 @@ export default function UserProblemDetailClient({
           )}
 
           {mobileSidebarOpen && !chatOpen && (
-            <div
-              className="fixed inset-0 z-[900] bg-[#000000]/40 min-[1024px]:hidden"
+            <button
+              aria-label="문제 목록 닫기"
+              className={mobileSidebarClasses.backdrop}
               onClick={() => setMobileSidebarOpen(false)}
+              type="button"
             />
           )}
 

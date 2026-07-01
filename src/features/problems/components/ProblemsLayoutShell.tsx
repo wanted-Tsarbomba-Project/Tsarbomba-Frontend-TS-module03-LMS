@@ -6,6 +6,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
+
 import type { ProblemCategory } from "../types";
 
 interface ProblemsLayoutShellProps {
@@ -39,8 +41,8 @@ export default function ProblemsLayoutShell({
       <aside
         className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 transition-all duration-300 ${
           isSidebarOpen
-            ? "max-[1023px]:fixed max-[1023px]:left-1/2 max-[1023px]:top-1/2 max-[1023px]:z-[1000] max-[1023px]:block max-[1023px]:max-h-[min(76dvh,560px)] max-[1023px]:w-[min(340px,calc(100dvw-32px))] max-[1023px]:-translate-x-1/2 max-[1023px]:-translate-y-1/2 max-[1023px]:overflow-y-auto max-[1023px]:shadow-[0_20px_50px_rgba(15,23,42,0.24)]"
-            : "max-[1023px]:hidden"
+            ? mobileSidebarClasses.overlayAsideOpen
+            : mobileSidebarClasses.overlayAsideClosed
         }`}
       >
         <div className="w-full flex flex-col gap-5">
@@ -90,13 +92,13 @@ export default function ProblemsLayoutShell({
       <button
         aria-label={isSidebarOpen ? "카테고리 닫기" : "카테고리 열기"}
         aria-pressed={isSidebarOpen}
-        className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-4 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-[#1a237e] bg-bg-box p-0 shadow-[0_8px_24px_rgba(15,23,42,0.22)] min-[1024px]:hidden"
+        className={mobileSidebarClasses.toggleButton}
         onClick={() => setIsSidebarOpen((prev) => !prev)}
         type="button"
       >
         <Image
           alt=""
-          className="h-14 w-14"
+          className={mobileSidebarClasses.toggleIcon}
           height={56}
           src="/assets/img/sidebar.svg"
           width={56}
@@ -104,9 +106,11 @@ export default function ProblemsLayoutShell({
       </button>
 
       {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-[900] bg-[#000000]/40 min-[1024px]:hidden"
+        <button
+          aria-label="카테고리 닫기"
+          className={mobileSidebarClasses.backdrop}
           onClick={closeSidebar}
+          type="button"
         />
       )}
 

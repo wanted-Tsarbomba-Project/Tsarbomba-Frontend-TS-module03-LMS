@@ -11,6 +11,7 @@ import { equipBadge, getMyBadges, syncMyBadges } from "@/features/badge/actions"
 import type { MyBadge } from "@/features/badge/types";
 import OneButtonModal from "@/components/common/OneButtonModal";
 import { ChatRoomListSkeleton } from "@/features/chat/components/ChatPageSkeleton";
+import { mobileSidebarClasses } from "./mobileSidebarClasses";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -433,8 +434,8 @@ export default function Sidebar({
       <aside
         className={`w-65 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 sticky top-20 transition-all duration-300 ${
           isOpen
-            ? "max-[1023px]:fixed max-[1023px]:left-1/2 max-[1023px]:top-1/2 max-[1023px]:z-[1000] max-[1023px]:block max-[1023px]:max-h-[min(76dvh,560px)] max-[1023px]:w-[min(340px,calc(100dvw-32px))] max-[1023px]:-translate-x-1/2 max-[1023px]:-translate-y-1/2 max-[1023px]:overflow-y-auto max-[1023px]:shadow-[0_20px_50px_rgba(15,23,42,0.24)]"
-            : "max-[1023px]:hidden"
+            ? mobileSidebarClasses.overlayAsideOpen
+            : mobileSidebarClasses.overlayAsideClosed
         }`}
       >
         {problemDetailMenu}
@@ -468,8 +469,8 @@ export default function Sidebar({
       <aside
         className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 transition-all duration-300 ${
           isOpen
-            ? "max-[1023px]:fixed max-[1023px]:left-1/2 max-[1023px]:top-1/2 max-[1023px]:z-[1000] max-[1023px]:block max-[1023px]:max-h-[min(76dvh,560px)] max-[1023px]:w-[min(340px,calc(100dvw-32px))] max-[1023px]:-translate-x-1/2 max-[1023px]:-translate-y-1/2 max-[1023px]:overflow-y-auto max-[1023px]:shadow-[0_20px_50px_rgba(15,23,42,0.24)]"
-            : "max-[1023px]:hidden"
+            ? mobileSidebarClasses.overlayAsideOpen
+            : mobileSidebarClasses.overlayAsideClosed
         }`}
       >
         {isAdminPath && adminMenu}
