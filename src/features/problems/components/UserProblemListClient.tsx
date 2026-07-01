@@ -8,6 +8,7 @@ import {
   List,
   OneButtonModal,
   Pagination,
+  listCellClasses,
   type ListColumn,
 } from "@/components/common";
 import { handleClientError } from "@/lib/errorHandling";
@@ -154,6 +155,7 @@ export default function UserProblemListClient({
     () => [
       {
         key: "problemNumber",
+        isRowNumber: true,
         label: PROBLEM_LIST_COLUMN_LABELS[0],
         render: (item, index) =>
           item.problemNumber ?? currentPage * pageSize + index + 1,
@@ -161,10 +163,12 @@ export default function UserProblemListClient({
       {
         key: "title",
         label: PROBLEM_LIST_COLUMN_LABELS[1],
+        cellClassName: listCellClasses.twoLine,
       },
       {
         key: "description",
         label: PROBLEM_LIST_COLUMN_LABELS[2],
+        cellClassName: listCellClasses.twoLine,
       },
       {
         key: "difficulty",
