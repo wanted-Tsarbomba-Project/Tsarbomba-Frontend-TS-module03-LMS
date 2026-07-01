@@ -12,6 +12,10 @@ import {
 import { handleClientError } from "@/lib/errorHandling";
 
 import { getMyPointRankingByMode, getPointRankingsByMode } from "../actions";
+import {
+  RANKING_LIST_SKELETON_COLUMNS,
+  RANKING_PAGE_SIZE,
+} from "../constants";
 import { rankingClasses } from "../styles";
 import type { RankingMode, RankingUser } from "../types";
 import MyRankingCard from "./MyRankingCard";
@@ -22,15 +26,6 @@ interface RankingClientProps {
   initialMyRanking: RankingUser | null;
   initialRankings: RankingUser[];
 }
-
-const RANKING_PAGE_SIZE = 20;
-const rankingListSkeletonColumns = [
-  "No.",
-  "뱃지",
-  "이름",
-  "주간 포인트",
-  "누적 포인트",
-];
 
 export default function RankingClient({
   initialMyRanking,
@@ -111,7 +106,8 @@ export default function RankingClient({
       <div className={rankingClasses.listShell}>
         {loading ? (
           <ListSkeleton
-            columns={rankingListSkeletonColumns}
+            columns={[...RANKING_LIST_SKELETON_COLUMNS]}
+            rowCount={RANKING_PAGE_SIZE}
             statusMessage="랭킹을 불러오는 중입니다."
           />
         ) : (

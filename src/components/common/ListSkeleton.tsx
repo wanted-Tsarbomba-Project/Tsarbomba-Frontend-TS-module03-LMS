@@ -2,6 +2,7 @@ import { Skeleton } from "primereact/skeleton";
 
 interface ListSkeletonProps {
   columns: string[];
+  columnWidths?: string[];
   containerClassName?: string;
   rowCount?: number;
   statusMessage?: string;
@@ -22,16 +23,38 @@ const listSkeletonClasses = {
   pagination: "mt-4 flex justify-center gap-2",
 } as const;
 
-const rowSkeletonWidths = ["36px", "64%", "82%", "56px", "48px", "76px"];
+function getSkeletonWidth(index: number, columnCount: number) {
+  if (columnCount <= 1) {
+    return "60%";
+  }
 
-function SkeletonCell({ index }: { index: number }) {
+  if (index === 0) {
+    return "36px";
+  }
+
+  if (index === columnCount - 1) {
+    return "64%";
+  }
+
+  return index % 2 === 0 ? "72%" : "56%";
+}
+
+function SkeletonCell({
+  columnCount,
+  index,
+  width,
+}: {
+  columnCount: number;
+  index: number;
+  width?: string;
+}) {
   return (
     <td>
       <div className={listSkeletonClasses.cellContent}>
         <Skeleton
           borderRadius="8px"
           height="18px"
-          width={rowSkeletonWidths[index] ?? "60%"}
+          width={width ?? getSkeletonWidth(index, columnCount)}
         />
       </div>
     </td>
@@ -40,6 +63,7 @@ function SkeletonCell({ index }: { index: number }) {
 
 export default function ListSkeleton({
   columns,
+  columnWidths,
   containerClassName = listSkeletonClasses.container,
   rowCount = 8,
   statusMessage = "목록을 불러오는 중입니다.",
@@ -59,8 +83,8 @@ export default function ListSkeleton({
         <table className={listSkeletonClasses.table}>
           <thead>
             <tr>
-              {columns.map((column) => (
-                <th key={column}>{column}</th>
+              {columns.map((column, columnIndex) => (
+                <th key={`${column}-${columnIndex}`}>{column}</th>
               ))}
             </tr>
           </thead>
@@ -69,7 +93,12 @@ export default function ListSkeleton({
             {Array.from({ length: rowCount }, (_, rowIndex) => (
               <tr key={rowIndex}>
                 {columns.map((column, columnIndex) => (
-                  <SkeletonCell index={columnIndex} key={column} />
+                  <SkeletonCell
+                    columnCount={columns.length}
+                    index={columnIndex}
+                    key={`${column}-${columnIndex}`}
+                    width={columnWidths?.[columnIndex]}
+                  />
                 ))}
               </tr>
             ))}

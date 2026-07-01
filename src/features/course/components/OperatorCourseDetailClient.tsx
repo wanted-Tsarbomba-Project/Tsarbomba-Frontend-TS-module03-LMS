@@ -8,6 +8,7 @@ import {
   getStudentProblemSet,
 } from "@/features/course/progressActions";
 import { getCourseProblemSets } from "@/features/course/problemSetActions";
+import { OPERATOR_COURSE_PROGRESS_COLUMN_LABELS } from "@/features/course/constants";
 import { resolveThumbnailUrl } from "@/features/course/http";
 import type {
   CourseDetail,
@@ -37,13 +38,6 @@ const STATUS_LABEL: Record<string, string> = {
   WRONG: "오답",
   UNSOLVED: "미제출",
 };
-const progressListSkeletonColumns = [
-  "No.",
-  "닉네임",
-  "강의 수강률",
-  "문제 풀이 현황",
-  "문제 풀이",
-];
 
 export default function OperatorCourseDetailClient({
   courseId,
@@ -77,23 +71,23 @@ export default function OperatorCourseDetailClient({
   } | null>(null);
 
   const progressColumns: ListColumn<StudentLearningProgress>[] = [
-    { key: "index", label: "No." },
-    { key: "studentName", label: "닉네임" },
+    { key: "index", label: OPERATOR_COURSE_PROGRESS_COLUMN_LABELS[0] },
+    { key: "studentName", label: OPERATOR_COURSE_PROGRESS_COLUMN_LABELS[1] },
     {
       key: "lecture",
-      label: "강의 수강률",
+      label: OPERATOR_COURSE_PROGRESS_COLUMN_LABELS[2],
       render: (item) =>
         `${item.completedLectureCount}/${item.totalLectureCount} ${item.lectureProgressRate}%`,
     },
     {
       key: "problem",
-      label: "문제 풀이 현황",
+      label: OPERATOR_COURSE_PROGRESS_COLUMN_LABELS[3],
       render: (item) =>
         `${item.completedProblemCount}/${item.totalProblemCount} 개`,
     },
     {
       key: "action",
-      label: "문제 풀이",
+      label: OPERATOR_COURSE_PROGRESS_COLUMN_LABELS[4],
       render: (item) => (
         <button
           type="button"
@@ -353,7 +347,7 @@ export default function OperatorCourseDetailClient({
             <div className="overflow-y-auto flex-1 p-4">
               {progressLoading ? (
                 <ListSkeleton
-                  columns={progressListSkeletonColumns}
+                  columns={[...OPERATOR_COURSE_PROGRESS_COLUMN_LABELS]}
                   rowCount={5}
                   statusMessage="학습 현황을 불러오는 중입니다."
                 />

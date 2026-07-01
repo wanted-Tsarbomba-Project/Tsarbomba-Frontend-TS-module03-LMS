@@ -14,18 +14,12 @@ import {
 import { handleClientError } from "@/lib/errorHandling";
 
 import { getAdminAccounts, updateAdminAccountPermission } from "../actions";
+import {
+  ADMIN_ACCOUNT_LIST_COLUMN_LABELS,
+  ADMIN_ACCOUNT_PAGE_SIZE,
+} from "../constants";
 import { adminMasterClasses } from "../styles";
 import type { AdminAccountSummary, AdminPermissionType } from "../types";
-
-const ADMIN_ACCOUNT_PAGE_SIZE = 20;
-const adminAccountListSkeletonColumns = [
-  "No.",
-  "이름",
-  "닉네임",
-  "이메일",
-  "회원 관리 권한",
-  "규칙 관리 권한",
-];
 
 const permissionLabels: Record<AdminPermissionType, string> = {
   userManagement: "회원 관리",
@@ -186,15 +180,15 @@ export default function MasterAccountsClient() {
     () => [
       {
         key: "rowNumber",
-        label: "No.",
+        label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[0],
         render: (_account, index) => page * ADMIN_ACCOUNT_PAGE_SIZE + index + 1,
       },
-      { key: "name", label: "이름" },
-      { key: "nickname", label: "닉네임" },
-      { key: "email", label: "이메일" },
+      { key: "name", label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[1] },
+      { key: "nickname", label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[2] },
+      { key: "email", label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[3] },
       {
         key: "userManagement",
-        label: "회원 관리 권한",
+        label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[4],
         render: (account) => (
           <PermissionButton
             account={account}
@@ -206,7 +200,7 @@ export default function MasterAccountsClient() {
       },
       {
         key: "ruleManagement",
-        label: "규칙 관리 권한",
+        label: ADMIN_ACCOUNT_LIST_COLUMN_LABELS[5],
         render: (account) => (
           <PermissionButton
             account={account}
@@ -235,7 +229,8 @@ export default function MasterAccountsClient() {
 
         {loading ? (
           <ListSkeleton
-            columns={adminAccountListSkeletonColumns}
+            columns={[...ADMIN_ACCOUNT_LIST_COLUMN_LABELS]}
+            rowCount={ADMIN_ACCOUNT_PAGE_SIZE}
             statusMessage="관리자 계정을 불러오는 중입니다."
           />
         ) : (

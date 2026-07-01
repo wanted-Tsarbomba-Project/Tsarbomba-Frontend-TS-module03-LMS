@@ -1,6 +1,8 @@
 import { ListSkeleton } from "@/components/common";
-
-const alertListSkeletonColumns = ["No.", "알람 내용", "처리상태"];
+import {
+  ALERT_LIST_COLUMN_LABELS,
+  ALERT_PAGE_SIZE,
+} from "@/features/admin/operations/constants";
 
 export default function AdminAlramsLoading() {
   return (
@@ -10,7 +12,8 @@ export default function AdminAlramsLoading() {
       </div>
 
       <ListSkeleton
-        columns={alertListSkeletonColumns}
+        columns={[...ALERT_LIST_COLUMN_LABELS]}
+        rowCount={ALERT_PAGE_SIZE}
         statusMessage="알람 목록을 불러오는 중입니다."
       />
     </div>

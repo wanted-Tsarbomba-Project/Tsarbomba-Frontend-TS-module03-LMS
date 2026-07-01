@@ -1,13 +1,8 @@
 import { ListSkeleton } from "@/components/common";
-
-const userListSkeletonColumns = [
-  "No.",
-  "이름",
-  "닉네임",
-  "이메일",
-  "가입일",
-  "상태",
-];
+import {
+  ADMIN_USER_LIST_COLUMN_LABELS,
+  ADMIN_USER_PAGE_SIZE,
+} from "@/features/admin/operations/constants";
 
 export default function AdminUsersLoading() {
   return (
@@ -19,7 +14,8 @@ export default function AdminUsersLoading() {
       </div>
 
       <ListSkeleton
-        columns={userListSkeletonColumns}
+        columns={[...ADMIN_USER_LIST_COLUMN_LABELS]}
+        rowCount={ADMIN_USER_PAGE_SIZE}
         statusMessage="회원 목록을 불러오는 중입니다."
       />
     </div>
