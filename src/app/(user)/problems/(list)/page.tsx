@@ -28,6 +28,7 @@ export default async function ProblemsPage({ searchParams }: ProblemsPageProps) 
 
   return (
     <UserProblemListClient
+      categoryId={categoryId}
       currentPage={currentPage}
       initialProblemSets={problemSetPage.problemSets}
       pageSize={PROBLEM_SET_PAGE_SIZE}

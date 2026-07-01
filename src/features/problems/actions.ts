@@ -1,6 +1,7 @@
 import { ApiClientError, type BackendErrorPayload } from "@/lib/errorHandling";
 import { SERVER_API_BASE_URL } from "@/lib/serverEnv";
 
+import { PROBLEM_SET_PAGE_SIZE } from "./constants";
 import type {
   CreateProblemRequest,
   EditableRecommendedCoursesResponse,
@@ -289,6 +290,38 @@ export async function getProblemSetPage({
   );
 
   return extractProblemSetPage(result);
+}
+
+export async function getAllProblemSets({
+  categoryId,
+  size = PROBLEM_SET_PAGE_SIZE,
+  init = {},
+}: {
+  categoryId?: string | null;
+  size?: number;
+  init?: NextRequestInit;
+} = {}) {
+  const firstPage = await getProblemSetPage({
+    categoryId,
+    page: 0,
+    size,
+    init,
+  });
+  const totalPages = Math.max(firstPage.totalPages, 1);
+  const problemSets = [...firstPage.problemSets];
+
+  for (let page = 1; page < totalPages; page += 1) {
+    const nextPage = await getProblemSetPage({
+      categoryId,
+      page,
+      size,
+      init,
+    });
+
+    problemSets.push(...nextPage.problemSets);
+  }
+
+  return problemSets;
 }
 
 function extractProblemSetPage(result: unknown): ProblemSetPage {

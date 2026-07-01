@@ -219,7 +219,7 @@ export default function Sidebar({
                 }
                 href="/admin/courses"
               >
-                강의 관리
+                강좌 관리
               </Link>
             </li>
             <li>
