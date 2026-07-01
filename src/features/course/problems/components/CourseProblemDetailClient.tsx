@@ -212,7 +212,9 @@ export default function CourseProblemDetailClient({
   // 데이터셋(CSV) 다운로드 — 문제세트 단위 (문제풀이방과 동일). 서버가 서명 URL 발급.
   const handleDatasetDownload = async () => {
     if (isDatasetDownloading) return;
-    const datasetKey = String(problemSet.problemSetId ?? lectureProblemSetId);
+    // 데이터셋은 문제세트 단위 — problemSetId(선택값) 없으면 정규화된 id 사용.
+    // lectureProblemSetId(강의-문제세트 연결 ID)로 fallback 하면 안 됨.
+    const datasetKey = String(problemSet.problemSetId ?? problemSet.id);
     setIsDatasetDownloading(true);
     try {
       const dataset = await getProblemDatasetDownloadUrl(datasetKey);

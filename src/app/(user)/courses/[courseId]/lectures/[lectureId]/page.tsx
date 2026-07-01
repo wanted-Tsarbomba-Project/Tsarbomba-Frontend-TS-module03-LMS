@@ -58,6 +58,14 @@ export default function LectureDetailPage() {
   const [materials, setMaterials] = useState<LectureMaterial[]>([]);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  // 운영/관리 역할은 미수강·잠금 무관하게 열람·이동 가능 (마운트 후 클라에서 확정 — hydration 안전)
+  const [isOperator, setIsOperator] = useState(false);
+  useEffect(() => {
+    const role = localStorage.getItem("userRole") ?? "";
+    setIsOperator(
+      ["OPERATOR", "ADMIN", "MASTER", "INSTRUCTOR"].includes(role),
+    );
+  }, []);
 
   const [panelOpen, setPanelOpen] = useState(true);
   const [problemNavTarget, setProblemNavTarget] =
@@ -244,7 +252,9 @@ export default function LectureDetailPage() {
       unlockedIds.add(lectures[i].lectureId);
     }
   }
-  const isLocked = (l: LectureSummary) => !unlockedIds.has(l.lectureId);
+  // 운영자는 모든 강의 잠금 해제 → nextLocked·목록 클릭 가드까지 일괄 예외 적용
+  const isLocked = (l: LectureSummary) =>
+    !isOperator && !unlockedIds.has(l.lectureId);
   const nextLocked = nextLecture ? isLocked(nextLecture) : true;
 
   const goToLecture = (id: number) => {
