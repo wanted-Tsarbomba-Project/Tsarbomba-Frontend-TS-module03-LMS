@@ -20,11 +20,11 @@ type PageItem =
 const SIBLING_COUNT = 2;
 
 const paginationClasses = {
-  container: "flex items-center justify-center gap-2",
+  container: "flex min-w-0 flex-wrap items-center justify-center gap-2",
   button:
-    "min-w-9 h-9 cursor-pointer rounded-base border border-border-light bg-bg-box px-3 text-description font-semibold text-text-primary transition-colors hover:cursor-pointer hover:bg-bg-hover-gray disabled:cursor-not-allowed disabled:opacity-50",
+    "h-9 min-w-9 cursor-pointer rounded-base border border-border-light bg-bg-box px-3 text-description font-semibold text-text-primary transition-colors hover:cursor-pointer hover:bg-bg-hover-gray disabled:cursor-not-allowed disabled:opacity-50 max-[420px]:px-2",
   activeButton:
-    "min-w-9 h-9 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-3 text-description font-semibold text-text-white transition-colors hover:cursor-pointer",
+    "h-9 min-w-9 cursor-pointer rounded-base border border-button-blue-bg bg-button-blue-bg px-3 text-description font-semibold text-text-white transition-colors hover:cursor-pointer max-[420px]:px-2",
   ellipsis:
     "flex h-9 min-w-9 items-center justify-center px-1 text-description font-semibold text-text-secondary",
 } as const;

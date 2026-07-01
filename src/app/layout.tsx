@@ -6,12 +6,14 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
 import Footer from "../components/layout/Footer";
 import CategoryNav from "../components/layout/CategoryNav";
 import OneButtonModal from "../components/common/OneButtonModal";
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -136,13 +138,35 @@ export default function RootLayout({
                 <Sidebar isOpen={isOpen} />
               )}
 
+              {(isMypagePath ||
+                isChatPath ||
+                (isAdminPath && canAccessCurrentAdmin)) && (
+                  <button
+                    aria-label={isOpen ? "사이드바 닫기" : "사이드바 열기"}
+                    aria-pressed={isOpen}
+                    className={mobileSidebarClasses.toggleButton}
+                    onClick={() => setIsOpen((prev) => !prev)}
+                    type="button"
+                  >
+                    <Image
+                      alt=""
+                      className={mobileSidebarClasses.toggleIcon}
+                    height={56}
+                    src="/assets/img/sidebar.svg"
+                    width={56}
+                  />
+                </button>
+              )}
+
               {isOpen &&
                 (isMypagePath ||
                   isChatPath ||
                   (isAdminPath && canAccessCurrentAdmin)) && (
-                  <div
-                    className="fixed inset-0 bg-[#000000]/40 z-998 lg:hidden"
+                  <button
+                    aria-label="사이드바 닫기"
+                    className={mobileSidebarClasses.backdrop}
                     onClick={() => setIsOpen(false)}
+                    type="button"
                   />
                 )}
 

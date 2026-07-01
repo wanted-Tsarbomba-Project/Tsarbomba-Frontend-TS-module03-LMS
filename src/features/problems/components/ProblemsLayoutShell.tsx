@@ -2,7 +2,11 @@
 
 // CSR - 문제 카테고리 사이드바: 현재 URL의 categoryId를 읽고 사용자의 카테고리 선택에 맞춰 라우팅함
 import type { ReactNode } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+import { mobileSidebarClasses } from "@/components/layout/mobileSidebarClasses";
 
 import type { ProblemCategory } from "../types";
 
@@ -24,14 +28,23 @@ export default function ProblemsLayoutShell({
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedCategoryId = searchParams.get("categoryId");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (pathname !== "/problems") {
     return <>{children}</>;
   }
 
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
     <div className="flex flex-1 w-full max-w-300 mx-auto relative box-border gap-5 max-[1024px]:px-5">
-      <aside className="w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 max-lg:hidden transition-all duration-300">
+      <aside
+        className={`w-60 shrink-0 bg-white border border-[#e8e8e8] rounded-xl p-5 h-fit mt-10 sticky top-24 transition-all duration-300 ${
+          isSidebarOpen
+            ? mobileSidebarClasses.overlayAsideOpen
+            : mobileSidebarClasses.overlayAsideClosed
+        }`}
+      >
         <div className="w-full flex flex-col gap-5">
           <div className="flex flex-col items-start px-2 py-1">
             <span className="text-lg font-bold text-[#1f2937]">카테고리</span>
@@ -44,7 +57,10 @@ export default function ProblemsLayoutShell({
                 className={
                   !selectedCategoryId ? itemActiveClass : itemBaseClass
                 }
-                onClick={() => router.push("/problems")}
+                onClick={() => {
+                  closeSidebar();
+                  router.push("/problems");
+                }}
                 type="button"
               >
                 전체
@@ -59,9 +75,10 @@ export default function ProblemsLayoutShell({
                       ? itemActiveClass
                       : itemBaseClass
                   }
-                  onClick={() =>
-                    router.push(`/problems?categoryId=${category.categoryId}`)
-                  }
+                  onClick={() => {
+                    closeSidebar();
+                    router.push(`/problems?categoryId=${category.categoryId}`);
+                  }}
                   type="button"
                 >
                   {category.categoryName}
@@ -71,6 +88,31 @@ export default function ProblemsLayoutShell({
           </ul>
         </div>
       </aside>
+
+      <button
+        aria-label={isSidebarOpen ? "카테고리 닫기" : "카테고리 열기"}
+        aria-pressed={isSidebarOpen}
+        className={mobileSidebarClasses.toggleButton}
+        onClick={() => setIsSidebarOpen((prev) => !prev)}
+        type="button"
+      >
+        <Image
+          alt=""
+          className={mobileSidebarClasses.toggleIcon}
+          height={56}
+          src="/assets/img/sidebar.svg"
+          width={56}
+        />
+      </button>
+
+      {isSidebarOpen && (
+        <button
+          aria-label="카테고리 닫기"
+          className={mobileSidebarClasses.backdrop}
+          onClick={closeSidebar}
+          type="button"
+        />
+      )}
 
       <main className="flex-1 min-w-0 py-10">{children}</main>
     </div>
