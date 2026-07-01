@@ -1,4 +1,6 @@
-import type { Key, ReactNode } from "react";
+"use client";
+
+import { useEffect, useRef, useState, type Key, type ReactNode } from "react";
 
 type ListItem = object & {
   id?: Key;
@@ -7,6 +9,10 @@ type ListItem = object & {
 export interface ListColumn<T extends ListItem> {
   key: keyof T | "index" | string;
   label: ReactNode;
+  cellClassName?: string | ((item: T, index: number) => string);
+  isRowNumber?: boolean;
+  title?: (item: T, index: number) => string | undefined;
+  width?: string;
   render?: (item: T, index: number) => ReactNode;
 }
 
@@ -22,15 +28,28 @@ interface ListProps<T extends ListItem> {
   emptyMessage?: ReactNode;
 }
 
+interface ListCellContentProps {
+  children: ReactNode;
+  className: string;
+  title?: string;
+}
+
 const listClasses = {
   container: "w-full",
   scrollArea:
     "max-h-[min(520px,calc(100vh-260px))] overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
   table:
     "w-full table-fixed border-collapse [&_td]:overflow-hidden [&_td]:text-ellipsis [&_td]:whitespace-nowrap [&_th]:overflow-hidden [&_th]:text-ellipsis [&_th]:whitespace-nowrap [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-[1] [&_thead_th]:h-[50px] [&_thead_th]:border-y [&_thead_th]:border-border-light [&_thead_th]:bg-bg-navbar [&_thead_th]:text-center [&_thead_th]:align-middle [&_thead_th]:font-semibold [&_tbody_td]:h-[50px] [&_tbody_td]:border-b [&_tbody_td]:border-border-light [&_tbody_td]:p-0 [&_tbody_td]:text-center [&_tbody_td]:align-middle [&_tbody_tr:hover_td]:cursor-pointer [&_tbody_tr:hover_td]:bg-[#f0f0f0]",
-  cellContent: "box-border whitespace-normal break-words p-2",
+  cellContent:
+    "box-border min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-1 py-0",
   pagination: "mt-4 flex justify-center",
 };
+
+const INDEX_COLUMN_WIDTH = "clamp(48px, 6ch, 72px)";
+
+export const listCellClasses = {
+  twoLine: "line-clamp-2 whitespace-normal! break-words leading-5",
+} as const;
 
 export default function List<T extends ListItem>({
   data,
@@ -45,6 +64,15 @@ export default function List<T extends ListItem>({
 }: ListProps<T>) {
   const table = (
     <table className={listClasses.table}>
+      <colgroup>
+        {columns.map((column) => (
+          <col
+            key={String(column.key)}
+            style={{ width: getColumnWidth(column) }}
+          />
+        ))}
+      </colgroup>
+
       <thead>
         <tr>
           {columns.map((column) => (
@@ -61,13 +89,31 @@ export default function List<T extends ListItem>({
               key={rowKey?.(item, index) ?? item.id ?? index}
               onClick={() => onRowClick?.(item)}
             >
-              {columns.map((column) => (
-                <td key={String(column.key)}>
-                  <div className={listClasses.cellContent}>
-                    {getCellContent(item, column, index, rowNumberOffset)}
-                  </div>
-                </td>
-              ))}
+              {columns.map((column) => {
+                const cellContent = getCellContent(
+                  item,
+                  column,
+                  index,
+                  rowNumberOffset,
+                );
+                const cellTitle = getCellTitle(
+                  item,
+                  column,
+                  index,
+                  cellContent,
+                );
+
+                return (
+                  <td key={String(column.key)}>
+                    <ListCellContent
+                      className={getCellClassName(column, item, index)}
+                      title={cellTitle}
+                    >
+                      {cellContent}
+                    </ListCellContent>
+                  </td>
+                );
+              })}
             </tr>
           ))
         ) : (
@@ -83,9 +129,64 @@ export default function List<T extends ListItem>({
 
   return (
     <div className={listClasses.container}>
-      {scrollable ? <div className={listClasses.scrollArea}>{table}</div> : table}
+      {scrollable ? (
+        <div className={listClasses.scrollArea}>{table}</div>
+      ) : (
+        table
+      )}
 
       {pagination && <div className={listClasses.pagination}>{pagination}</div>}
+    </div>
+  );
+}
+
+function ListCellContent({
+  children,
+  className,
+  title,
+}: ListCellContentProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const contentElement = contentRef.current;
+
+    if (!contentElement || !title) {
+      setIsOverflowing(false);
+      return;
+    }
+
+    const updateOverflowState = () => {
+      const nextIsOverflowing =
+        contentElement.scrollWidth > contentElement.clientWidth ||
+        contentElement.scrollHeight > contentElement.clientHeight;
+
+      setIsOverflowing((currentIsOverflowing) =>
+        currentIsOverflowing === nextIsOverflowing
+          ? currentIsOverflowing
+          : nextIsOverflowing,
+      );
+    };
+
+    updateOverflowState();
+
+    const resizeObserver = new ResizeObserver(updateOverflowState);
+    resizeObserver.observe(contentElement);
+    window.addEventListener("resize", updateOverflowState);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateOverflowState);
+    };
+  }, [children, className, title]);
+
+  return (
+    <div
+      className={className}
+      ref={contentRef}
+      title={isOverflowing ? title : undefined}
+    >
+      {children}
     </div>
   );
 }
@@ -100,6 +201,31 @@ function getRowClassName<T extends ListItem>(
   }
 
   return rowClassName;
+}
+
+function getCellClassName<T extends ListItem>(
+  column: ListColumn<T>,
+  item: T,
+  index: number,
+) {
+  const extraClassName =
+    typeof column.cellClassName === "function"
+      ? column.cellClassName(item, index)
+      : column.cellClassName;
+
+  return [listClasses.cellContent, extraClassName].filter(Boolean).join(" ");
+}
+
+function getColumnWidth<T extends ListItem>(column: ListColumn<T>) {
+  if (column.width) {
+    return column.width;
+  }
+
+  if (isRowNumberColumn(column)) {
+    return INDEX_COLUMN_WIDTH;
+  }
+
+  return undefined;
 }
 
 function getCellContent<T extends ListItem>(
@@ -131,4 +257,53 @@ function getCellContent<T extends ListItem>(
   }
 
   return "-";
+}
+
+function getCellTitle<T extends ListItem>(
+  item: T,
+  column: ListColumn<T>,
+  index: number,
+  cellContent: ReactNode,
+) {
+  if (isRowNumberColumn(column)) {
+    return undefined;
+  }
+
+  if (column.title) {
+    return normalizeTitle(column.title(item, index));
+  }
+
+  if (isTitleValue(cellContent)) {
+    return normalizeTitle(cellContent);
+  }
+
+  const value = (item as Record<string, unknown>)[String(column.key)];
+
+  if (isTitleValue(value)) {
+    return normalizeTitle(value);
+  }
+
+  return undefined;
+}
+
+function isRowNumberColumn<T extends ListItem>(column: ListColumn<T>) {
+  return column.key === "index" || column.isRowNumber === true;
+}
+
+function isTitleValue(value: unknown): value is string | number | boolean {
+  return (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
+
+function normalizeTitle(value: string | number | boolean | undefined) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const title = String(value).trim();
+
+  return title.length > 0 ? title : undefined;
 }
